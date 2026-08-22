@@ -61,7 +61,7 @@ jobs:
           version: latest-known
 
       - name: PlatformIO build
-        run: uv run pio run -e ${{ matrix.environment }}
+        run: uv run pio run -e "${{matrix.environment}}"
 
   lint:
     name: Lint

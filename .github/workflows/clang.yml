@@ -88,6 +88,7 @@ jobs:
         run: |
           cat <<'EOL' > include/esp/secrets.h
           #pragma once
+          #ifdef ARDUINO_ARCH_ESP32
           #define HOSTNAME "bekant"
           #define MQTT_HOST "localhost"
           #define MQTT_KEY "redacted"
@@ -104,15 +105,15 @@ jobs:
           #define PIN_TPUP 8
           #define WIFI_KEY "redacted"
           #define WIFI_SSID "redacted"
+          #endif // ARDUINO_ARCH_ESP32
           EOL
 
-          uv run pio run -t compiledb -e ${{ matrix.environment }}
+          uv run pio run -t compiledb -e "${{matrix.environment}}"
 
       - name: Clang tidy
         uses: cpp-linter/cpp-linter-action@cab1143a2c149bc41e85b070a9de81716974c18f # v2.21.0
         id: tidy
         with:
-          extra-args: -DCORE_DEBUG_LEVEL=ARDUHAL_LOG_LEVEL_VERBOSE
           file-annotations: false
           files-changed-only: false
           step-summary: true

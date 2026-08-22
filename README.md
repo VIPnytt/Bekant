@@ -21,9 +21,9 @@ It provides simple two-button control with height presets, smart-home integratio
 > [!WARNING]
 > Do not connect the desk's 29–35 V supply directly to the VIN pin of a typical ESP32 development board. Only use a board specifically designed for this input voltage, or use a suitable buck converter.
 
-An [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller is required for this mod. The ESP32 is used to control the Megadesk controller and provide smart-home features.
+A [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller is required for this mod. The ESP32 is used to control the Megadesk controller and provide smart-home features.
 
-It is recommended to get an ESP32 board with support for 35 V DC input, depending on the desk's power supply. These aren't very common, but the [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is an excellent choice. Alternatively any ESP32 board can be used, but a buck converter is then required to step down the voltage from 35 V DC to 5 V DC.
+It is recommended to get an ESP32 board with support for up to 35 V DC input, depending on the desk's power supply. These aren't very common, but the [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is an excellent choice. Alternatively any ESP32 board can be used, but a buck converter is then required to step down the voltage from 35 V DC to 5 V DC.
 
 For safe communication between the ESP32 and the Megadesk controller, a logic level shifter is required. The Megadesk controller operates at 5 V logic levels, while the ESP32 operates at 3.3 V logic levels. A logic level shifter ensures that the signals are properly translated between the two devices. These are commonly available and can be found as breakout boards in various forms from different manufacturers. Tested product families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E).
 
