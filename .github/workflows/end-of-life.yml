@@ -1,0 +1,46 @@
+name: End of life
+
+on:
+  schedule:
+    - cron: 24 7 31 * *
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  idle-check:
+    name: Idle check
+    runs-on: ubuntu-slim
+
+    outputs:
+      active: ${{ steps.idle.outputs.active }}
+
+    steps:
+      - name: GitHub Script idle check
+        id: idle
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { data: branch } = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: context.ref.replace('refs/heads/', ''),
+            });
+            const active = new Date() - new Date(branch.commit.commit.committer.date) <= 90 * 86400000;
+            core.info(`Branch active: ${active}`);
+            core.setOutput('active', active);
+
+  python:
+    name: Python
+    needs: idle-check
+    runs-on: ubuntu-slim
+    if: ${{ fromJSON(needs.idle-check.outputs.active) }}
+    steps:
+      - name: End-of-Life
+        uses: sindrel/endoflife-github-action@5f91adaabc542a346876290ff0f447c7bc355f99 # v1.0.3
+        with:
+          product: python
+          version: 3.11
+          fail_on_eol: true

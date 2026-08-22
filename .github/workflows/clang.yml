@@ -1,0 +1,130 @@
+name: Clang
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  platformio:
+    name: PlatformIO environments
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.config.outputs.environments }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: 3.11
+          version: latest-known
+
+      - name: PlatformIO environments
+        id: config
+        run: echo "environments=$(uv run --only-group platformio pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Clang format
+        uses: cpp-linter/cpp-linter-action@cab1143a2c149bc41e85b070a9de81716974c18f # v2.21.0
+        id: format
+        with:
+          files-changed-only: false
+          step-summary: true
+          style: file
+          tidy-checks: -*
+
+      - name: Summary
+        run: |
+          echo "Clang report:"
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            echo "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}?pr=${{ github.event.pull_request.number }}"
+          else
+            echo "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          exit $(( ${{ steps.format.outputs.clang-format-checks-failed }} != 0 ))
+
+  tidy:
+    name: Tidy
+    needs: platformio
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: ${{ fromJSON(needs.platformio.outputs.environments) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Cache for PlatformIO
+        continue-on-error: true
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini') }}
+          path: .platformio/.cache
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: 3.11
+          version: latest-known
+
+      - name: PlatformIO compilation database
+        run: |
+          cat <<'EOL' > include/esp/secrets.h
+          #pragma once
+          #define PIN_ADC 0
+          #define PIN_LED 1
+          #define PIN_MISO 2
+          #define PIN_MOSI 3
+          #define PIN_OE 4
+          #define PIN_RST 5
+          #define PIN_SCK 6
+          #define PIN_TPDN 7
+          #define PIN_TPUP 8
+          #define HOSTNAME "bekant"
+          #define WIFI_SSID "redacted"
+          #define WIFI_KEY "redacted"
+          #define MQTT_HOST "localhost"
+          #define MQTT_USER "redacted"
+          #define MQTT_KEY "redacted"
+          #define OTA_KEY "redacted"
+          EOL
+
+          uv run --only-group platformio pio run -t compiledb -e ${{ matrix.environment }}
+
+      - name: Clang tidy
+        uses: cpp-linter/cpp-linter-action@cab1143a2c149bc41e85b070a9de81716974c18f # v2.21.0
+        id: tidy
+        with:
+          extra-args: -DCORE_DEBUG_LEVEL=ARDUHAL_LOG_LEVEL_VERBOSE
+          file-annotations: false
+          files-changed-only: false
+          step-summary: true
+          style: ""
+          tidy-checks: ""
+
+      - name: Summary
+        run: |
+          echo "Status: ${{ steps.tidy.outputs.checks-failed }} checks failed."
+          echo "Clang report:"
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            echo "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}?pr=${{ github.event.pull_request.number }}"
+          else
+            echo "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
