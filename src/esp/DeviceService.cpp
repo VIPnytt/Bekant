@@ -20,7 +20,7 @@ void DeviceService::begin()
     pinMode(PIN_ADC, ANALOG);
 #endif // PIN_ADC
 #ifdef PIN_LED
-        pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_LED, OUTPUT);
 #endif // PIN_LED
     pinMode(PIN_MISO, INPUT);
     pinMode(PIN_MOSI, OUTPUT);
