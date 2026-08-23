@@ -2,9 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/secrets.h"
-
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <HardwareSerial.h>
 #include <string>
 

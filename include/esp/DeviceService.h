@@ -6,7 +6,7 @@
 #include "esp/IspService.h"
 #include "secrets.h"
 
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <espMqttClient.h>

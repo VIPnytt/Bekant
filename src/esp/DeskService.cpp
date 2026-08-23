@@ -60,7 +60,7 @@ void DeskService::handle()
         ESP_LOGW("hardwareSerial_error_t", "%d", _error);
         JsonDocument doc{};
         doc["hardwareSerial_error_t"].set(_error);
-        Device.transmit(doc);
+        DeviceService::transmit(doc);
     }
 }
 
@@ -110,7 +110,7 @@ void DeskService::parse(std::string message)
     }
     metadata(doc);
     doc["rx"].set(message);
-    Device.transmit(doc);
+    DeviceService::transmit(doc);
 }
 
 void DeskService::save()
@@ -167,6 +167,22 @@ void DeskService::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
 void DeskService::onHomeAssistant(JsonDocument &doc)
 {
     {
+        JsonObject desk{doc[HomeAssistantAbbreviations::components]["desk"].to<JsonObject>()};
+        desk[HomeAssistantAbbreviations::device_class].set("distance");
+        desk[HomeAssistantAbbreviations::icon].set("mdi:desk");
+        desk[HomeAssistantAbbreviations::json_attributes_template].set(
+            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}}})");
+        desk[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
+        desk[HomeAssistantAbbreviations::name].set("Desk");
+        desk[HomeAssistantAbbreviations::platform].set("sensor");
+        desk[HomeAssistantAbbreviations::state_class].set("measurement");
+        desk[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        desk[HomeAssistantAbbreviations::suggested_display_precision].set(1U);
+        desk[HomeAssistantAbbreviations::unique_id].set("desk");
+        desk[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
+        desk[HomeAssistantAbbreviations::value_template].set(R"({{value_json.desk}})");
+    }
+    {
         JsonObject encoders{doc[HomeAssistantAbbreviations::components]["encoders"].to<JsonObject>()};
         encoders[HomeAssistantAbbreviations::entity_category].set("diagnostic");
         encoders[HomeAssistantAbbreviations::icon].set("mdi:counter");
@@ -180,58 +196,6 @@ void DeskService::onHomeAssistant(JsonDocument &doc)
         encoders[HomeAssistantAbbreviations::unique_id].set("encoders");
         encoders[HomeAssistantAbbreviations::value_template].set(
             R"({{value_json.encoders|sum/value_json.encoders|length}})");
-    }
-    {
-        JsonObject legs{doc[HomeAssistantAbbreviations::components]["desk"].to<JsonObject>()};
-        legs[HomeAssistantAbbreviations::device_class].set("distance");
-        legs[HomeAssistantAbbreviations::icon].set("mdi:desk");
-        legs[HomeAssistantAbbreviations::json_attributes_template].set(
-            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}}})");
-        legs[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
-        legs[HomeAssistantAbbreviations::name].set("Desk");
-        legs[HomeAssistantAbbreviations::platform].set("sensor");
-        legs[HomeAssistantAbbreviations::state_class].set("measurement");
-        legs[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        legs[HomeAssistantAbbreviations::suggested_display_precision].set(1U);
-        legs[HomeAssistantAbbreviations::unique_id].set("desk");
-        legs[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        legs[HomeAssistantAbbreviations::value_template].set(R"({{value_json.desk}})");
-    }
-    {
-        JsonObject lowPreset{doc[HomeAssistantAbbreviations::components]["preset_low"].to<JsonObject>()};
-        lowPreset[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"low":{{value}}}})");
-        lowPreset[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        lowPreset[HomeAssistantAbbreviations::device_class].set("distance");
-        lowPreset[HomeAssistantAbbreviations::entity_category].set("config");
-        lowPreset[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
-        lowPreset[HomeAssistantAbbreviations::max].set(ReferenceHeight::heightHigh);
-        lowPreset[HomeAssistantAbbreviations::min].set(ReferenceHeight::heightLow);
-        lowPreset[HomeAssistantAbbreviations::mode].set("box");
-        lowPreset[HomeAssistantAbbreviations::name].set("Preset low");
-        lowPreset[HomeAssistantAbbreviations::platform].set("number");
-        lowPreset[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        lowPreset[HomeAssistantAbbreviations::step].set(.1F);
-        lowPreset[HomeAssistantAbbreviations::unique_id].set("preset_low");
-        lowPreset[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        lowPreset[HomeAssistantAbbreviations::value_template].set("{{value_json.preset.low|round(1)}}");
-    }
-    {
-        JsonObject highPreset{doc[HomeAssistantAbbreviations::components]["preset_high"].to<JsonObject>()};
-        highPreset[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"high":{{value}}}})");
-        highPreset[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        highPreset[HomeAssistantAbbreviations::device_class].set("distance");
-        highPreset[HomeAssistantAbbreviations::entity_category].set("config");
-        highPreset[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
-        highPreset[HomeAssistantAbbreviations::max].set(ReferenceHeight::heightHigh);
-        highPreset[HomeAssistantAbbreviations::min].set(ReferenceHeight::heightLow);
-        highPreset[HomeAssistantAbbreviations::mode].set("box");
-        highPreset[HomeAssistantAbbreviations::name].set("Preset high");
-        highPreset[HomeAssistantAbbreviations::platform].set("number");
-        highPreset[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        highPreset[HomeAssistantAbbreviations::step].set(.1F);
-        highPreset[HomeAssistantAbbreviations::unique_id].set("preset_high");
-        highPreset[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        highPreset[HomeAssistantAbbreviations::value_template].set("{{value_json.preset.high|round(1)}}");
     }
     {
         JsonObject height{doc[HomeAssistantAbbreviations::components]["height"].to<JsonObject>()};
@@ -252,6 +216,42 @@ void DeskService::onHomeAssistant(JsonDocument &doc)
         height[HomeAssistantAbbreviations::unique_id].set("height");
         height[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
         height[HomeAssistantAbbreviations::value_template].set("{{value_json.desk|round(1)}}");
+    }
+    {
+        JsonObject highPreset{doc[HomeAssistantAbbreviations::components]["preset_high"].to<JsonObject>()};
+        highPreset[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"high":{{value}}}})");
+        highPreset[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        highPreset[HomeAssistantAbbreviations::device_class].set("distance");
+        highPreset[HomeAssistantAbbreviations::entity_category].set("config");
+        highPreset[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
+        highPreset[HomeAssistantAbbreviations::max].set(ReferenceHeight::heightHigh);
+        highPreset[HomeAssistantAbbreviations::min].set(ReferenceHeight::heightLow);
+        highPreset[HomeAssistantAbbreviations::mode].set("box");
+        highPreset[HomeAssistantAbbreviations::name].set("Preset high");
+        highPreset[HomeAssistantAbbreviations::platform].set("number");
+        highPreset[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        highPreset[HomeAssistantAbbreviations::step].set(.1F);
+        highPreset[HomeAssistantAbbreviations::unique_id].set("preset_high");
+        highPreset[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
+        highPreset[HomeAssistantAbbreviations::value_template].set("{{value_json.preset.high|round(1)}}");
+    }
+    {
+        JsonObject lowPreset{doc[HomeAssistantAbbreviations::components]["preset_low"].to<JsonObject>()};
+        lowPreset[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"low":{{value}}}})");
+        lowPreset[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        lowPreset[HomeAssistantAbbreviations::device_class].set("distance");
+        lowPreset[HomeAssistantAbbreviations::entity_category].set("config");
+        lowPreset[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
+        lowPreset[HomeAssistantAbbreviations::max].set(ReferenceHeight::heightHigh);
+        lowPreset[HomeAssistantAbbreviations::min].set(ReferenceHeight::heightLow);
+        lowPreset[HomeAssistantAbbreviations::mode].set("box");
+        lowPreset[HomeAssistantAbbreviations::name].set("Preset low");
+        lowPreset[HomeAssistantAbbreviations::platform].set("number");
+        lowPreset[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        lowPreset[HomeAssistantAbbreviations::step].set(.1F);
+        lowPreset[HomeAssistantAbbreviations::unique_id].set("preset_low");
+        lowPreset[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
+        lowPreset[HomeAssistantAbbreviations::value_template].set("{{value_json.preset.low|round(1)}}");
     }
     {
         JsonObject offset{doc[HomeAssistantAbbreviations::components]["offset"].to<JsonObject>()};

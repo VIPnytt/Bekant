@@ -4,8 +4,7 @@
 
 #include "avr/Lin.h"
 
-#include <stddef.h>
-#include <stdint.h>
+#include <stddef.h> // NOLINT(hicpp-deprecated-headers)
 
 class Megadesk
 {

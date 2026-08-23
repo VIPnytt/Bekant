@@ -3,7 +3,6 @@
 #include "esp/DeviceService.h"
 
 #include "esp/DeskService.h"
-#include "esp/IspService.h"
 #include "esp/constants.h"
 #include "esp/secrets.h"
 
@@ -246,7 +245,7 @@ void DeviceService::transmit(JsonDocument &doc)
                  length);
 }
 
-void DeviceService::onConnect(bool sessionPresent)
+void DeviceService::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGD("MQTT", "connected");
     mqtt.subscribe("bekant/" HOSTNAME "/set", static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2));
@@ -257,7 +256,7 @@ void DeviceService::onConnect(bool sessionPresent)
     statusWhite();
 }
 
-void DeviceService::onConnected(arduino_event_id_t event)
+void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGD("Wi-Fi", "Connected");
     ESP_LOGV("Wi-Fi", "RSSI %d dBm", WiFi.RSSI());
@@ -271,6 +270,7 @@ void DeviceService::onDisconnect(espMqttClientTypes::DisconnectReason reason)
     statusRed();
 }
 
+// NOLINTNEXTLINE(misc-unused-parameters)
 void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_t info)
 {
 
@@ -301,6 +301,24 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         accessory[HomeAssistantAbbreviations::value_template].set("{{value_json.accessory}}");
     }
 #endif // PIN_OE
+#ifdef PIN_ADC
+    {
+        JsonObject adc{doc[HomeAssistantAbbreviations::components]["adc"].to<JsonObject>()};
+        adc[HomeAssistantAbbreviations::device_class].set("voltage");
+        adc[HomeAssistantAbbreviations::enabled_by_default].set(false);
+        adc[HomeAssistantAbbreviations::entity_category].set("diagnostic");
+        adc[HomeAssistantAbbreviations::expire_after].set(INT8_MAX);
+        adc[HomeAssistantAbbreviations::icon].set("mdi:alpha-v-circle-outline");
+        adc[HomeAssistantAbbreviations::name].set("Voltage");
+        adc[HomeAssistantAbbreviations::suggested_display_precision].set(1);
+        adc[HomeAssistantAbbreviations::platform].set("sensor");
+        adc[HomeAssistantAbbreviations::state_class].set("measurement");
+        adc[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        adc[HomeAssistantAbbreviations::unique_id].set("adc");
+        adc[HomeAssistantAbbreviations::unit_of_measurement].set("V");
+        adc[HomeAssistantAbbreviations::value_template].set("{{value_json.voltage}}");
+    }
+#endif // PIN_ADC
     {
         JsonObject calibrate{doc[HomeAssistantAbbreviations::components]["calibrate"].to<JsonObject>()};
         calibrate[HomeAssistantAbbreviations::command_template].set(R"({"action":"{{value}}"})");
@@ -312,36 +330,18 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         calibrate[HomeAssistantAbbreviations::platform].set("button");
         calibrate[HomeAssistantAbbreviations::unique_id].set("calibrate");
     }
-#ifdef PIN_TPDN
     {
-        JsonObject down{doc[HomeAssistantAbbreviations::components]["down"].to<JsonObject>()};
-        down[HomeAssistantAbbreviations::command_template].set(R"({"button":{"down":{{value}}}})");
-        down[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        down[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        down[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        down[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
-        down[HomeAssistantAbbreviations::name].set("Button down");
-        down[HomeAssistantAbbreviations::payload_off].set("false");
-        down[HomeAssistantAbbreviations::payload_on].set("true");
-        down[HomeAssistantAbbreviations::state_off].set("False");
-        down[HomeAssistantAbbreviations::state_on].set("True");
-        down[HomeAssistantAbbreviations::platform].set("switch");
-        down[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        down[HomeAssistantAbbreviations::unique_id].set("down");
-        down[HomeAssistantAbbreviations::value_template].set("{{value_json.button.down}}");
-    }
-#endif // PIN_TPDN
-    {
-        JsonObject high{doc[HomeAssistantAbbreviations::components]["recall_high"].to<JsonObject>()};
-        high[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
-        high[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        high[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
-        high[HomeAssistantAbbreviations::json_attributes_template].set(R"({"Preset":{{value_json.preset.high}}})");
-        high[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
-        high[HomeAssistantAbbreviations::name].set("Preset high");
-        high[HomeAssistantAbbreviations::payload_press].set("high");
-        high[HomeAssistantAbbreviations::platform].set("button");
-        high[HomeAssistantAbbreviations::unique_id].set("recall_high");
+        JsonObject highRecall{doc[HomeAssistantAbbreviations::components]["recall_high"].to<JsonObject>()};
+        highRecall[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
+        highRecall[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        highRecall[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
+        highRecall[HomeAssistantAbbreviations::json_attributes_template].set(
+            R"({"Preset":{{value_json.preset.high}}})");
+        highRecall[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
+        highRecall[HomeAssistantAbbreviations::name].set("Preset high");
+        highRecall[HomeAssistantAbbreviations::payload_press].set("high");
+        highRecall[HomeAssistantAbbreviations::platform].set("button");
+        highRecall[HomeAssistantAbbreviations::unique_id].set("recall_high");
     }
     {
         JsonObject highSensor{doc[HomeAssistantAbbreviations::components]["high_sensor"].to<JsonObject>()};
@@ -357,16 +357,16 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         highSensor[HomeAssistantAbbreviations::value_template].set(R"({{value_json.preset.high|round(1)}})");
     }
     {
-        JsonObject low{doc[HomeAssistantAbbreviations::components]["recall_low"].to<JsonObject>()};
-        low[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
-        low[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        low[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
-        low[HomeAssistantAbbreviations::json_attributes_template].set(R"({"Preset":{{value_json.preset.low}}})");
-        low[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
-        low[HomeAssistantAbbreviations::name].set("Preset low");
-        low[HomeAssistantAbbreviations::payload_press].set("low");
-        low[HomeAssistantAbbreviations::platform].set("button");
-        low[HomeAssistantAbbreviations::unique_id].set("recall_low");
+        JsonObject lowRecall{doc[HomeAssistantAbbreviations::components]["recall_low"].to<JsonObject>()};
+        lowRecall[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
+        lowRecall[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        lowRecall[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
+        lowRecall[HomeAssistantAbbreviations::json_attributes_template].set(R"({"Preset":{{value_json.preset.low}}})");
+        lowRecall[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
+        lowRecall[HomeAssistantAbbreviations::name].set("Preset low");
+        lowRecall[HomeAssistantAbbreviations::payload_press].set("low");
+        lowRecall[HomeAssistantAbbreviations::platform].set("button");
+        lowRecall[HomeAssistantAbbreviations::unique_id].set("recall_low");
     }
     {
         JsonObject lowSensor{doc[HomeAssistantAbbreviations::components]["low_sensor"].to<JsonObject>()};
@@ -437,51 +437,53 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         temperature[HomeAssistantAbbreviations::unit_of_measurement].set("°C");
         temperature[HomeAssistantAbbreviations::value_template].set("{{value_json.temperature}}");
     }
+#ifdef PIN_TPDN
+    {
+        JsonObject tpdn{doc[HomeAssistantAbbreviations::components]["tpdn"].to<JsonObject>()};
+        tpdn[HomeAssistantAbbreviations::command_template].set(R"({"button":{"down":{{value}}}})");
+        tpdn[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        tpdn[HomeAssistantAbbreviations::enabled_by_default].set(false);
+        tpdn[HomeAssistantAbbreviations::entity_category].set("diagnostic");
+        tpdn[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
+        tpdn[HomeAssistantAbbreviations::name].set("Button down");
+        tpdn[HomeAssistantAbbreviations::payload_off].set("false");
+        tpdn[HomeAssistantAbbreviations::payload_on].set("true");
+        tpdn[HomeAssistantAbbreviations::state_off].set("False");
+        tpdn[HomeAssistantAbbreviations::state_on].set("True");
+        tpdn[HomeAssistantAbbreviations::platform].set("switch");
+        tpdn[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        tpdn[HomeAssistantAbbreviations::unique_id].set("tpdn");
+        tpdn[HomeAssistantAbbreviations::value_template].set("{{value_json.button.down}}");
+    }
+#endif // PIN_TPDN
 #ifdef PIN_TPUP
     {
-        JsonObject up{doc[HomeAssistantAbbreviations::components]["up"].to<JsonObject>()};
-        up[HomeAssistantAbbreviations::command_template].set(R"({"button":{"up":{{value}}}})");
-        up[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        up[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        up[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        up[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
-        up[HomeAssistantAbbreviations::name].set("Button up");
-        up[HomeAssistantAbbreviations::payload_off].set("false");
-        up[HomeAssistantAbbreviations::payload_on].set("true");
-        up[HomeAssistantAbbreviations::state_off].set("False");
-        up[HomeAssistantAbbreviations::state_on].set("True");
-        up[HomeAssistantAbbreviations::platform].set("switch");
-        up[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        up[HomeAssistantAbbreviations::unique_id].set("up");
-        up[HomeAssistantAbbreviations::value_template].set("{{value_json.button.up}}");
+        JsonObject tpup{doc[HomeAssistantAbbreviations::components]["tpup"].to<JsonObject>()};
+        tpup[HomeAssistantAbbreviations::command_template].set(R"({"button":{"up":{{value}}}})");
+        tpup[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        tpup[HomeAssistantAbbreviations::enabled_by_default].set(false);
+        tpup[HomeAssistantAbbreviations::entity_category].set("diagnostic");
+        tpup[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
+        tpup[HomeAssistantAbbreviations::name].set("Button up");
+        tpup[HomeAssistantAbbreviations::payload_off].set("false");
+        tpup[HomeAssistantAbbreviations::payload_on].set("true");
+        tpup[HomeAssistantAbbreviations::state_off].set("False");
+        tpup[HomeAssistantAbbreviations::state_on].set("True");
+        tpup[HomeAssistantAbbreviations::platform].set("switch");
+        tpup[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        tpup[HomeAssistantAbbreviations::unique_id].set("tpup");
+        tpup[HomeAssistantAbbreviations::value_template].set("{{value_json.button.up}}");
     }
 #endif // PIN_TPUP
-#ifdef PIN_ADC
-    {
-        JsonObject voltage{doc[HomeAssistantAbbreviations::components]["voltage"].to<JsonObject>()};
-        voltage[HomeAssistantAbbreviations::device_class].set("voltage");
-        voltage[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        voltage[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        voltage[HomeAssistantAbbreviations::expire_after].set(INT8_MAX);
-        voltage[HomeAssistantAbbreviations::icon].set("mdi:alpha-v-circle-outline");
-        voltage[HomeAssistantAbbreviations::name].set("Voltage");
-        voltage[HomeAssistantAbbreviations::suggested_display_precision].set(1);
-        voltage[HomeAssistantAbbreviations::platform].set("sensor");
-        voltage[HomeAssistantAbbreviations::state_class].set("measurement");
-        voltage[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        voltage[HomeAssistantAbbreviations::unique_id].set("voltage");
-        voltage[HomeAssistantAbbreviations::unit_of_measurement].set("V");
-        voltage[HomeAssistantAbbreviations::value_template].set("{{value_json.voltage}}");
-    }
-#endif // PIN_ADC
 }
 
+// NOLINTNEXTLINE(misc-unused-parameters)
 void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                               const uint8_t *payload, size_t len, size_t index, size_t total)
 {
     if (len == total)
     {
-        JsonDocument doc{};
+        JsonDocument doc{}; // NOLINT(misc-const-correctness)
         if (deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
         {
             if (doc["action"].is<std::string_view>())

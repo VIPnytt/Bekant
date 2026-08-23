@@ -7,7 +7,6 @@
 
 #include <ESPmDNS.h>
 #include <SPI.h>
-#include <WiFi.h>
 
 void IspService::begin()
 {
@@ -127,11 +126,11 @@ void IspService::handle()
             ESP.restart();
         }
     }
-    else if (Device.avrServer.hasClient())
+    else if (DeviceService::avrServer.hasClient())
     {
         Device.safeMode();
         digitalWrite(PIN_RST, HIGH);
-        client = Device.avrServer.accept();
+        client = DeviceService::avrServer.accept();
         client.setNoDelay(true);
         active = true;
     }
@@ -356,7 +355,7 @@ void IspService::write_flash(size_t length)
         while (idx < length)
         {
             vTaskDelay(1U);
-            if (page != here & ~((pageSize / 2U) - 1U))
+            if ((page != here & ~((pageSize / 2U) - 1U)) != 0U)
             {
                 SPI.transfer(0x4CU);
                 SPI.transfer((page >> 8U) & 0xFFU);

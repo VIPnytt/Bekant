@@ -6,7 +6,6 @@
 
 #include <EEPROM.h>
 #include <HardwareSerial.h>
-#include <math.h>
 #include <wiring.h>
 
 void Megadesk::begin()
@@ -84,7 +83,7 @@ void Megadesk::begin()
         }
     }
     constexpr uint8_t magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
-    lin.send(0x12U, magicPacket, sizeof(magicPacket));
+    lin.send(0x12U, magicPacket);
     if (errorCount != 0U)
     {
         playTone(0b1U << 11U);
@@ -95,10 +94,10 @@ void Megadesk::begin()
 uint8_t Megadesk::sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4)
 {
     const uint8_t packet[8U]{payload1, payload2, payload3, payload4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-    lin.send(0x3C, packet, sizeof(packet));
+    lin.send(0x3C, packet);
     delay(sizeof(packet));
     uint8_t response[sizeof(packet)]{};
-    return lin.request(0x3DU, response, sizeof(response));
+    return lin.request(0x3DU, response);
 }
 
 void Megadesk::handle()
@@ -289,11 +288,11 @@ void Megadesk::savePreset(char preset, uint16_t value)
 void Megadesk::handleEncoders()
 {
     constexpr uint8_t empty[3U]{0U, 0U, 0U};
-    lin.send(0x11U, empty, sizeof(empty));
+    lin.send(0x11U, empty);
     uint8_t nodeA[3U]{0U};
     uint8_t nodeB[3U]{0U};
-    const uint8_t charsA{lin.request(0x8U, nodeA, sizeof(nodeA))};
-    const uint8_t charsB{lin.request(0x9U, nodeB, sizeof(nodeB))};
+    const uint8_t charsA{lin.request(0x8U, nodeA)};
+    const uint8_t charsB{lin.request(0x9U, nodeB)};
     const uint16_t _encoderA{static_cast<uint16_t>(nodeA[0U]) | static_cast<uint16_t>(nodeA[1U] << 8U)};
     const uint16_t _encoderB{static_cast<uint16_t>(nodeB[0U]) | static_cast<uint16_t>(nodeB[1U] << 8U)};
     if (_encoderA != encoderA)
@@ -429,12 +428,12 @@ void Megadesk::sendCommand(Command command, uint16_t payload)
 {
     for (uint8_t idx{0U}; idx < 6U; ++idx)
     {
-        lin.send(0x10U, nullptr, 0U);
+        lin.send(0x10U);
     }
-    lin.send(0x1U, nullptr, 0U);
+    lin.send(0x1U);
     const uint8_t packet[3U]{
         static_cast<uint8_t>(payload & 0xFFU), static_cast<uint8_t>(payload >> 8U), static_cast<uint8_t>(command)};
-    lin.send(0x12U, packet, sizeof(packet));
+    lin.send(0x12U, packet);
 }
 
 void Megadesk::playTone(uint16_t frequency)

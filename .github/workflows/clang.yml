@@ -121,6 +121,7 @@ jobs:
         uses: cpp-linter/cpp-linter-action@cab1143a2c149bc41e85b070a9de81716974c18f # v2.21.0
         id: tidy
         with:
+          extra-args: -DCORE_DEBUG_LEVEL=5
           file-annotations: false
           files-changed-only: false
           step-summary: true
@@ -129,7 +130,7 @@ jobs:
 
       - name: Summary
         env:
-          clang-threshold: 64
+          clang-threshold: 53
         run: |
           echo "Status: ${{ steps.tidy.outputs.checks-failed }} checks failed, threshold for success is ${{ env.clang-threshold }}."
           echo "Clang report:"

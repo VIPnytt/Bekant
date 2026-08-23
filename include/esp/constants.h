@@ -2,8 +2,6 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "secrets.h"
-
 #include <cstdint>
 #include <string_view>
 
