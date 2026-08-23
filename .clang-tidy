@@ -9,7 +9,7 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-vararg,
   -fuchsia-default-arguments-calls,
-  -[fuchsia-default-arguments-declarations,
+  -fuchsia-default-arguments-declarations,
   -fuchsia-statically-constructed-objects,
   -google-runtime-int,
   -hicpp-avoid-c-arrays,
