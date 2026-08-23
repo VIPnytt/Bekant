@@ -1,3 +1,9 @@
+avr:
+  - changed-files:
+    - any-glob-to-any-file:
+      - include/avr/**/*
+      - src/avr/**/*
+
 bug:
   - head-branch:
     - ^fix/
@@ -13,3 +19,9 @@ documentation:
 enhancement:
   - head-branch:
     - ^feat/
+
+esp:
+  - changed-files:
+    - any-glob-to-any-file:
+      - include/esp/**/*
+      - src/esp/**/*
