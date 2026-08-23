@@ -1,11 +1,7 @@
-name: PlatformIO
+name: uv
 
 on:
   pull_request:
-    branches:
-      - main
-
-  push:
     branches:
       - main
 
@@ -15,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint
+  uv-lock:
+    name: uv.lock consistency
     runs-on: ubuntu-latest
 
     steps:
@@ -31,10 +27,5 @@ jobs:
           python-version: 3.11
           version: latest-known
 
-      - name: PlatformIO lint
-        run: |
-          OUTPUT=$(uv run pio project config --lint --json-output)
-          echo "$OUTPUT"
-          if [ "$OUTPUT" != "{'errors': [], 'warnings': []}" ]; then
-            exit 1
-          fi
+      - name: uv lock check
+        run: uv lock --check

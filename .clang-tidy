@@ -1,2 +1,33 @@
-Checks: "*"
+Checks: >
+  *,
+  -altera-unroll-loops,
+  -bugprone-branch-clone,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-vararg,
+  -fuchsia-default-arguments-calls,
+  -fuchsia-default-arguments-declarations,
+  -fuchsia-statically-constructed-objects,
+  -google-runtime-int,
+  -hicpp-avoid-c-arrays,
+  -hicpp-vararg,
+  -llvm-header-guard,
+  -llvmlibc-callee-namespace,
+  -llvmlibc-implementation-in-namespace,
+  -misc-use-internal-linkage,
+  -modernize-avoid-c-arrays,
+  -modernize-use-trailing-return-type,
+  -portability-avoid-pragma-once,
+  -readability-convert-member-functions-to-static,
+  -readability-magic-numbers
+CheckOptions:
+  - key: cppcoreguidelines-macro-usage.CheckCapsOnly
+    value: true
+  - key: misc-include-cleaner.MissingIncludes
+    value: false
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: ^(rx|tx)$
 FormatStyle: file
