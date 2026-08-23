@@ -26,6 +26,8 @@ Checks: >
 CheckOptions:
   - key: cppcoreguidelines-macro-usage.CheckCapsOnly
     value: true
+  - key: misc-include-cleaner.MissingIncludes
+    value: false
   - key: readability-identifier-length.IgnoredVariableNames
     value: ^(rx|tx)$
 FormatStyle: file
