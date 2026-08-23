@@ -85,6 +85,8 @@ jobs:
           version: latest-known
 
       - name: PlatformIO compilation database
+        env:
+          PIO_ENVIRONMENT: ${{ matrix.environment }}
         run: |
           cat <<'EOL' > include/esp/secrets.h
           #pragma once
@@ -107,8 +109,7 @@ jobs:
           #define WIFI_SSID "redacted"
           #endif // ARDUINO_ARCH_ESP32
           EOL
-
-          uv run pio run -t compiledb -e "${{matrix.environment}}"
+          uv run pio run -t compiledb -e "$PIO_ENVIRONMENT"
 
       - name: Clang tidy
         uses: cpp-linter/cpp-linter-action@cab1143a2c149bc41e85b070a9de81716974c18f # v2.21.0
