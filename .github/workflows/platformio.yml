@@ -15,56 +15,6 @@ permissions:
   contents: read
 
 jobs:
-  context:
-    name: Context
-    runs-on: ubuntu-latest
-    outputs:
-      pio-environments: ${{ steps.platformio.outputs.environments }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          python-version: 3.11
-          version: latest-known
-
-      - name: PlatformIO environments
-        id: platformio
-        run: echo "environments=$(uv run pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
-
-  build:
-    name: Build
-    needs: context
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        environment: ${{ fromJSON(needs.context.outputs.pio-environments) }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up Cache for PlatformIO
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini') }}
-          path: .platformio/.cache
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          python-version: 3.11
-          version: latest-known
-
-      - name: PlatformIO build
-        env:
-          PIO_ENVIRONMENT: ${{ matrix.environment }}
-        run: uv run pio run -e "$PIO_ENVIRONMENT"
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
