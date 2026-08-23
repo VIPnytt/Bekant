@@ -2,7 +2,6 @@
 
 #include "esp/DeviceService.h"
 
-#include "constants.h"
 #include "esp/DeskService.h"
 #include "esp/IspService.h"
 #include "esp/constants.h"
@@ -20,6 +19,9 @@ void DeviceService::begin()
 #ifdef PIN_ADC
     pinMode(PIN_ADC, ANALOG);
 #endif // PIN_ADC
+#ifdef PIN_LED
+    pinMode(PIN_LED, OUTPUT);
+#endif // PIN_LED
     pinMode(PIN_MISO, INPUT);
     pinMode(PIN_MOSI, OUTPUT);
 #ifdef PIN_OE

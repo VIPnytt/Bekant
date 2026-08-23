@@ -9,8 +9,8 @@
 // #define PIN_OE 5 // Optional, for logic level shifter
 #define PIN_RST 6
 #define PIN_SCK 7
-// #define PIN_TPDN 8 // Optional, button up
-// #define PIN_TPUP 9 // Optional, button down
+// #define PIN_TPDN 8 // Optional, button down
+// #define PIN_TPUP 9 // Optional, button up
 
 #define HOSTNAME "bekant"
 

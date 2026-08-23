@@ -29,7 +29,7 @@ jobs:
 
       - name: PlatformIO environments
         id: config
-        run: echo "environments=$(uv run --only-group platformio pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
+        run: echo "environments=$(uv run pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
 
   format:
     name: Format
@@ -85,9 +85,17 @@ jobs:
           version: latest-known
 
       - name: PlatformIO compilation database
+        env:
+          PIO_ENVIRONMENT: ${{ matrix.environment }}
         run: |
           cat <<'EOL' > include/esp/secrets.h
           #pragma once
+          #ifdef ARDUINO_ARCH_ESP32
+          #define HOSTNAME "bekant"
+          #define MQTT_HOST "localhost"
+          #define MQTT_KEY "redacted"
+          #define MQTT_USER "redacted"
+          #define OTA_KEY "redacted"
           #define PIN_ADC 0
           #define PIN_LED 1
           #define PIN_MISO 2
@@ -97,22 +105,16 @@ jobs:
           #define PIN_SCK 6
           #define PIN_TPDN 7
           #define PIN_TPUP 8
-          #define HOSTNAME "bekant"
-          #define WIFI_SSID "redacted"
           #define WIFI_KEY "redacted"
-          #define MQTT_HOST "localhost"
-          #define MQTT_USER "redacted"
-          #define MQTT_KEY "redacted"
-          #define OTA_KEY "redacted"
+          #define WIFI_SSID "redacted"
+          #endif // ARDUINO_ARCH_ESP32
           EOL
-
-          uv run --only-group platformio pio run -t compiledb -e ${{ matrix.environment }}
+          uv run pio run -t compiledb -e "$PIO_ENVIRONMENT"
 
       - name: Clang tidy
         uses: cpp-linter/cpp-linter-action@cab1143a2c149bc41e85b070a9de81716974c18f # v2.21.0
         id: tidy
         with:
-          extra-args: -DCORE_DEBUG_LEVEL=ARDUHAL_LOG_LEVEL_VERBOSE
           file-annotations: false
           files-changed-only: false
           step-summary: true

@@ -16,22 +16,20 @@ It provides simple two-button control with height presets, smart-home integratio
 
 - Megadesk replacement controller board
 - ESP32 with support for 29-35 V DC input, depending on your desk's power supply
-- Logic level shifter for 5V to 3.3V communication
+- Logic level shifter for 5 V to 3.3 V communication
 
 > [!WARNING]
 > Do not connect the desk's 29–35 V supply directly to the VIN pin of a typical ESP32 development board. Only use a board specifically designed for this input voltage, or use a suitable buck converter.
 
-### Required hardware
+A [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller is required for this mod. The ESP32 is used to control the Megadesk controller and provide smart-home features.
 
-An [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller is required for this mod. The ESP32 is used to control the Megadesk controller and provide smart-home features.
+It is recommended to get an ESP32 board with support for up to 35 V DC input, depending on the desk's power supply. These aren't very common, but the [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is an excellent choice. Alternatively any ESP32 board can be used, but a buck converter is then required to step down the voltage from 35 V DC to 5 V DC.
 
-It is recommended to get an ESP32 board with support for up to 35V DC input, depending on the desk's power supply. These aren't very common, but the [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is an excellent choice. Alternatively any ESP32 board can be used, but a buck converter is then required to step down the voltage from 29-35 V DC to 5V DC.
-
-For safe communication between the ESP32 and the Megadesk controller, a logic level shifter is required. The Megadesk controller operates at 5V logic levels, while the ESP32 operates at 3.3V logic levels. A logic level shifter ensures that the signals are properly translated between the two devices. These are commonly available and can be found as breakout boards in various forms from different manufacturers. Tested product families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E).
+For safe communication between the ESP32 and the Megadesk controller, a logic level shifter is required. The Megadesk controller operates at 5 V logic levels, while the ESP32 operates at 3.3 V logic levels. A logic level shifter ensures that the signals are properly translated between the two devices. These are commonly available and can be found as breakout boards in various forms from different manufacturers. Tested product families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E).
 
 The logic level shifter can be hidden inside the stock controller enclosure, only exposing the ESP32 partially sticking out of the enclosure on the back side next to the cable. This mounting position can be beneficial as it provides easy access to the ESP32 USB port while also allowing the ESP32's RGB status LED to light up the underside of the desk, providing visual feedback on the desk's status.
 
-### Installation
+## Installation
 
 - Wire the ESP32 and logic level shifter to the Megadesk replacement controller.
 - Configure [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h) with pin assignments.
@@ -58,7 +56,7 @@ The `TPUP` and `TPDN` pins can be connected to enable simulation of physical but
 
 Connecting `OE` allows the ESP32 to electrically isolate itself from the Megadesk controller by disabling the level shifter. This is mainly useful for development and debugging.
 
-The IKEA Bekant desk has a bad reputation for having a power supply prone to failure. The `ADC` pin can be connected to the 35V DC input voltage via a voltage divider, allowing the ESP32 to monitor the input voltage and report it through Home Assistant. This can be useful for detecting power supply issues before they cause problems.
+The IKEA Bekant desk has a bad reputation for having a power supply prone to failure. The `ADC` pin can be connected to the 35 V DC input voltage via a voltage divider, allowing the ESP32 to monitor the input voltage and report it through Home Assistant. This can be useful for detecting power supply issues before they cause problems.
 
 ### Megadesk pinout diagram
 
