@@ -352,18 +352,18 @@ void IspService::write_flash(size_t length)
     {
         client.print(stkInSync);
         size_t idx{0};
-        size_t page{here & ~(pageSize / 2U - 1U)};
+        size_t page{here & ~((pageSize / 2U) - 1U)};
         while (idx < length)
         {
             vTaskDelay(1U);
-            if (page != here & ~(pageSize / 2U - 1U))
+            if (page != here & ~((pageSize / 2U) - 1U))
             {
                 SPI.transfer(0x4CU);
                 SPI.transfer((page >> 8U) & 0xFFU);
                 SPI.transfer(page & 0xFFU);
                 SPI.transfer(0x0U);
                 vTaskDelay(0b1U << 4U);
-                page = here & ~(pageSize / 2U - 1U);
+                page = here & ~((pageSize / 2U) - 1U);
             }
             SPI.transfer(0x40U);
             SPI.transfer((here >> 8U) & 0xFFU);

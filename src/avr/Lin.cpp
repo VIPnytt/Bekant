@@ -30,25 +30,26 @@ uint8_t Lin::calcChecksum(const uint8_t *data, uint8_t length, uint16_t sum)
     {
         sum += *(data++);
     }
-    while (sum >> 8U)
+    while ((sum >> 8U) != 0U)
     {
         sum = (sum & 0xFFU) + (sum >> 8U);
     }
     return ~sum;
 }
 
-uint8_t Lin::addressParity(uint8_t address)
+uint8_t Lin::addressParity(uint8_t identifier)
 {
-    const uint8_t p0 =
-        ((address >> 0U) & 1U) ^ ((address >> 1U) & 1U) ^ ((address >> 2U) & 1U) ^ ((address >> 4U) & 1U);
-    const uint8_t p1 =
-        ~(((address >> 1U) & 1U) ^ ((address >> 3U) & 1U) ^ ((address >> 4U) & 1U) ^ ((address >> 5U) & 1U));
-    return (p0 | (p1 << 1U)) << 6U;
+    const auto parity0{((identifier >> 0U) & 1U) ^ ((identifier >> 1U) & 1U) ^ ((identifier >> 2U) & 1U) ^
+                       ((identifier >> 4U) & 1U)};
+    const auto parity1{~(((identifier >> 1U) & 1U) ^ ((identifier >> 3U) & 1U) ^ ((identifier >> 4U) & 1U) ^
+                         ((identifier >> 5U) & 1U)) &
+                       1U};
+    return static_cast<uint8_t>((parity0 | (parity1 << 1U)) << 6U);
 }
 
 int Lin::readWithTimeout(int16_t &countdown)
 {
-    while (!Serial.available())
+    while (Serial.available() == 0)
     {
         delayMicroseconds(100U);
         countdown -= 100;
@@ -71,12 +72,10 @@ uint8_t Lin::request(uint8_t address, uint8_t *data, uint8_t length)
     Serial.write(0x55U);
     Serial.write(idByte);
     Serial.flush();
-    bytesReceived = 0xFDU;
     do
     {
         byte = readWithTimeout(countdown);
     } while (byte != 0x55U && byte != -1);
-    bytesReceived = 0xFEU;
     do
     {
         byte = readWithTimeout(countdown);
@@ -105,7 +104,7 @@ uint8_t Lin::request(uint8_t address, uint8_t *data, uint8_t length)
 
 void Lin::send(uint8_t address, const uint8_t *data, uint8_t length)
 {
-    const uint8_t addressByte = (address & 0x3FU) | addressParity(address);
+    const uint8_t addressByte{static_cast<uint8_t>((address & 0x3FU) | addressParity(address))};
     serialBreak();
     Serial.write(0x55U);
     Serial.write(addressByte);

@@ -2,15 +2,15 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include <inttypes.h>
+#include <stdint.h>
 
 class Lin
 {
 private:
     static constexpr unsigned long baud{19'200UL};
 
-    uint8_t addressParity(uint8_t addr);
-    uint8_t calcChecksum(const uint8_t *message, uint8_t nBytes, uint16_t start = 0);
+    uint8_t addressParity(uint8_t identifier);
+    uint8_t calcChecksum(const uint8_t *message, uint8_t nBytes, uint16_t sum);
 
     int readWithTimeout(int16_t &countDown);
 

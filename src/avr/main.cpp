@@ -1,9 +1,8 @@
 #ifdef ARDUINO_ARCH_AVR
 
-#include "avr/main.h"
-
 #include "avr/Megadesk.h"
 
+#include <Arduino.h>
 #include <avr/wdt.h>
 
 Megadesk desk{};

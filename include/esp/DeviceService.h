@@ -2,6 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
+#include "esp/DeskService.h"
 #include "esp/IspService.h"
 #include "secrets.h"
 
@@ -25,6 +26,8 @@ private:
     static inline bool reset{false};
 
     static inline ArduinoOTAClass ArduinoOTA{};
+
+    static inline DeskService Desk{};
 
     IspService ISP{};
 

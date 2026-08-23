@@ -585,7 +585,7 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
             if (doc["reset"].is<bool>())
             {
                 reset = doc["reset"].as<bool>();
-                Device.statusRed();
+                DeviceService::statusRed();
                 digitalWrite(PIN_RST, reset ? LOW : HIGH);
                 JsonDocument doc{};
                 Desk.metadata(doc);

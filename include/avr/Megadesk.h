@@ -5,6 +5,7 @@
 #include "avr/Lin.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 class Megadesk
 {

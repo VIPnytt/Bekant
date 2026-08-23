@@ -14,8 +14,8 @@ void Megadesk::begin()
     Serial1.begin(115'200UL);
     delay(INT8_MAX);
     pinMode(Pin::tone, OUTPUT);
-    pinMode(Pin::down, INPUT_PULLUP);
-    pinMode(Pin::up, INPUT_PULLUP);
+    pinMode(Pin::buttonDown, INPUT_PULLUP);
+    pinMode(Pin::buttonUp, INPUT_PULLUP);
     EEPROM.get<uint16_t>(static_cast<int>('h'), presetHigh);
     EEPROM.get<uint16_t>(static_cast<int>('l'), presetLow);
     Serial1.flush();
@@ -113,8 +113,8 @@ void Megadesk::handle()
 
 void Megadesk::handleButtons()
 {
-    const bool _buttonDown{digitalRead(Pin::down) == LOW};
-    const bool _buttonUp{digitalRead(Pin::up) == LOW};
+    const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
+    const bool _buttonUp{digitalRead(Pin::buttonUp) == LOW};
     if (_buttonDown != buttonDown)
     {
         buttonDown = _buttonDown;
@@ -429,9 +429,9 @@ void Megadesk::sendCommand(Command command, uint16_t payload)
 {
     for (uint8_t idx{0U}; idx < 6U; ++idx)
     {
-        lin.send(0x10U, 0U, 0U);
+        lin.send(0x10U, nullptr, 0U);
     }
-    lin.send(0x1U, 0U, 0U);
+    lin.send(0x1U, nullptr, 0U);
     const uint8_t packet[3U]{
         static_cast<uint8_t>(payload & 0xFFU), static_cast<uint8_t>(payload >> 8U), static_cast<uint8_t>(command)};
     lin.send(0x12U, packet, sizeof(packet));

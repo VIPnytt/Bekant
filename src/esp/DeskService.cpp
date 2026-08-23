@@ -54,7 +54,7 @@ void DeskService::handle()
     }
     else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)
     {
-        Device.statusRed();
+        DeviceService::statusRed();
         const uint8_t _error{static_cast<uint8_t>(lastError)};
         lastError = hardwareSerial_error_t::UART_NO_ERROR;
         ESP_LOGW("hardwareSerial_error_t", "%d", _error);
@@ -64,7 +64,7 @@ void DeskService::handle()
     }
 }
 
-void DeskService::parse(const std::string message)
+void DeskService::parse(std::string message)
 {
     JsonDocument doc{};
     const char first{message.at(0U)};
@@ -81,7 +81,7 @@ void DeskService::parse(const std::string message)
     else if (first == 'd' && message.size() == 2U)
     {
         buttonDown = message.at(1U) == '1';
-        buttonDown ? Device.statusGreen() : Device.statusWhite();
+        buttonDown ? Device.statusGreen() : DeviceService::statusWhite();
     }
     else if (first == 'h' && (message.size() == 4U || message.size() == 5U))
     {
@@ -102,11 +102,11 @@ void DeskService::parse(const std::string message)
     else if (first == 'u' && message.size() == 2U)
     {
         buttonUp = message.at(1U) == '1';
-        buttonUp ? Device.statusGreen() : Device.statusWhite();
+        buttonUp ? Device.statusGreen() : DeviceService::statusWhite();
     }
     else
     {
-        Device.statusRed();
+        DeviceService::statusRed();
     }
     metadata(doc);
     doc["rx"].set(message);
@@ -296,13 +296,5 @@ void DeskService::onHomeAssistant(JsonDocument &doc)
 }
 
 void DeskService::onReceiveError(hardwareSerial_error_t error) { lastError = error; }
-
-DeskService &DeskService::getInstance()
-{
-    static DeskService instance;
-    return instance;
-}
-
-DeskService &Desk{DeskService::getInstance()};
 
 #endif // ARDUINO_ARCH_ESP32

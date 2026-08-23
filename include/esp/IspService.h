@@ -24,7 +24,7 @@ private:
 
     NetworkClient client{};
 
-    void byteReply(uint8_t b);
+    void byteReply(uint8_t byte);
     void empty_reply();
     void eeprom_read_page(size_t length);
     void enterProgrammingMode();

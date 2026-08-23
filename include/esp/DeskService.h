@@ -24,7 +24,7 @@ private:
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
     void decode(std::pair<uint16_t, float> &height, uint16_t encoded);
-    void parse(const std::string message);
+    void parse(std::string message);
 
     static void onReceiveError(hardwareSerial_error_t error);
 
@@ -35,10 +35,6 @@ public:
     void save();
 
     void onHomeAssistant(JsonDocument &doc);
-
-    static DeskService &getInstance();
 };
-
-extern DeskService &Desk;
 
 #endif // ARDUINO_ARCH_ESP32
