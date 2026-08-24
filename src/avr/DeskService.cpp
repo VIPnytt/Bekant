@@ -18,11 +18,11 @@ void DeskService::begin()
     EEPROM.get<uint16_t>(static_cast<int>('h'), presetHigh);
     EEPROM.get<uint16_t>(static_cast<int>('l'), presetLow);
     Serial1.flush();
-    if (presetHigh != 0U && presetHigh != 0xFFFFU)
+    if (presetHigh != 0xFFFFU)
     {
         Serial1.printf("h%u\n", presetHigh);
     }
-    if (presetLow != 0U && presetLow != 0xFFFFU)
+    if (presetLow != 0xFFFFU)
     {
         Serial1.printf("l%u\n", presetLow);
     }
@@ -170,7 +170,7 @@ void DeskService::handleButtons()
     else if (buttonCount == -1 && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        if (presetLow != 0U && presetLow != 0xFFFFU)
+        if (presetLow != 0xFFFFU)
         {
             Serial1.printf("l%u\n", presetLow);
             encoderTarget = presetLow;
@@ -179,7 +179,7 @@ void DeskService::handleButtons()
     else if (buttonCount == 1 && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        if (presetHigh != 0U && presetHigh != 0xFFFFU)
+        if (presetHigh != 0xFFFFU)
         {
             Serial1.printf("h%u\n", presetHigh);
             encoderTarget = presetHigh;
@@ -200,40 +200,102 @@ void DeskService::handleButtons()
 
 void DeskService::handleBuffer()
 {
-    static size_t idx{0U};
-    static uint8_t data[5U]{0U};
     const int byte{Serial1.read()};
-    if (byte != -1)
+    if (byte == static_cast<int>('\n') && bufferLength != 0U)
     {
-        if (idx <= sizeof(data) && byte == static_cast<int>('\n'))
+        parseRequest();
+        bufferLength = 0U;
+    }
+    else if (byte != -1 && byte != static_cast<int>('\n'))
+    {
+        if (bufferLength < sizeof(buffer))
         {
-            parseSerial(data);
-            idx = 0U;
+            buffer[bufferLength] = static_cast<char>(byte);
         }
-        else if (idx < sizeof(data))
-        {
-            data[idx++] = static_cast<uint8_t>(byte);
-        }
+        ++bufferLength;
     }
 }
 
-void DeskService::parseSerial(const uint8_t (&data)[1U])
+void DeskService::parseRequest()
 {
-    if (data[0U] == static_cast<uint8_t>('c'))
+    switch (buffer[0U])
+    {
+    case 'c': // calibrate
     {
         playTone(0b1U << 10U);
         state = State::RECAL_PREPARE;
     }
-    else if (data[0U] == static_cast<uint8_t>('h'))
+    break;
+    case 'e': // encoder target
     {
-        encoderTarget = presetHigh;
-        move = true;
+        const uint16_t _target{parseDigits()};
+        if (_target != 0U)
+        {
+            encoderTarget = _target;
+            move = true;
+        }
     }
-    else if (data[0U] == static_cast<uint8_t>('l'))
+    break;
+    case 'h': // high preset
     {
-        encoderTarget = presetLow;
-        move = true;
+        if (bufferLength != 1U)
+        {
+            const uint16_t _high{parseDigits()};
+            if (_high != 0U && _high != presetHigh)
+            {
+                presetHigh = _high;
+                savePreset('h', presetHigh);
+            }
+        }
+        else if (presetHigh != 0xFFFFU)
+        {
+            encoderTarget = presetHigh;
+            move = true;
+        }
     }
+    break;
+    case 'l': // low preset
+    {
+        if (bufferLength != 1U)
+        {
+            const uint16_t _low{parseDigits()};
+            if (_low != 0U && _low != presetLow)
+            {
+                presetLow = _low;
+                savePreset('l', presetLow);
+            }
+        }
+        else if (presetLow != 0xFFFFU)
+        {
+            encoderTarget = presetLow;
+            move = true;
+        }
+    }
+    break;
+    case 't': // tone
+    {
+        const uint16_t _frequency{parseDigits()};
+        if (_frequency != 0U)
+        {
+            playTone(_frequency);
+        }
+    }
+    break;
+    }
+}
+
+uint16_t DeskService::parseDigits()
+{
+    uint16_t value{0U};
+    for (size_t idx{1U}; idx < bufferLength; ++idx)
+    {
+        if (buffer[idx] < '0' || buffer[idx] > '9')
+        {
+            return 0U;
+        }
+        value = static_cast<uint16_t>((value * 10U) + (buffer[idx] - '0'));
+    }
+    return value;
 }
 
 void DeskService::savePreset(char preset, uint16_t value)
@@ -357,7 +419,7 @@ void DeskService::handleEncoders()
         sendCommand(Command::PRE_MOVE);
         break;
     case State::RECAL_ONGOING:
-        if (max(encoderA, encoderB) <= 99U && nodeA[2U] == 1U && nodeB[2U] == 1U)
+        if (nodeA[2U] == 1U && nodeB[2U] == 1U && max(encoderA, encoderB) <= 99U)
         {
             state = State::RECAL_DONE;
         }
@@ -378,7 +440,7 @@ void DeskService::sendCommand(Command command)
     sendCommand(
         command,
         constrain(encoderTarget,
-                  static_cast<uint16_t>(max(0b1U << 8U, static_cast<int>(max(encoderA, encoderB)) - (0b1U << 8U))),
+                  static_cast<uint16_t>(max(0b1 << 8U, static_cast<int>(max(encoderA, encoderB)) - (0b1 << 8U))),
                   static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
 }
 

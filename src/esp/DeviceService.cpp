@@ -307,7 +307,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         adc[HomeAssistantAbbreviations::device_class].set("voltage");
         adc[HomeAssistantAbbreviations::enabled_by_default].set(false);
         adc[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        adc[HomeAssistantAbbreviations::expire_after].set(0b1U << 7U);
+        adc[HomeAssistantAbbreviations::expire_after].set(0b1U << 8U);
         adc[HomeAssistantAbbreviations::icon].set("mdi:alpha-v-circle-outline");
         adc[HomeAssistantAbbreviations::name].set("Power supply");
         adc[HomeAssistantAbbreviations::suggested_display_precision].set(1);
