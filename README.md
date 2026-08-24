@@ -161,7 +161,7 @@ Home Assistant with MQTT is recommended for the best experience, but the desk al
   - **Preset low:** Set the preset low height
   - **Reset:** Holds the Megadesk controller in reset, preventing the desk from responding to commands or physical button presses. Releasing the lock allows normal operation again.
   - **Reboot:** Reboots the ESP32
-  - **Accessory:** Intended for controlling the logic level shifter's OE pin, but can also be used for other peripherals. Only available when the `OE` pin is defined in `secrets.h`.
+  - **Output enable:** Intended for controlling the logic level shifter's OE pin, but can also be used for other peripherals. Only available when the `OE` pin is defined in `secrets.h`.
 - **Diagnostic**
   - **Offset:** Displays the current leg offset height.
   - **Calibrate:** The desk will slowly lower to the lowest physically possible position and then reset the legs height counters.

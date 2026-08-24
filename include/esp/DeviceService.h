@@ -18,10 +18,7 @@ private:
 
     unsigned long lastMillis{0U};
 
-#ifdef PIN_OE
     static inline bool accessory{true};
-#endif // PIN_OE
-
     static inline bool pending{false};
     static inline bool reset{false};
 
@@ -49,6 +46,11 @@ private:
     static void onDisconnected(arduino_event_id_t event, arduino_event_info_t info);
     static void onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                           const uint8_t *payload, size_t len, size_t index, size_t total);
+    static void sendTx(std::string_view data);
+    static void setButton(bool direction, bool state);
+    static void setOutputEnable(bool state);
+    static void setReset(bool state);
+    static void restart();
 
 public:
     static inline NetworkServer avrServer{328U};

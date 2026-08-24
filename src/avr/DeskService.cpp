@@ -397,7 +397,6 @@ void DeskService::parseEncoders(uint8_t nodeA, uint8_t nodeB)
             sendCommand(Command::RAISE);
         }
         break;
-
     case State::STOP:
         state = State::DONE;
         sendCommand(Command::OK);

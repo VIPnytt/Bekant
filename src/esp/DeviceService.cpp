@@ -290,7 +290,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         accessory[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
         accessory[HomeAssistantAbbreviations::entity_category].set("config");
         accessory[HomeAssistantAbbreviations::icon].set("mdi:chip");
-        accessory[HomeAssistantAbbreviations::name].set("Accessory");
+        accessory[HomeAssistantAbbreviations::name].set("Output enable");
         accessory[HomeAssistantAbbreviations::payload_off].set("false");
         accessory[HomeAssistantAbbreviations::payload_on].set("true");
         accessory[HomeAssistantAbbreviations::state_off].set("False");
@@ -491,118 +491,52 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
                 const std::string_view action{doc["action"].as<std::string_view>()};
                 if (action == "calibrate")
                 {
-                    JsonDocument _doc{};
-                    Desk.metadata(_doc);
-                    _doc["tx"].set("c");
-                    transmit(_doc);
-                    statusRed();
-                    Serial1.print("c\n");
+                    sendTx("c");
                 }
                 else if (action == "restart")
                 {
-                    digitalWrite(PIN_RST, LOW);
-                    ESP.restart();
+                    restart();
                 }
             }
-#ifdef PIN_OE
-            if (doc["accessory"].is<bool>() && doc["accessory"].as<bool>() != accessory)
+            if (doc["oe"].is<bool>())
             {
-                accessory = doc["accessory"].as<bool>();
-                digitalWrite(PIN_OE, accessory ? HIGH : LOW);
-                JsonDocument doc{};
-                Desk.metadata(doc);
-                transmit(doc);
-                nvs_handle_t handle{};
-                if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
-                {
-                    nvs_set_u8(handle, "accessory", static_cast<uint8_t>(accessory));
-                    nvs_commit(handle);
-                    nvs_close(handle);
-                }
+                setOutputEnable(doc["oe"].as<bool>());
             }
-#endif // PIN_OE
-#ifdef PIN_TPDN
             if (doc["button"]["down"].is<bool>())
             {
-                digitalWrite(PIN_TPDN, doc["button"]["down"].as<bool>() ? LOW : HIGH);
+                setButton(false, doc["button"]["down"].as<bool>());
             }
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
             if (doc["button"]["up"].is<bool>())
             {
-                digitalWrite(PIN_TPUP, doc["button"]["up"].as<bool>() ? LOW : HIGH);
+                setButton(true, doc["button"]["up"].as<bool>());
             }
-#endif // PIN_TPUP
             if (doc["desk"].is<float>())
             {
-                const std::string payload{"e" + std::to_string(Device.encode(doc["desk"].as<float>()))};
-                JsonDocument _doc{};
-                Desk.metadata(_doc);
-                _doc["tx"].set(payload);
-                transmit(_doc);
-                statusRed();
-                Serial1.write(payload.data(), payload.size());
-                Serial1.write('\n');
+                sendTx("e" + std::to_string(Device.encode(doc["desk"].as<float>())));
             }
             if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
             {
-                JsonDocument _doc{};
-                Desk.metadata(_doc);
-                _doc["tx"].set("h");
-                transmit(_doc);
-                statusRed();
-                Serial1.print("h\n");
+                sendTx("h");
             }
             if (doc["preset"]["high"].is<float>())
             {
-                const std::string payload{"h" + std::to_string(Device.encode(doc["preset"]["high"].as<float>()))};
-                JsonDocument _doc{};
-                Desk.metadata(_doc);
-                _doc["tx"].set(payload);
-                transmit(_doc);
-                statusRed();
-                Serial1.write(payload.data(), payload.size());
-                Serial1.write('\n');
+                sendTx("h" + std::to_string(Device.encode(doc["preset"]["high"].as<float>())));
             }
             if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
             {
-                JsonDocument _doc{};
-                Desk.metadata(_doc);
-                _doc["tx"].set("l");
-                transmit(_doc);
-                statusRed();
-                Serial1.print("l\n");
+                sendTx("l");
             }
             if (doc["preset"]["low"].is<float>())
             {
-                const std::string payload{"l" + std::to_string(Device.encode(doc["preset"]["low"].as<float>()))};
-                JsonDocument _doc{};
-                Desk.metadata(_doc);
-                _doc["tx"].set(payload);
-                transmit(_doc);
-                statusRed();
-                Serial1.write(payload.data(), payload.size());
-                Serial1.write('\n');
+                sendTx("l" + std::to_string(Device.encode(doc["preset"]["low"].as<float>())));
             }
             if (doc["reset"].is<bool>())
             {
-                reset = doc["reset"].as<bool>();
-                DeviceService::statusRed();
-                digitalWrite(PIN_RST, reset ? LOW : HIGH);
-                JsonDocument doc{};
-                Desk.metadata(doc);
-                transmit(doc);
+                setReset(doc["reset"].as<bool>());
             }
             if (doc["tx"].is<std::string_view>())
             {
-                JsonDocument _doc{};
-                const std::string_view payload{doc["tx"].as<std::string_view>()};
-                Desk.metadata(_doc);
-                _doc["tx"].set(payload);
-                transmit(_doc);
-                statusRed();
-                Serial1.write(payload.data(), payload.size());
-                Serial1.write('\n');
+                sendTx(doc["tx"].as<std::string_view>());
             }
         }
     }
@@ -615,6 +549,70 @@ uint16_t DeviceService::encode(float userHeight)
                  static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
                  (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
                 static_cast<float>(ReferenceHeight::encoderLow)));
+}
+
+void DeviceService::sendTx(std::string_view payload)
+{
+    JsonDocument _doc{};
+    Desk.metadata(_doc);
+    _doc["tx"].set(payload);
+    transmit(_doc);
+    statusRed();
+    Serial1.write(payload.data(), payload.size());
+    Serial1.write('\n');
+}
+
+void DeviceService::setButton(bool direction, bool state)
+{
+    if (state)
+    {
+        statusRed();
+    }
+#if defined(PIN_TPDN) && defined(PIN_TPUP)
+    digitalWrite(direction ? PIN_TPUP : PIN_TPDN, state ? LOW : HIGH);
+#endif // defined(PIN_TPDN) && defined(PIN_TPUP)
+}
+
+void DeviceService::setOutputEnable(bool state)
+{
+#ifdef PIN_OE
+    if (state != accessory)
+    {
+        accessory = state;
+        digitalWrite(PIN_OE, accessory ? HIGH : LOW);
+        JsonDocument doc{};
+        Desk.metadata(doc);
+        transmit(doc);
+        nvs_handle_t handle{};
+        if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+        {
+            nvs_set_u8(handle, "oe", static_cast<uint8_t>(accessory));
+            nvs_commit(handle);
+            nvs_close(handle);
+        }
+    }
+#endif // PIN_OE
+}
+
+void DeviceService::setReset(bool state)
+{
+    if (state != reset)
+    {
+        reset = state;
+        DeviceService::statusRed();
+        digitalWrite(PIN_RST, reset ? LOW : HIGH);
+        JsonDocument doc{};
+        Desk.metadata(doc);
+        transmit(doc);
+    }
+}
+
+void DeviceService::restart()
+{
+    DeviceService::statusRed();
+    mqtt.disconnect();
+    digitalWrite(PIN_RST, LOW);
+    ESP.restart();
 }
 
 DeviceService &DeviceService::getInstance()
