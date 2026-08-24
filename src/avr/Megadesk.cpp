@@ -207,7 +207,7 @@ void Megadesk::handleBuffer()
     {
         if (idx <= sizeof(data) && byte == static_cast<int>('\n'))
         {
-            parseSerial(data, idx);
+            parseSerial(data);
             idx = 0U;
         }
         else if (idx < sizeof(data))
@@ -217,65 +217,22 @@ void Megadesk::handleBuffer()
     }
 }
 
-uint16_t Megadesk::parseDigits(const uint8_t *data, size_t length)
+void Megadesk::parseSerial(const uint8_t (&data)[1U])
 {
-    uint16_t value{0U};
-    for (size_t idx{0U}; idx < length; ++idx)
+    if (data[0U] == static_cast<uint8_t>('c'))
     {
-        value = static_cast<uint16_t>((value * 10U) + (data[idx] - static_cast<unsigned int>('0')));
+        playTone(0b1U << 10U);
+        state = State::RECAL_PREPARE;
     }
-    return value;
-}
-
-void Megadesk::parseSerial(const uint8_t *data, size_t length)
-{
-    if (length == 1U)
+    else if (data[0U] == static_cast<uint8_t>('h'))
     {
-        if (data[0U] == static_cast<uint8_t>('c'))
-        {
-            playTone(0b1U << 10U);
-            state = State::RECAL_PREPARE;
-        }
-        else if (data[0U] == static_cast<uint8_t>('h'))
-        {
-            encoderTarget = presetHigh;
-            move = true;
-        }
-        else if (data[0U] == static_cast<uint8_t>('l'))
-        {
-            encoderTarget = presetLow;
-            move = true;
-        }
+        encoderTarget = presetHigh;
+        move = true;
     }
-    else if (length == 4U || length == 5U)
+    else if (data[0U] == static_cast<uint8_t>('l'))
     {
-        if (data[0U] == static_cast<uint8_t>('e'))
-        {
-            encoderTarget = parseDigits(data + 1U, static_cast<size_t>(length - 1U));
-            move = true;
-        }
-        else if (data[0U] == static_cast<uint8_t>('h'))
-        {
-            const uint16_t _high{parseDigits(data + 1U, static_cast<size_t>(length - 1U))};
-            if (_high != presetHigh)
-            {
-                presetHigh = _high;
-                savePreset('h', presetHigh);
-            }
-        }
-        else if (data[0U] == static_cast<uint8_t>('l'))
-        {
-            const uint16_t _low{parseDigits(data + 1U, static_cast<size_t>(length - 1U))};
-            if (_low != presetLow)
-            {
-                presetLow = _low;
-                savePreset('l', presetLow);
-            }
-        }
-        else if (data[0U] == static_cast<uint8_t>('t'))
-        {
-            playTone(parseDigits(data + 1U, static_cast<size_t>(length - 1U)));
-        }
+        encoderTarget = presetLow;
+        move = true;
     }
 }
 

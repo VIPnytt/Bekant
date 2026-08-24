@@ -350,12 +350,12 @@ void IspService::write_flash(size_t length)
     if (getChar() == stkCrcEop)
     {
         client.print(stkInSync);
-        size_t idx{0};
+        size_t idx{0U}; // NOLINT(misc-const-correctness)
         size_t page{here & ~((pageSize / 2U) - 1U)};
         while (idx < length)
         {
             vTaskDelay(1U);
-            if ((page != here & ~((pageSize / 2U) - 1U)) != 0U)
+            if (page != (here & ~((pageSize / 2U) - 1U)))
             {
                 SPI.transfer(0x4CU);
                 SPI.transfer((page >> 8U) & 0xFFU);

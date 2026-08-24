@@ -4,7 +4,7 @@
 
 #include "avr/Lin.h"
 
-#include <stddef.h> // NOLINT(hicpp-deprecated-headers)
+#include <stddef.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
 
 class Megadesk
 {
@@ -58,13 +58,52 @@ private:
     void handleEncoders();
     void sendCommand(Command command);
     void sendCommand(Command command, uint16_t target);
-    void parseSerial(const uint8_t *data, size_t length);
+    void parseSerial(const uint8_t (&data)[1U]);
     void playTone(uint16_t frequency);
     void savePreset(char preset, uint16_t value);
 
     uint8_t sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4);
 
-    uint16_t parseDigits(const uint8_t *data, size_t length);
+    template <size_t N> void parseSerial(const uint8_t (&data)[N])
+    {
+        if (data[0U] == static_cast<uint8_t>('e'))
+        {
+            encoderTarget = parseDigits(data);
+            move = true;
+        }
+        else if (data[0U] == static_cast<uint8_t>('h'))
+        {
+            const uint16_t _high{parseDigits(data)};
+            if (_high != presetHigh)
+            {
+                presetHigh = _high;
+                savePreset('h', presetHigh);
+            }
+        }
+        else if (data[0U] == static_cast<uint8_t>('l'))
+        {
+            const uint16_t _low{parseDigits(data)};
+            if (_low != presetLow)
+            {
+                presetLow = _low;
+                savePreset('l', presetLow);
+            }
+        }
+        else if (data[0U] == static_cast<uint8_t>('t'))
+        {
+            playTone(parseDigits(data));
+        }
+    }
+
+    template <size_t N> uint16_t parseDigits(const uint8_t (&data)[N])
+    {
+        uint16_t value{0U};
+        for (size_t idx{1U}; idx < N; ++idx)
+        {
+            value = static_cast<uint16_t>((value * 10U) + (data[idx] - static_cast<unsigned int>('0')));
+        }
+        return value;
+    }
 
 public:
     void begin();

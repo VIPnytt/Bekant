@@ -481,7 +481,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
 void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                               const uint8_t *payload, size_t len, size_t index, size_t total)
 {
-    if (len == total)
+    if (index == 0U && len == total)
     {
         JsonDocument doc{}; // NOLINT(misc-const-correctness)
         if (deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
