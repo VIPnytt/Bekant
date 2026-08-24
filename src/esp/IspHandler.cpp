@@ -176,7 +176,7 @@ void IspHandler::enterProgrammingMode()
     SPI.transfer(0x0U);
 }
 
-void IspHandler::eeprom_read_page(size_t length)
+void IspHandler::eeprom_read_page(size_t length) // NOLINT(readability-make-member-function-const)
 {
     std::vector<uint8_t> data(length + 1U);
     const size_t start{here * 2U};
@@ -352,7 +352,7 @@ void IspHandler::write_flash(size_t length)
         client.print(stkInSync);
         size_t idx{0U}; // NOLINT(misc-const-correctness)
         size_t page{here & ~((pageSize / 2U) - 1U)};
-        while (idx < length)
+        for (size_t idx{0U}; idx < length; idx += 2U)
         {
             vTaskDelay(1U);
             if (page != (here & ~((pageSize / 2U) - 1U)))
@@ -367,11 +367,11 @@ void IspHandler::write_flash(size_t length)
             SPI.transfer(0x40U);
             SPI.transfer((here >> 8U) & 0xFFU);
             SPI.transfer(here & 0xFFU);
-            SPI.transfer(buffer.at(idx++));
+            SPI.transfer(buffer.at(idx));
             SPI.transfer(0x48U);
             SPI.transfer((here >> 8U) & 0xFFU);
             SPI.transfer(here & 0xFFU);
-            SPI.transfer(buffer.at(idx++));
+            SPI.transfer(buffer.at(idx + 1U));
             ++here;
         }
         SPI.transfer(0x4CU);
