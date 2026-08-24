@@ -7,17 +7,29 @@
 #include <stdint.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
 #include <wiring.h>
 
-class Lin
+class LinHandler
 {
 private:
     static constexpr unsigned long baud{19'200UL};
 
     uint8_t addressParity(unsigned int identifier);
-    uint8_t calcChecksum(const uint8_t *message, uint8_t nBytes, uint16_t sum);
 
     int readWithTimeout(int16_t &countDown);
 
     void serialBreak();
+
+    template <size_t N> uint8_t calcChecksum(const uint8_t (&data)[N], uint16_t sum)
+    {
+        for (const uint8_t byte : data)
+        {
+            sum += byte;
+        }
+        while ((sum >> 8U) != 0U)
+        {
+            sum = (sum & 0xFFU) + (sum >> 8U);
+        }
+        return static_cast<uint8_t>(~sum);
+    }
 
 public:
     void begin();
@@ -44,7 +56,7 @@ public:
             byte = readWithTimeout(countdown);
         } while (byte != idByte && byte != -1);
         bytesReceived = 0U;
-        for (uint8_t idx{0U}; idx < N; idx++)
+        for (size_t idx{0U}; idx < N; idx++)
         {
             byte = readWithTimeout(countdown);
             data[idx] = byte;
@@ -57,7 +69,7 @@ public:
         }
         byte = readWithTimeout(countdown);
         ++bytesReceived;
-        if (calcChecksum(data, static_cast<uint8_t>(N), identifier == 0x3DU ? 0U : idByte) != byte)
+        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != byte)
         {
             bytesReceived = 0xFFU;
         }
@@ -72,9 +84,8 @@ public:
         serialBreak();
         Serial.write(0x55U);
         Serial.write(addressByte);
-        Serial.write(static_cast<const uint8_t *>(data), static_cast<uint8_t>(N));
-        Serial.write(calcChecksum(
-            static_cast<const uint8_t *>(data), static_cast<uint8_t>(N), identifier == 0x3CU ? 0U : addressByte));
+        Serial.write(data, N);
+        Serial.write(calcChecksum(data, identifier == 0x3CU ? 0U : addressByte));
         Serial.flush();
         delay(static_cast<unsigned long>(N) + 3U);
     }

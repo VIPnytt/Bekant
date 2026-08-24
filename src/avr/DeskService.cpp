@@ -1,6 +1,6 @@
 #ifdef ARDUINO_ARCH_AVR
 
-#include "avr/Megadesk.h"
+#include "avr/DeskService.h"
 
 #include "avr/constants.h"
 
@@ -8,7 +8,7 @@
 #include <HardwareSerial.h>
 #include <wiring.h>
 
-void Megadesk::begin()
+void DeskService::begin()
 {
     Serial1.begin(115'200UL);
     delay(0b1U << 8U);
@@ -91,7 +91,7 @@ void Megadesk::begin()
     }
 }
 
-uint8_t Megadesk::sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4)
+uint8_t DeskService::sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4)
 {
     const uint8_t packet[8U]{payload1, payload2, payload3, payload4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
     lin.send(0x3C, packet);
@@ -100,7 +100,7 @@ uint8_t Megadesk::sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload
     return lin.request(0x3DU, response);
 }
 
-void Megadesk::handle()
+void DeskService::handle()
 {
     handleEncoders();
     if (state != State::RECAL_PREPARE && state != State::RECAL_ONGOING && state != State::RECAL_DONE)
@@ -110,7 +110,7 @@ void Megadesk::handle()
     }
 }
 
-void Megadesk::handleButtons()
+void DeskService::handleButtons()
 {
     const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
     const bool _buttonUp{digitalRead(Pin::buttonUp) == LOW};
@@ -198,7 +198,7 @@ void Megadesk::handleButtons()
     }
 }
 
-void Megadesk::handleBuffer()
+void DeskService::handleBuffer()
 {
     static size_t idx{0U};
     static uint8_t data[5U]{0U};
@@ -217,7 +217,7 @@ void Megadesk::handleBuffer()
     }
 }
 
-void Megadesk::parseSerial(const uint8_t (&data)[1U])
+void DeskService::parseSerial(const uint8_t (&data)[1U])
 {
     if (data[0U] == static_cast<uint8_t>('c'))
     {
@@ -236,13 +236,13 @@ void Megadesk::parseSerial(const uint8_t (&data)[1U])
     }
 }
 
-void Megadesk::savePreset(char preset, uint16_t value)
+void DeskService::savePreset(char preset, uint16_t value)
 {
     EEPROM.put(static_cast<int>(preset), value);
     Serial1.printf("%c%u\n", preset, value);
 }
 
-void Megadesk::handleEncoders()
+void DeskService::handleEncoders()
 {
     constexpr uint8_t empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
@@ -373,7 +373,7 @@ void Megadesk::handleEncoders()
     }
 }
 
-void Megadesk::sendCommand(Command command)
+void DeskService::sendCommand(Command command)
 {
     sendCommand(
         command,
@@ -382,7 +382,7 @@ void Megadesk::sendCommand(Command command)
                   static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
 }
 
-void Megadesk::sendCommand(Command command, uint16_t payload)
+void DeskService::sendCommand(Command command, uint16_t payload)
 {
     for (uint8_t idx{0U}; idx < 6U; ++idx)
     {
@@ -394,7 +394,7 @@ void Megadesk::sendCommand(Command command, uint16_t payload)
     lin.send(0x12U, packet);
 }
 
-void Megadesk::playTone(uint16_t frequency)
+void DeskService::playTone(uint16_t frequency)
 {
     const uint16_t halfperiod{static_cast<uint16_t>(500'000UL / frequency)};
     const uint16_t delay{static_cast<uint16_t>(halfperiod - (48'000'000UL / F_CPU))};

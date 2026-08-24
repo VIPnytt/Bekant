@@ -1,16 +1,16 @@
 #ifdef ARDUINO_ARCH_AVR
 
-#include "avr/Lin.h"
+#include "avr/LinHandler.h"
 
 #include "avr/constants.h"
 
-void Lin::begin()
+void LinHandler::begin()
 {
     pinMode(Pin::lin, OUTPUT);
     Serial.begin(baud);
 }
 
-void Lin::serialBreak()
+void LinHandler::serialBreak()
 {
     Serial.end();
     pinMode(Pin::lin, OUTPUT);
@@ -21,20 +21,7 @@ void Lin::serialBreak()
     Serial.begin(baud);
 }
 
-uint8_t Lin::calcChecksum(const uint8_t *data, uint8_t length, uint16_t sum)
-{
-    while (length-- > 0)
-    {
-        sum += *(data++);
-    }
-    while ((sum >> 8U) != 0U)
-    {
-        sum = (sum & 0xFFU) + (sum >> 8U);
-    }
-    return ~sum;
-}
-
-uint8_t Lin::addressParity(unsigned int identifier)
+uint8_t LinHandler::addressParity(unsigned int identifier)
 {
     const unsigned int parity0{((identifier >> 0U) & 1U) ^ ((identifier >> 1U) & 1U) ^ ((identifier >> 2U) & 1U) ^
                                ((identifier >> 4U) & 1U)};
@@ -44,7 +31,7 @@ uint8_t Lin::addressParity(unsigned int identifier)
     return static_cast<uint8_t>((parity0 | (parity1 << 1U)) << 6U);
 }
 
-int Lin::readWithTimeout(int16_t &countdown)
+int LinHandler::readWithTimeout(int16_t &countdown)
 {
     while (Serial.available() == 0)
     {
@@ -58,14 +45,14 @@ int Lin::readWithTimeout(int16_t &countdown)
     return Serial.read();
 }
 
-void Lin::send(uint8_t identifier)
+void LinHandler::send(uint8_t identifier)
 {
     const uint8_t addressByte{
         static_cast<uint8_t>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
     serialBreak();
     Serial.write(0x55U);
     Serial.write(addressByte);
-    Serial.write(calcChecksum(nullptr, 0U, identifier == 0x3CU ? 0U : addressByte));
+    Serial.write(identifier == 0x3CU ? 0xFFU : static_cast<uint8_t>(~addressByte));
     Serial.flush();
     delay(3U);
 }

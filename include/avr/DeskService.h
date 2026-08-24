@@ -2,11 +2,11 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include "avr/Lin.h"
+#include "avr/LinHandler.h"
 
 #include <stddef.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
 
-class Megadesk
+class DeskService
 {
 private:
     enum class Command : uint8_t
@@ -49,7 +49,7 @@ private:
     unsigned long lastMillisButton{0U};
     unsigned long lastMillisEncoder{0U};
 
-    Lin lin;
+    LinHandler lin;
 
     State state{State::IDLE};
 

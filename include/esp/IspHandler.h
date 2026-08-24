@@ -4,7 +4,7 @@
 
 #include <NetworkClient.h>
 
-class IspService
+class IspHandler
 {
 private:
     static constexpr char stkCrcEop{'\x20'};

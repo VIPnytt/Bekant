@@ -1,6 +1,6 @@
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/IspService.h"
+#include "esp/IspHandler.h"
 
 #include "esp/DeviceService.h"
 #include "esp/secrets.h"
@@ -8,13 +8,13 @@
 #include <ESPmDNS.h>
 #include <SPI.h>
 
-void IspService::begin()
+void IspHandler::begin()
 {
     digitalWrite(PIN_RST, HIGH);
     MDNS.addService("avrisp", "tcp", 328U);
 }
 
-void IspService::handle()
+void IspHandler::handle()
 {
     if (active)
     {
@@ -136,7 +136,7 @@ void IspService::handle()
     }
 }
 
-void IspService::byteReply(uint8_t byte)
+void IspHandler::byteReply(uint8_t byte)
 {
     if (getChar() == stkCrcEop)
     {
@@ -149,7 +149,7 @@ void IspService::byteReply(uint8_t byte)
     }
 }
 
-void IspService::empty_reply()
+void IspHandler::empty_reply()
 {
     if (getChar() == stkCrcEop)
     {
@@ -163,7 +163,7 @@ void IspService::empty_reply()
     }
 }
 
-void IspService::enterProgrammingMode()
+void IspHandler::enterProgrammingMode()
 {
     SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, GPIO_NUM_NC);
     SPI.setFrequency(300'000UL);
@@ -176,7 +176,7 @@ void IspService::enterProgrammingMode()
     SPI.transfer(0x0U);
 }
 
-void IspService::eeprom_read_page(size_t length)
+void IspHandler::eeprom_read_page(size_t length)
 {
     std::vector<uint8_t> data(length + 1U);
     const size_t start{here * 2U};
@@ -192,7 +192,7 @@ void IspService::eeprom_read_page(size_t length)
     client.write(data.data(), data.size());
 }
 
-void IspService::flash_read_page(size_t length)
+void IspHandler::flash_read_page(size_t length)
 {
     for (size_t idx{0U}; idx < length; idx += 2U)
     {
@@ -212,7 +212,7 @@ void IspService::flash_read_page(size_t length)
     client.write(&status, sizeof(status));
 }
 
-uint8_t IspService::getChar()
+uint8_t IspHandler::getChar()
 {
     while (!client.available())
     {
@@ -221,7 +221,7 @@ uint8_t IspService::getChar()
     return static_cast<uint8_t>(client.read());
 }
 
-void IspService::program_page()
+void IspHandler::program_page()
 {
     const size_t length{(256U * getChar()) + getChar()};
     const char memtype{getChar()};
@@ -249,7 +249,7 @@ void IspService::program_page()
     }
 }
 
-void IspService::read_page()
+void IspHandler::read_page()
 {
     const size_t length{(256U * getChar()) + getChar()};
     const char memtype{getChar()};
@@ -270,7 +270,7 @@ void IspService::read_page()
     }
 }
 
-void IspService::read_signature()
+void IspHandler::read_signature()
 {
     if (getChar() != stkCrcEop)
     {
@@ -294,7 +294,7 @@ void IspService::read_signature()
     client.print(stkOk);
 }
 
-void IspService::universal()
+void IspHandler::universal()
 {
     for (size_t idx{0U}; idx < 4U; ++idx)
     {
@@ -306,7 +306,7 @@ void IspService::universal()
     byteReply(SPI.transfer(buffer.at(3U)));
 }
 
-bool IspService::write_eeprom(size_t length)
+bool IspHandler::write_eeprom(size_t length)
 {
     if (length > eepromSize)
     {
@@ -324,7 +324,7 @@ bool IspService::write_eeprom(size_t length)
     return true;
 }
 
-void IspService::write_eeprom_chunk(size_t start, size_t length)
+void IspHandler::write_eeprom_chunk(size_t start, size_t length)
 {
     for (size_t idx{0U}; idx < length; ++idx)
     {
@@ -341,7 +341,7 @@ void IspService::write_eeprom_chunk(size_t start, size_t length)
     }
 }
 
-void IspService::write_flash(size_t length)
+void IspHandler::write_flash(size_t length)
 {
     for (size_t _idx{0U}; _idx < length; ++_idx)
     {

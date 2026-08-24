@@ -1,10 +1,10 @@
 #ifdef ARDUINO_ARCH_AVR
 
-#include "avr/Megadesk.h"
+#include "avr/DeskService.h"
 
 #include <avr/wdt.h>
 
-Megadesk desk{};
+DeskService desk{};
 
 void setup()
 {

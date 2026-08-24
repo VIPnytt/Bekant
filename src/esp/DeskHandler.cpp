@@ -1,13 +1,13 @@
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/DeskService.h"
+#include "esp/DeskHandler.h"
 
 #include "esp/DeviceService.h"
 #include "esp/constants.h"
 
 #include <nvs.h>
 
-void DeskService::begin()
+void DeskHandler::begin()
 {
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
@@ -35,7 +35,7 @@ void DeskService::begin()
     Serial1.begin(115'200UL, SerialConfig::SERIAL_8N1, PIN_MISO, PIN_SCK);
 }
 
-void DeskService::handle()
+void DeskHandler::handle()
 {
     const int byte{Serial1.read()};
     if (byte != -1)
@@ -64,7 +64,7 @@ void DeskService::handle()
     }
 }
 
-void DeskService::parse(std::string message)
+void DeskHandler::parse(std::string message)
 {
     JsonDocument doc{};
     const char first{message.at(0U)};
@@ -113,7 +113,7 @@ void DeskService::parse(std::string message)
     DeviceService::transmit(doc);
 }
 
-void DeskService::save()
+void DeskHandler::save()
 {
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
@@ -127,7 +127,7 @@ void DeskService::save()
     }
 }
 
-void DeskService::metadata(JsonDocument &doc)
+void DeskHandler::metadata(JsonDocument &doc)
 {
     doc["button"]["down"].set(buttonDown);
     doc["button"]["up"].set(buttonUp);
@@ -155,7 +155,7 @@ void DeskService::metadata(JsonDocument &doc)
     }
 }
 
-void DeskService::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
+void DeskHandler::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
 {
     height.first = encoded;
     height.second = ((static_cast<float>(height.first) - static_cast<float>(ReferenceHeight::encoderLow)) *
@@ -164,7 +164,7 @@ void DeskService::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
                     ReferenceHeight::heightLow;
 }
 
-void DeskService::onHomeAssistant(JsonDocument &doc)
+void DeskHandler::onHomeAssistant(JsonDocument &doc)
 {
     {
         JsonObject desk{doc[HomeAssistantAbbreviations::components]["desk"].to<JsonObject>()};
@@ -295,6 +295,6 @@ void DeskService::onHomeAssistant(JsonDocument &doc)
     }
 }
 
-void DeskService::onReceiveError(hardwareSerial_error_t error) { lastError = error; }
+void DeskHandler::onReceiveError(hardwareSerial_error_t error) { lastError = error; }
 
 #endif // ARDUINO_ARCH_ESP32

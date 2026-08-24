@@ -2,8 +2,8 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/DeskService.h"
-#include "esp/IspService.h"
+#include "esp/DeskHandler.h"
+#include "esp/IspHandler.h"
 #include "secrets.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
@@ -27,9 +27,9 @@ private:
 
     static inline ArduinoOTAClass ArduinoOTA{};
 
-    static inline DeskService Desk{};
+    static inline DeskHandler Desk{};
 
-    IspService ISP{};
+    IspHandler ISP{};
 
 #ifdef PIN_LED
     NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};

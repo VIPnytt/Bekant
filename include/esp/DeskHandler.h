@@ -6,7 +6,7 @@
 #include <HardwareSerial.h>
 #include <string>
 
-class DeskService
+class DeskHandler
 {
 private:
     bool buttonDown{false};
