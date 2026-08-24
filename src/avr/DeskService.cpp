@@ -110,7 +110,7 @@ void DeskService::handle()
     }
 }
 
-void DeskService::handleButtons()
+void DeskService::readButtons()
 {
     const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
     const bool _buttonUp{digitalRead(Pin::buttonUp) == LOW};
@@ -142,6 +142,11 @@ void DeskService::handleButtons()
         }
         Serial1.printf("u%u\n", static_cast<uint8_t>(buttonUp));
     }
+}
+
+void DeskService::handleButtons()
+{
+    readButtons();
     if (buttonDown && buttonUp && millis() - lastMillisButton > 0b1U << 13U)
     {
         buttonCount = 0;
@@ -205,7 +210,7 @@ void DeskService::handleBuffer()
     {
         if (bufferLength <= sizeof(buffer))
         {
-            parseRequest();
+            parseBuffer();
         }
         bufferLength = 0U;
     }
@@ -219,7 +224,7 @@ void DeskService::handleBuffer()
     }
 }
 
-void DeskService::parseRequest()
+void DeskService::parseBuffer()
 {
     if (buffer[0U] == 'c')
     {
@@ -334,11 +339,16 @@ void DeskService::handleEncoders()
         lastMillisEncoder = millis();
         Serial1.printf("b%u\n", encoderB);
     }
+    parseEncoders(nodeA[2U], nodeB[2U]);
+}
+
+void DeskService::parseEncoders(uint8_t nodeA, uint8_t nodeB)
+{
     switch (state)
     {
     case State::IDLE:
-        if (move && (nodeA[2U] == 0U || nodeA[2U] == 0x25U || nodeA[2U] == 0x60U) &&
-            (nodeB[2U] == 0U || nodeB[2U] == 0x25U || nodeB[2U] == 0x60U))
+        if (move && (nodeA == 0U || nodeA == 0x25U || nodeA == 0x60U) &&
+            (nodeB == 0U || nodeB == 0x25U || nodeB == 0x60U))
         {
             state = State::PREPARE;
         }
@@ -393,8 +403,7 @@ void DeskService::handleEncoders()
         sendCommand(Command::OK);
         break;
     case State::DONE:
-        if ((nodeA[2U] == 0U || nodeA[2U] == 0x25U || nodeA[2U] == 0x60U) &&
-            (nodeB[2U] == 0U || nodeB[2U] == 0x25U || nodeB[2U] == 0x60U))
+        if ((nodeA == 0U || nodeA == 0x25U || nodeA == 0x60U) && (nodeB == 0U || nodeB == 0x25U || nodeB == 0x60U))
         {
             move = false;
             state = State::IDLE;
@@ -409,7 +418,7 @@ void DeskService::handleEncoders()
         sendCommand(Command::PRE_MOVE);
         break;
     case State::RECAL_ONGOING:
-        if (nodeA[2U] == 1U && nodeB[2U] == 1U && max(encoderA, encoderB) <= 99U)
+        if (nodeA == 1U && nodeB == 1U && max(encoderA, encoderB) <= 99U)
         {
             state = State::RECAL_DONE;
         }
@@ -427,11 +436,12 @@ void DeskService::handleEncoders()
 
 void DeskService::sendCommand(Command command)
 {
-    sendCommand(command,
-                constrain(encoderTarget,
-                          static_cast<uint16_t>(max(
-                              0b1U << 8U, static_cast<int>(max(encoderA, encoderB)) - static_cast<int>(0b1U << 8U))),
-                          static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
+    sendCommand(
+        command,
+        constrain(encoderTarget,
+                  static_cast<uint16_t>(max(static_cast<int>(0b1U << 8U),
+                                            static_cast<int>(max(encoderA, encoderB)) - static_cast<int>(0b1U << 8U))),
+                  static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
 }
 
 void DeskService::sendCommand(Command command, uint16_t payload)

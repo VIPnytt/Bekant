@@ -58,11 +58,13 @@ private:
     State state{State::IDLE};
 
     void handleBuffer();
+    void readButtons();
     void handleButtons();
     void handleEncoders();
+    void parseEncoders(uint8_t nodeA, uint8_t nodeB);
     void sendCommand(Command command);
     void sendCommand(Command command, uint16_t target);
-    void parseRequest();
+    void parseBuffer();
     void playTone(uint16_t frequency);
     void savePreset(char preset, uint16_t value);
 

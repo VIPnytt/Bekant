@@ -388,7 +388,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         reset[HomeAssistantAbbreviations::enabled_by_default].set(false);
         reset[HomeAssistantAbbreviations::entity_category].set("config");
         reset[HomeAssistantAbbreviations::icon].set("mdi:lock-outline");
-        reset[HomeAssistantAbbreviations::name].set("Child lock");
+        reset[HomeAssistantAbbreviations::name].set("Reset");
         reset[HomeAssistantAbbreviations::payload_off].set("false");
         reset[HomeAssistantAbbreviations::payload_on].set("true");
         reset[HomeAssistantAbbreviations::state_off].set("False");
