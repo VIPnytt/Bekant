@@ -203,7 +203,10 @@ void DeskService::handleBuffer()
     const int byte{Serial1.read()};
     if (byte == static_cast<int>('\n') && bufferLength != 0U)
     {
-        parseRequest();
+        if (bufferLength <= sizeof(buffer))
+        {
+            parseRequest();
+        }
         bufferLength = 0U;
     }
     else if (byte != -1 && byte != static_cast<int>('\n'))
@@ -256,7 +259,7 @@ void DeskService::parseRequest()
         const uint16_t _low{parseDigits()};
         if (_low != 0U && _low != presetLow)
         {
-            presetHigh = _low;
+            presetLow = _low;
             savePreset(buffer[0U], presetLow);
         }
     }
