@@ -275,16 +275,17 @@ void DeskService::parseRequest()
 
 uint16_t DeskService::parseDigits()
 {
-    uint16_t value{0U};
+    unsigned int value{0U};
     for (size_t idx{1U}; idx < bufferLength; ++idx)
     {
         if (buffer[idx] < '0' || buffer[idx] > '9')
         {
             return 0U;
         }
-        value = static_cast<uint16_t>((value * 10U) + (buffer[idx] - '0'));
+        value *= 10U;
+        value += static_cast<unsigned int>(buffer[idx] - '0');
     }
-    return value;
+    return static_cast<uint16_t>(value);
 }
 
 void DeskService::savePreset(char preset, uint16_t value)
