@@ -34,13 +34,13 @@ uint8_t Lin::calcChecksum(const uint8_t *data, uint8_t length, uint16_t sum)
     return ~sum;
 }
 
-uint8_t Lin::addressParity(uint8_t identifier)
+uint8_t Lin::addressParity(unsigned int identifier)
 {
-    const auto parity0{((identifier >> 0U) & 1U) ^ ((identifier >> 1U) & 1U) ^ ((identifier >> 2U) & 1U) ^
-                       ((identifier >> 4U) & 1U)};
-    const auto parity1{~(((identifier >> 1U) & 1U) ^ ((identifier >> 3U) & 1U) ^ ((identifier >> 4U) & 1U) ^
-                         ((identifier >> 5U) & 1U)) &
-                       1U};
+    const unsigned int parity0{((identifier >> 0U) & 1U) ^ ((identifier >> 1U) & 1U) ^ ((identifier >> 2U) & 1U) ^
+                               ((identifier >> 4U) & 1U)};
+    const unsigned int parity1{~(((identifier >> 1U) & 1U) ^ ((identifier >> 3U) & 1U) ^ ((identifier >> 4U) & 1U) ^
+                                 ((identifier >> 5U) & 1U)) &
+                               1U};
     return static_cast<uint8_t>((parity0 | (parity1 << 1U)) << 6U);
 }
 
@@ -60,7 +60,8 @@ int Lin::readWithTimeout(int16_t &countdown)
 
 void Lin::send(uint8_t identifier)
 {
-    const uint8_t addressByte{static_cast<uint8_t>((identifier & 0x3FU) | addressParity(identifier))};
+    const uint8_t addressByte{
+        static_cast<uint8_t>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
     serialBreak();
     Serial.write(0x55U);
     Serial.write(addressByte);

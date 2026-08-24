@@ -12,7 +12,7 @@ class Lin
 private:
     static constexpr unsigned long baud{19'200UL};
 
-    uint8_t addressParity(uint8_t identifier);
+    uint8_t addressParity(unsigned int identifier);
     uint8_t calcChecksum(const uint8_t *message, uint8_t nBytes, uint16_t sum);
 
     int readWithTimeout(int16_t &countDown);
@@ -28,7 +28,8 @@ public:
         delay(static_cast<unsigned long>(N) + 1U);
         uint8_t bytesReceived{0U};
         int16_t byte{0U};
-        const uint8_t idByte{static_cast<uint8_t>((identifier & 0x3FU) | addressParity(identifier))};
+        const uint8_t idByte{
+            static_cast<uint8_t>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
         int16_t countdown{static_cast<int16_t>(124'000'000UL / baud)};
         serialBreak();
         Serial.write(0x55U);
@@ -66,7 +67,8 @@ public:
 
     template <size_t N> void send(uint8_t identifier, const uint8_t (&data)[N])
     {
-        const uint8_t addressByte{static_cast<uint8_t>((identifier & 0x3FU) | addressParity(identifier))};
+        const uint8_t addressByte{
+            static_cast<uint8_t>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
         serialBreak();
         Serial.write(0x55U);
         Serial.write(addressByte);

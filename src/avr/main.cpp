@@ -2,7 +2,6 @@
 
 #include "avr/Megadesk.h"
 
-#include <Arduino.h>
 #include <avr/wdt.h>
 
 Megadesk desk{};

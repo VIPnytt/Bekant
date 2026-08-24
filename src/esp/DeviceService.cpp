@@ -14,7 +14,7 @@
 void DeviceService::begin()
 {
     Serial.begin(115'200UL);
-    vTaskDelay(INT8_MAX);
+    vTaskDelay(0b1U << 7U);
 #ifdef PIN_ADC
     pinMode(PIN_ADC, ANALOG);
 #endif // PIN_ADC
@@ -91,7 +91,7 @@ void DeviceService::handle()
 #endif // PIN_LED
         lastMillis = millis();
     }
-    else if (color.B != 0U && color.G == 0U && color.R == 0U && millis() - lastMillis > INT8_MAX)
+    else if (color.B != 0U && color.G == 0U && color.R == 0U && millis() - lastMillis > (0b1U << 7U))
     {
         statusWhite();
     }
@@ -100,12 +100,12 @@ void DeviceService::handle()
         unsetButtons();
         statusWhite();
     }
-    else if (color.B == 0U && color.G == 0U && color.R != 0U && millis() - lastMillis > INT16_MAX)
+    else if (color.B == 0U && color.G == 0U && color.R != 0U && millis() - lastMillis > (0b1U << 15U))
     {
         unsetButtons();
         statusNone();
     }
-    else if (color.B != 0U && color.G != 0U && color.R != 0U && millis() - lastMillis > UINT16_MAX)
+    else if (color.B != 0U && color.G != 0U && color.R != 0U && millis() - lastMillis > (0b1U << 16U))
     {
         statusNone();
         Desk.save();
@@ -285,7 +285,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
 {
 #ifdef PIN_OE
     {
-        JsonObject accessory{doc[HomeAssistantAbbreviations::components]["accessory"].to<JsonObject>()};
+        JsonObject accessory{doc[HomeAssistantAbbreviations::components]["oe"].to<JsonObject>()};
         accessory[HomeAssistantAbbreviations::command_template].set(R"({"accessory":{{value}}})");
         accessory[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
         accessory[HomeAssistantAbbreviations::entity_category].set("config");
@@ -297,7 +297,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         accessory[HomeAssistantAbbreviations::state_on].set("True");
         accessory[HomeAssistantAbbreviations::platform].set("switch");
         accessory[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        accessory[HomeAssistantAbbreviations::unique_id].set("accessory");
+        accessory[HomeAssistantAbbreviations::unique_id].set("oe");
         accessory[HomeAssistantAbbreviations::value_template].set("{{value_json.accessory}}");
     }
 #endif // PIN_OE
@@ -307,9 +307,9 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         adc[HomeAssistantAbbreviations::device_class].set("voltage");
         adc[HomeAssistantAbbreviations::enabled_by_default].set(false);
         adc[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        adc[HomeAssistantAbbreviations::expire_after].set(INT8_MAX);
+        adc[HomeAssistantAbbreviations::expire_after].set(0b1U << 7U);
         adc[HomeAssistantAbbreviations::icon].set("mdi:alpha-v-circle-outline");
-        adc[HomeAssistantAbbreviations::name].set("Voltage");
+        adc[HomeAssistantAbbreviations::name].set("Power supply");
         adc[HomeAssistantAbbreviations::suggested_display_precision].set(1);
         adc[HomeAssistantAbbreviations::platform].set("sensor");
         adc[HomeAssistantAbbreviations::state_class].set("measurement");
@@ -414,7 +414,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         JsonObject rssi{doc[HomeAssistantAbbreviations::components]["rssi"].to<JsonObject>()};
         rssi[HomeAssistantAbbreviations::device_class].set("signal_strength");
         rssi[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        rssi[HomeAssistantAbbreviations::expire_after].set(UINT8_MAX);
+        rssi[HomeAssistantAbbreviations::expire_after].set(0b1U << 8U);
         rssi[HomeAssistantAbbreviations::name].set("Wi-Fi signal");
         rssi[HomeAssistantAbbreviations::platform].set("sensor");
         rssi[HomeAssistantAbbreviations::state_class].set("measurement");
@@ -428,7 +428,7 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         temperature[HomeAssistantAbbreviations::device_class].set("temperature");
         temperature[HomeAssistantAbbreviations::enabled_by_default].set(false);
         temperature[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        temperature[HomeAssistantAbbreviations::expire_after].set(UINT8_MAX);
+        temperature[HomeAssistantAbbreviations::expire_after].set(0b1U << 8U);
         temperature[HomeAssistantAbbreviations::name].set("Temperature ESP32");
         temperature[HomeAssistantAbbreviations::platform].set("sensor");
         temperature[HomeAssistantAbbreviations::state_class].set("measurement");

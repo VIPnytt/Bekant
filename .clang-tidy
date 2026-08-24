@@ -1,5 +1,6 @@
 Checks: >
   *,
+  -altera-id-dependent-backward-branch,
   -altera-unroll-loops,
   -bugprone-branch-clone,
   -bugprone-easily-swappable-parameters,
@@ -18,6 +19,7 @@ Checks: >
   -llvm-header-guard,
   -llvmlibc-callee-namespace,
   -llvmlibc-implementation-in-namespace,
+  -llvmlibc-inline-function-decl,
   -llvmlibc-restrict-system-libc-headers,
   -misc-use-internal-linkage,
   -modernize-avoid-c-arrays,

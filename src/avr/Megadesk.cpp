@@ -11,18 +11,18 @@
 void Megadesk::begin()
 {
     Serial1.begin(115'200UL);
-    delay(INT8_MAX);
+    delay(0b1U << 8U);
     pinMode(Pin::tone, OUTPUT);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
     EEPROM.get<uint16_t>(static_cast<int>('h'), presetHigh);
     EEPROM.get<uint16_t>(static_cast<int>('l'), presetLow);
     Serial1.flush();
-    if (presetHigh != 0U && presetHigh != UINT16_MAX)
+    if (presetHigh != 0U && presetHigh != 0xFFFFU)
     {
         Serial1.printf("h%u\n", presetHigh);
     }
-    if (presetLow != 0U && presetLow != UINT16_MAX)
+    if (presetLow != 0U && presetLow != 0xFFFFU)
     {
         Serial1.printf("l%u\n", presetLow);
     }
@@ -52,7 +52,7 @@ void Megadesk::begin()
     };
     int8_t pid{-1};
     uint8_t errorCount{0U};
-    for (uint8_t idx{0U}; idx < sizeof(data) / sizeof(data[0U]); ++idx)
+    for (size_t idx{0U}; idx < sizeof(data) / sizeof(data[0U]); ++idx)
     {
         if (idx == 4U || idx == 11U)
         {
@@ -124,7 +124,7 @@ void Megadesk::handleButtons()
         }
         else if (move)
         {
-            encoderTarget = max(encoderA, encoderB) - UINT8_MAX;
+            encoderTarget = max(encoderA, encoderB) - (0b1U << 8U);
         }
         Serial1.printf("d%u\n", static_cast<uint8_t>(buttonDown));
     }
@@ -138,7 +138,7 @@ void Megadesk::handleButtons()
         }
         else if (move)
         {
-            encoderTarget = min(encoderA, encoderB) + UINT8_MAX;
+            encoderTarget = min(encoderA, encoderB) + (0b1U << 8U);
         }
         Serial1.printf("u%u\n", static_cast<uint8_t>(buttonUp));
     }
@@ -151,13 +151,13 @@ void Megadesk::handleButtons()
     else if (buttonDown && !buttonUp && millis() - lastMillisButton > 0b1U << 9U)
     {
         buttonCount = 0;
-        encoderTarget = max(encoderA, encoderB) - UINT8_MAX;
+        encoderTarget = max(encoderA, encoderB) - (0b1U << 8U);
         move = true;
     }
     else if (buttonUp && !buttonDown && millis() - lastMillisButton > 0b1U << 9U)
     {
         buttonCount = 0;
-        encoderTarget = min(encoderA, encoderB) + UINT8_MAX;
+        encoderTarget = min(encoderA, encoderB) + (0b1U << 8U);
         move = true;
     }
     else if (buttonCount == -2 && millis() - lastMillisButton > 0b1U << 8U)
@@ -170,7 +170,7 @@ void Megadesk::handleButtons()
     else if (buttonCount == -1 && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        if (presetLow != 0U && presetLow != UINT16_MAX)
+        if (presetLow != 0U && presetLow != 0xFFFFU)
         {
             Serial1.printf("l%u\n", presetLow);
             encoderTarget = presetLow;
@@ -179,7 +179,7 @@ void Megadesk::handleButtons()
     else if (buttonCount == 1 && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        if (presetHigh != 0U && presetHigh != UINT16_MAX)
+        if (presetHigh != 0U && presetHigh != 0xFFFFU)
         {
             Serial1.printf("h%u\n", presetHigh);
             encoderTarget = presetHigh;
@@ -316,7 +316,7 @@ void Megadesk::handleEncoders()
         sendCommand(Command::PRE_MOVE);
         break;
     case State::DOWN:
-        if (encoderTarget >= min(encoderA, encoderB) || millis() - lastMillisEncoder > UINT8_MAX)
+        if (encoderTarget >= min(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
         {
             state = State::STOP;
         }
@@ -326,7 +326,7 @@ void Megadesk::handleEncoders()
         }
         break;
     case State::UP:
-        if (encoderTarget <= max(encoderA, encoderB) || millis() - lastMillisEncoder > UINT8_MAX)
+        if (encoderTarget <= max(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
         {
             state = State::STOP;
         }
@@ -375,10 +375,11 @@ void Megadesk::handleEncoders()
 
 void Megadesk::sendCommand(Command command)
 {
-    sendCommand(command,
-                constrain(encoderTarget,
-                          static_cast<uint16_t>(max(UINT8_MAX, static_cast<int>(max(encoderA, encoderB)) - UINT8_MAX)),
-                          static_cast<uint16_t>(min(encoderA, encoderB) + UINT8_MAX)));
+    sendCommand(
+        command,
+        constrain(encoderTarget,
+                  static_cast<uint16_t>(max(0b1U << 8U, static_cast<int>(max(encoderA, encoderB)) - (0b1U << 8U))),
+                  static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
 }
 
 void Megadesk::sendCommand(Command command, uint16_t payload)
