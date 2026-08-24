@@ -218,15 +218,12 @@ void DeskService::handleBuffer()
 
 void DeskService::parseRequest()
 {
-    switch (buffer[0U])
-    {
-    case 'c': // calibrate
+    if (buffer[0U] == 'c')
     {
         playTone(0b1U << 10U);
         state = State::RECAL_PREPARE;
     }
-    break;
-    case 'e': // encoder target
+    else if (buffer[0U] == 'e')
     {
         const uint16_t _target{parseDigits()};
         if (_target != 0U)
@@ -235,52 +232,41 @@ void DeskService::parseRequest()
             move = true;
         }
     }
-    break;
-    case 'h': // high preset
+    else if (buffer[0U] == 'h' && bufferLength == 1U && presetHigh != 0xFFFFU)
     {
-        if (bufferLength != 1U)
+        encoderTarget = presetHigh;
+        move = true;
+    }
+    else if (buffer[0U] == 'h' && bufferLength != 1U)
+    {
+        const uint16_t _high{parseDigits()};
+        if (_high != 0U && _high != presetHigh)
         {
-            const uint16_t _high{parseDigits()};
-            if (_high != 0U && _high != presetHigh)
-            {
-                presetHigh = _high;
-                savePreset('h', presetHigh);
-            }
-        }
-        else if (presetHigh != 0xFFFFU)
-        {
-            encoderTarget = presetHigh;
-            move = true;
+            presetHigh = _high;
+            savePreset(buffer[0U], presetHigh);
         }
     }
-    break;
-    case 'l': // low preset
+    else if (buffer[0U] == 'l' && bufferLength == 1U && presetLow != 0xFFFFU)
     {
-        if (bufferLength != 1U)
+        encoderTarget = presetLow;
+        move = true;
+    }
+    else if (buffer[0U] == 'l' && bufferLength != 1U)
+    {
+        const uint16_t _low{parseDigits()};
+        if (_low != 0U && _low != presetLow)
         {
-            const uint16_t _low{parseDigits()};
-            if (_low != 0U && _low != presetLow)
-            {
-                presetLow = _low;
-                savePreset('l', presetLow);
-            }
-        }
-        else if (presetLow != 0xFFFFU)
-        {
-            encoderTarget = presetLow;
-            move = true;
+            presetHigh = _low;
+            savePreset(buffer[0U], presetLow);
         }
     }
-    break;
-    case 't': // tone
+    else if (buffer[0U] == 't')
     {
         const uint16_t _frequency{parseDigits()};
         if (_frequency != 0U)
         {
             playTone(_frequency);
         }
-    }
-    break;
     }
 }
 
@@ -437,11 +423,11 @@ void DeskService::handleEncoders()
 
 void DeskService::sendCommand(Command command)
 {
-    sendCommand(
-        command,
-        constrain(encoderTarget,
-                  static_cast<uint16_t>(max(0b1 << 8U, static_cast<int>(max(encoderA, encoderB)) - (0b1 << 8U))),
-                  static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
+    sendCommand(command,
+                constrain(encoderTarget,
+                          static_cast<uint16_t>(max(
+                              0b1U << 8U, static_cast<int>(max(encoderA, encoderB)) - static_cast<int>(0b1U << 8U))),
+                          static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
 }
 
 void DeskService::sendCommand(Command command, uint16_t payload)
