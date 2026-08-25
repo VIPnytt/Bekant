@@ -37,14 +37,14 @@ void DeviceService::begin()
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        uint8_t _accessory{};
-        if (nvs_get_u8(handle, "accessory", &_accessory) == ESP_OK)
+        uint8_t _oe{};
+        if (nvs_get_u8(handle, "oe", &_oe) == ESP_OK)
         {
-            accessory = static_cast<bool>(_accessory);
+            oe = static_cast<bool>(_oe);
         }
         nvs_close(handle);
     }
-    digitalWrite(PIN_OE, accessory ? HIGH : LOW);
+    digitalWrite(PIN_OE, oe ? HIGH : LOW);
 #endif // PIN_OE
     WiFi.onEvent(&onConnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
     WiFi.onEvent(&onDisconnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
@@ -219,7 +219,7 @@ void DeviceService::statusWhite()
 void DeviceService::transmit(JsonDocument &doc)
 {
 #ifdef PIN_OE
-    doc["accessory"].set(accessory);
+    doc["oe"].set(oe);
 #endif // PIN_OE
     doc["reset"].set(reset);
     doc["rssi"].set(WiFi.RSSI());
@@ -310,11 +310,11 @@ void DeviceService::handleRequest(JsonObjectConst doc)
     }
     if (doc["button"]["down"].is<bool>())
     {
-        device.setButton(false, doc["button"]["down"].as<bool>());
+        device.setButtonDown(doc["button"]["down"].as<bool>());
     }
     if (doc["button"]["up"].is<bool>())
     {
-        device.setButton(true, doc["button"]["up"].as<bool>());
+        device.setButtonUp(doc["button"]["up"].as<bool>());
     }
     if (doc["desk"].is<float>())
     {
@@ -370,31 +370,42 @@ void DeviceService::sendTx(std::string_view payload)
     Serial1.write('\n');
 }
 
-void DeviceService::setButton(bool direction, bool state)
+void DeviceService::setButtonDown(bool state)
 {
+#ifdef PIN_TPDN
     if (state)
     {
         statusRed();
     }
-#if defined(PIN_TPDN) && defined(PIN_TPUP)
-    digitalWrite(direction ? PIN_TPUP : PIN_TPDN, state ? LOW : HIGH);
-#endif // defined(PIN_TPDN) && defined(PIN_TPUP)
+    digitalWrite(PIN_TPDN, state ? LOW : HIGH);
+#endif // PIN_TPDN
+}
+
+void DeviceService::setButtonUp(bool state)
+{
+#ifdef PIN_TPUP
+    if (state)
+    {
+        statusRed();
+    }
+    digitalWrite(PIN_TPUP, state ? LOW : HIGH);
+#endif // PIN_TPUP
 }
 
 void DeviceService::setOutputEnable(bool state)
 {
 #ifdef PIN_OE
-    if (state != accessory)
+    if (state != oe)
     {
-        accessory = state;
-        digitalWrite(PIN_OE, accessory ? HIGH : LOW);
+        oe = state;
+        digitalWrite(PIN_OE, oe ? HIGH : LOW);
         JsonDocument doc{};
         desk.metadata(doc);
         transmit(doc);
         nvs_handle_t handle{};
         if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
         {
-            nvs_set_u8(handle, "oe", static_cast<uint8_t>(accessory));
+            nvs_set_u8(handle, "oe", static_cast<uint8_t>(oe));
             nvs_commit(handle);
             nvs_close(handle);
         }
@@ -417,24 +428,6 @@ void DeviceService::setReset(bool state)
 
 void DeviceService::onHomeAssistant(JsonDocument &doc)
 {
-#ifdef PIN_OE
-    {
-        JsonObject accessory{doc[HomeAssistantAbbreviations::components]["oe"].to<JsonObject>()};
-        accessory[HomeAssistantAbbreviations::command_template].set(R"({"accessory":{{value}}})");
-        accessory[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        accessory[HomeAssistantAbbreviations::entity_category].set("config");
-        accessory[HomeAssistantAbbreviations::icon].set("mdi:chip");
-        accessory[HomeAssistantAbbreviations::name].set("Output enable");
-        accessory[HomeAssistantAbbreviations::payload_off].set("false");
-        accessory[HomeAssistantAbbreviations::payload_on].set("true");
-        accessory[HomeAssistantAbbreviations::state_off].set("False");
-        accessory[HomeAssistantAbbreviations::state_on].set("True");
-        accessory[HomeAssistantAbbreviations::platform].set("switch");
-        accessory[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        accessory[HomeAssistantAbbreviations::unique_id].set("oe");
-        accessory[HomeAssistantAbbreviations::value_template].set("{{value_json.accessory}}");
-    }
-#endif // PIN_OE
 #ifdef PIN_ADC
     {
         JsonObject adc{doc[HomeAssistantAbbreviations::components]["adc"].to<JsonObject>()};
@@ -515,6 +508,24 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
         lowSensor[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
         lowSensor[HomeAssistantAbbreviations::value_template].set(R"({{value_json.preset.low|round(1)}})");
     }
+#ifdef PIN_OE
+    {
+        JsonObject oe{doc[HomeAssistantAbbreviations::components]["oe"].to<JsonObject>()};
+        oe[HomeAssistantAbbreviations::command_template].set(R"({"oe":{{value}}})");
+        oe[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
+        oe[HomeAssistantAbbreviations::entity_category].set("config");
+        oe[HomeAssistantAbbreviations::icon].set("mdi:chip");
+        oe[HomeAssistantAbbreviations::name].set("Output enable");
+        oe[HomeAssistantAbbreviations::payload_off].set("false");
+        oe[HomeAssistantAbbreviations::payload_on].set("true");
+        oe[HomeAssistantAbbreviations::state_off].set("False");
+        oe[HomeAssistantAbbreviations::state_on].set("True");
+        oe[HomeAssistantAbbreviations::platform].set("switch");
+        oe[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
+        oe[HomeAssistantAbbreviations::unique_id].set("oe");
+        oe[HomeAssistantAbbreviations::value_template].set("{{value_json.oe}}");
+    }
+#endif // PIN_OE
     {
         JsonObject reset{doc[HomeAssistantAbbreviations::components]["reset"].to<JsonObject>()};
         reset[HomeAssistantAbbreviations::command_template].set(R"({"reset":{{value}}})");

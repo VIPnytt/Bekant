@@ -16,7 +16,7 @@ class DeviceService
 private:
     static constexpr std::array<uint8_t, 1U> will{0U};
 
-    bool accessory{true};
+    bool oe{true};
     bool pending{false};
     bool reset{false};
 
@@ -40,7 +40,8 @@ private:
     void onHomeAssistant(JsonDocument &doc);
     void sendTx(std::string_view data);
     void sendTx(char prefix, float userHeight);
-    void setButton(bool direction, bool state);
+    void setButtonDown(bool state);
+    void setButtonUp(bool state);
     void setOutputEnable(bool state);
     void setReset(bool state);
 

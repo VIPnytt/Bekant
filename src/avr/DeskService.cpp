@@ -177,12 +177,14 @@ void DeskService::handleButtons()
         buttonCount = 0;
         Serial1.printf("l%u\n", presetLow);
         encoderTarget = presetLow;
+        move = true;
     }
     else if (buttonCount == 1 && presetHigh != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
         Serial1.printf("h%u\n", presetHigh);
         encoderTarget = presetHigh;
+        move = true;
     }
     else if (buttonCount == 2 && millis() - lastMillisButton > 0b1U << 8U)
     {
