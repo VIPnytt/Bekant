@@ -2,17 +2,16 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/secrets.h"
-
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <HardwareSerial.h>
 #include <string>
 
-class DeskService
+class DeskHandler
 {
 private:
     bool buttonDown{false};
     bool buttonUp{false};
+    bool saved{true};
 
     std::pair<uint16_t, float> legA{0U, .0F};
     std::pair<uint16_t, float> legB{0U, .0F};
@@ -24,7 +23,10 @@ private:
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
     void decode(std::pair<uint16_t, float> &height, uint16_t encoded);
-    void parse(const std::string message);
+    void parse(std::string message);
+    void parseButton(bool &button, bool state) const;
+    void parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded);
+    void parsePreset(std::pair<uint16_t, float> &preset, uint16_t encoded);
 
     static void onReceiveError(hardwareSerial_error_t error);
 
@@ -35,10 +37,6 @@ public:
     void save();
 
     void onHomeAssistant(JsonDocument &doc);
-
-    static DeskService &getInstance();
 };
-
-extern DeskService &Desk;
 
 #endif // ARDUINO_ARCH_ESP32

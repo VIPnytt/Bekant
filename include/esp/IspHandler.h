@@ -3,8 +3,9 @@
 #ifdef ARDUINO_ARCH_ESP32
 
 #include <NetworkClient.h>
+#include <NetworkServer.h>
 
-class IspService
+class IspHandler
 {
 private:
     static constexpr char stkCrcEop{'\x20'};
@@ -24,19 +25,21 @@ private:
 
     NetworkClient client{};
 
-    void byteReply(uint8_t b);
-    void empty_reply();
-    void eeprom_read_page(size_t length);
-    void enterProgrammingMode();
-    void flash_read_page(size_t length);
-    void program_page();
-    void read_page();
-    void read_signature();
-    void universal();
-    void write_eeprom_chunk(size_t start, size_t length);
-    void write_flash(size_t length);
+    NetworkServer server{328U};
 
-    bool write_eeprom(size_t length);
+    void byteReply(uint8_t byte);
+    void emptyReply();
+    void eepromReadPage(size_t length);
+    void enterProgrammingMode();
+    void flashReadPage(size_t length);
+    void programPage();
+    void readPage();
+    void readSignature();
+    void universal();
+    void writeEepromChunk(size_t start, size_t length);
+    void writeFlash(size_t length);
+
+    bool writeEeprom(size_t length);
 
     uint8_t getChar();
 

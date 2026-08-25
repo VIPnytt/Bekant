@@ -4,11 +4,11 @@
 
 #include "esp/DeviceService.h"
 
-void setup() { Device.begin(); }
+void setup() { device.begin(); }
 
 void loop()
 {
-    Device.handle();
+    device.handle();
     vTaskDelay(1U);
 }
 

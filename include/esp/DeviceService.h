@@ -2,10 +2,11 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/IspService.h"
-#include "secrets.h"
+#include "esp/DeskHandler.h"
+#include "esp/IspHandler.h"
+#include "esp/secrets.h"
 
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <espMqttClient.h>
@@ -15,30 +16,34 @@ class DeviceService
 private:
     static constexpr std::array<uint8_t, 1U> will{0U};
 
+    bool oe{true};
+    bool pending{false};
+    bool reset{false};
+
     unsigned long lastMillis{0U};
 
-#ifdef PIN_OE
-    static inline bool accessory{true};
-#endif // PIN_OE
+    ArduinoOTAClass ota;
 
-    static inline bool pending{false};
-    static inline bool reset{false};
+    DeskHandler desk{};
 
-    static inline ArduinoOTAClass ArduinoOTA{};
+    espMqttClient mqtt{};
 
-    IspService ISP{};
+    IspHandler isp{};
 
 #ifdef PIN_LED
     NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};
 #endif // PIN_LED
 
-    static inline RgbColor color{0xFFU, 0xFFU, 0xFFU};
+    RgbColor color{0xFFU, 0xFFU, 0xFFU};
 
-    static inline espMqttClient mqtt{};
-
+    void handleRequest(JsonObjectConst doc);
     void onHomeAssistant(JsonDocument &doc);
-
-    uint16_t encode(float userHeight);
+    void sendTx(std::string_view data);
+    void sendTx(char prefix, float userHeight);
+    void setButtonDown(bool state);
+    void setButtonUp(bool state);
+    void setOutputEnable(bool state);
+    void setReset(bool state);
 
     static void onConnect(bool sessionPresent);
     static void onConnected(arduino_event_id_t event);
@@ -48,25 +53,22 @@ private:
                           const uint8_t *payload, size_t len, size_t index, size_t total);
 
 public:
-    static inline NetworkServer avrServer{328U};
-
     void begin();
     void handle();
-    void safeMode();
-    void unsetButtons();
 
     void mqttDiscovery();
+    void safeMode();
     void statusBlue();
     void statusGreen();
     void statusNone();
-
-    static void statusRed();
-    static void statusWhite();
-    static void transmit(JsonDocument &doc);
+    void statusRed();
+    void statusWhite();
+    void unsetButtons();
+    void transmit(JsonDocument &doc);
 
     static DeviceService &getInstance();
 };
 
-extern DeviceService &Device;
+extern DeviceService &device; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // ARDUINO_ARCH_ESP32

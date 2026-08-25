@@ -1,21 +1,20 @@
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/IspService.h"
+#include "esp/IspHandler.h"
 
 #include "esp/DeviceService.h"
 #include "esp/secrets.h"
 
 #include <ESPmDNS.h>
 #include <SPI.h>
-#include <WiFi.h>
 
-void IspService::begin()
+void IspHandler::begin()
 {
-    digitalWrite(PIN_RST, HIGH);
+    server.begin();
     MDNS.addService("avrisp", "tcp", 328U);
 }
 
-void IspService::handle()
+void IspHandler::handle()
 {
     if (active)
     {
@@ -25,10 +24,9 @@ void IspService::handle()
             {
             case 0x20U:
                 client.print(stkNoSync);
-                ESP_LOGE("ISP", "error");
                 break;
             case 0x30U:
-                empty_reply();
+                emptyReply();
                 break;
             case 0x31U:
                 if (getChar() == stkCrcEop)
@@ -52,7 +50,7 @@ void IspService::handle()
                     byteReply(18U);
                     break;
                 case 0x93U:
-                    byteReply('S');
+                    byteReply(static_cast<uint8_t>('S'));
                     break;
                 default:
                     byteReply(0U);
@@ -67,7 +65,7 @@ void IspService::handle()
                 }
                 pageSize = static_cast<uint16_t>((static_cast<uint16_t>(buffer.at(12U)) << 8U) | buffer.at(13U));
                 eepromSize = static_cast<uint16_t>((static_cast<uint16_t>(buffer.at(14U)) << 8U) | buffer.at(15U));
-                empty_reply();
+                emptyReply();
             }
             break;
             case 0x45U:
@@ -76,23 +74,23 @@ void IspService::handle()
                 {
                     buffer.at(idx) = getChar();
                 }
-                empty_reply();
+                emptyReply();
             }
             break;
             case 0x50U:
                 enterProgrammingMode();
-                empty_reply();
+                emptyReply();
                 break;
             case 0x51U:
                 SPI.end();
-                empty_reply();
+                emptyReply();
                 vTaskDelay(5U);
                 client.stop();
                 break;
             case 0x55U:
                 here = getChar();
-                here += 256U * getChar();
-                empty_reply();
+                here += (0b1U << 8U) * getChar();
+                emptyReply();
                 break;
             case 0x56U:
                 universal();
@@ -100,23 +98,22 @@ void IspService::handle()
             case 0x60U:
                 getChar();
                 getChar();
-                empty_reply();
+                emptyReply();
                 break;
             case 0x61U:
                 getChar();
-                empty_reply();
+                emptyReply();
                 break;
             case 0x64U:
-                program_page();
+                programPage();
                 break;
             case 0x74U:
-                read_page();
+                readPage();
                 break;
             case 0x75:
-                read_signature();
+                readSignature();
                 break;
             default:
-                ESP_LOGE("ISP", "error");
                 client.print(getChar() == stkCrcEop ? '\x12' : stkNoSync);
             }
         }
@@ -127,17 +124,17 @@ void IspService::handle()
             ESP.restart();
         }
     }
-    else if (Device.avrServer.hasClient())
+    else if (server.hasClient())
     {
-        Device.safeMode();
+        device.safeMode();
         digitalWrite(PIN_RST, HIGH);
-        client = Device.avrServer.accept();
+        client = server.accept();
         client.setNoDelay(true);
         active = true;
     }
 }
 
-void IspService::byteReply(uint8_t byte)
+void IspHandler::byteReply(uint8_t byte)
 {
     if (getChar() == stkCrcEop)
     {
@@ -150,7 +147,7 @@ void IspService::byteReply(uint8_t byte)
     }
 }
 
-void IspService::empty_reply()
+void IspHandler::emptyReply()
 {
     if (getChar() == stkCrcEop)
     {
@@ -160,11 +157,10 @@ void IspService::empty_reply()
     else
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
     }
 }
 
-void IspService::enterProgrammingMode()
+void IspHandler::enterProgrammingMode()
 {
     SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, GPIO_NUM_NC);
     SPI.setFrequency(300'000UL);
@@ -173,11 +169,11 @@ void IspService::enterProgrammingMode()
     vTaskDelay(0b1U << 5U);
     SPI.transfer(0xACU);
     SPI.transfer(0x53U);
-    SPI.transfer(0x0U);
-    SPI.transfer(0x0U);
+    SPI.transfer(0U);
+    SPI.transfer(0U);
 }
 
-void IspService::eeprom_read_page(size_t length)
+void IspHandler::eepromReadPage(size_t length) // NOLINT(readability-make-member-function-const)
 {
     std::vector<uint8_t> data(length + 1U);
     const size_t start{here * 2U};
@@ -193,18 +189,18 @@ void IspService::eeprom_read_page(size_t length)
     client.write(data.data(), data.size());
 }
 
-void IspService::flash_read_page(size_t length)
+void IspHandler::flashReadPage(size_t length)
 {
     for (size_t idx{0U}; idx < length; idx += 2U)
     {
         SPI.transfer(0x20U);
         SPI.transfer((here >> 8U) & 0xFFU);
         SPI.transfer(here & 0xFFU);
-        const uint8_t low{SPI.transfer(0x00U)};
+        const uint8_t low{SPI.transfer(0U)};
         SPI.transfer(0x28U);
         SPI.transfer((here >> 8U) & 0xFFU);
         SPI.transfer(here & 0xFFU);
-        const uint8_t high{SPI.transfer(0x00U)};
+        const uint8_t high{SPI.transfer(0U)};
         const std::array<uint8_t, 2U> data{low, high};
         client.write(data.data(), data.size());
         ++here;
@@ -213,7 +209,7 @@ void IspService::flash_read_page(size_t length)
     client.write(&status, sizeof(status));
 }
 
-uint8_t IspService::getChar()
+uint8_t IspHandler::getChar()
 {
     while (!client.available())
     {
@@ -222,13 +218,13 @@ uint8_t IspService::getChar()
     return static_cast<uint8_t>(client.read());
 }
 
-void IspService::program_page()
+void IspHandler::programPage()
 {
-    const size_t length{(256U * getChar()) + getChar()};
+    const size_t length{((0b1U << 8U) * getChar()) + getChar()};
     const char memtype{getChar()};
     if (memtype == 'E')
     {
-        const bool result{write_eeprom(length)};
+        const bool result{writeEeprom(length)};
         if (getChar() == stkCrcEop)
         {
             client.print(stkInSync);
@@ -237,12 +233,11 @@ void IspService::program_page()
         else
         {
             client.print(stkNoSync);
-            ESP_LOGE("ISP", "error");
         }
     }
     else if (memtype == 'F')
     {
-        write_flash(length);
+        writeFlash(length);
     }
     else
     {
@@ -250,52 +245,50 @@ void IspService::program_page()
     }
 }
 
-void IspService::read_page()
+void IspHandler::readPage()
 {
-    const size_t length{(256U * getChar()) + getChar()};
+    const size_t length{((0b1U << 8U) * getChar()) + getChar()};
     const char memtype{getChar()};
     if (getChar() != stkCrcEop)
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
         return;
     }
     client.print(stkInSync);
     if (memtype == 'E')
     {
-        eeprom_read_page(length);
+        eepromReadPage(length);
     }
     else if (memtype == 'F')
     {
-        flash_read_page(length);
+        flashReadPage(length);
     }
 }
 
-void IspService::read_signature()
+void IspHandler::readSignature()
 {
     if (getChar() != stkCrcEop)
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
         return;
     }
     client.print(stkInSync);
     SPI.transfer(0x30U);
-    SPI.transfer(0x0U);
-    SPI.transfer(0x0U);
-    client.print(static_cast<char>(SPI.transfer(0x0U)));
+    SPI.transfer(0U);
+    SPI.transfer(0U);
+    client.print(static_cast<char>(SPI.transfer(0U)));
     SPI.transfer(0x30U);
-    SPI.transfer(0x0U);
+    SPI.transfer(0U);
     SPI.transfer(0x1U);
-    client.print(static_cast<char>(SPI.transfer(0x0U)));
+    client.print(static_cast<char>(SPI.transfer(0U)));
     SPI.transfer(0x30U);
-    SPI.transfer(0x0U);
+    SPI.transfer(0U);
     SPI.transfer(0x2U);
-    client.print(static_cast<char>(SPI.transfer(0x0U)));
+    client.print(static_cast<char>(SPI.transfer(0U)));
     client.print(stkOk);
 }
 
-void IspService::universal()
+void IspHandler::universal()
 {
     for (size_t idx{0U}; idx < 4U; ++idx)
     {
@@ -307,25 +300,24 @@ void IspService::universal()
     byteReply(SPI.transfer(buffer.at(3U)));
 }
 
-bool IspService::write_eeprom(size_t length)
+bool IspHandler::writeEeprom(size_t length)
 {
     if (length > eepromSize)
     {
-        ESP_LOGE("ISP", "error");
         return false;
     }
     size_t start{here * 2U};
     while (length > 32U)
     {
-        write_eeprom_chunk(start, 32U);
+        writeEepromChunk(start, 32U);
         start += 32U;
         length -= 32U;
     }
-    write_eeprom_chunk(start, length);
+    writeEepromChunk(start, length);
     return true;
 }
 
-void IspService::write_eeprom_chunk(size_t start, size_t length)
+void IspHandler::writeEepromChunk(size_t start, size_t length)
 {
     for (size_t idx{0U}; idx < length; ++idx)
     {
@@ -342,50 +334,48 @@ void IspService::write_eeprom_chunk(size_t start, size_t length)
     }
 }
 
-void IspService::write_flash(size_t length)
+void IspHandler::writeFlash(size_t length)
 {
-    for (size_t _idx{0U}; _idx < length; ++_idx)
+    for (size_t idx{0U}; idx < length; ++idx)
     {
-        buffer.at(_idx) = getChar();
+        buffer.at(idx) = getChar();
     }
-    if (getChar() == stkCrcEop)
+    if (getChar() == stkCrcEop && (length & 1U) == 0U)
     {
         client.print(stkInSync);
-        size_t idx{0};
-        size_t page{here & ~(pageSize / 2U - 1U)};
-        while (idx < length)
+        size_t page{here & ~((pageSize / 2U) - 1U)};
+        for (size_t idx{0U}; idx < length; idx += 2U)
         {
             vTaskDelay(1U);
-            if (page != here & ~(pageSize / 2U - 1U))
+            if (page != (here & ~((pageSize / 2U) - 1U)))
             {
                 SPI.transfer(0x4CU);
                 SPI.transfer((page >> 8U) & 0xFFU);
                 SPI.transfer(page & 0xFFU);
-                SPI.transfer(0x0U);
+                SPI.transfer(0U);
                 vTaskDelay(0b1U << 4U);
-                page = here & ~(pageSize / 2U - 1U);
+                page = here & ~((pageSize / 2U) - 1U);
             }
             SPI.transfer(0x40U);
             SPI.transfer((here >> 8U) & 0xFFU);
             SPI.transfer(here & 0xFFU);
-            SPI.transfer(buffer.at(idx++));
+            SPI.transfer(buffer.at(idx));
             SPI.transfer(0x48U);
             SPI.transfer((here >> 8U) & 0xFFU);
             SPI.transfer(here & 0xFFU);
-            SPI.transfer(buffer.at(idx++));
+            SPI.transfer(buffer.at(idx + 1U));
             ++here;
         }
         SPI.transfer(0x4CU);
         SPI.transfer((page >> 8U) & 0xFFU);
         SPI.transfer(page & 0xFFU);
-        SPI.transfer(0x0U);
+        SPI.transfer(0U);
         vTaskDelay(0b1U << 4U);
         client.print(stkOk);
     }
     else
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
     }
 }
 
