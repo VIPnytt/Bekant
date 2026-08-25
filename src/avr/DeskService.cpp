@@ -11,12 +11,12 @@
 void DeskService::begin()
 {
     Serial1.begin(115'200UL);
-    delay(0b1U << 8U);
+    delay(0b1U << 11U);
     pinMode(Pin::tone, OUTPUT);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
-    EEPROM.get<uint16_t>(static_cast<int>('h'), presetHigh);
-    EEPROM.get<uint16_t>(static_cast<int>('l'), presetLow);
+    EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
+    EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     Serial1.flush();
     if (presetHigh != 0xFFFFU)
     {
@@ -26,8 +26,9 @@ void DeskService::begin()
     {
         Serial1.printf("l%u\n", presetLow);
     }
+    Serial1.flush();
     lin.begin();
-    constexpr uint8_t data[21U][4U]{
+    constexpr unsigned char data[21U][4U]{
         {0xFFU, 0x7U, 0xFFU, 0xFFU},
         {0xFFU, 0x7U, 0xFFU, 0xFFU},
         {0xFFU, 0x1U, 0x7U, 0xFFU},
@@ -50,8 +51,8 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    int8_t pid{-1};
-    uint8_t errorCount{0U};
+    signed char pid{-1};
+    unsigned char errorCount{0U};
     for (size_t idx{0U}; idx < sizeof(data) / sizeof(data[0U]); ++idx)
     {
         if (idx == 4U || idx == 11U)
@@ -82,21 +83,22 @@ void DeskService::begin()
             sendPacket(data[idx][0U] == 0U ? pid : data[idx][0U], data[idx][1U], data[idx][2U], data[idx][3U]);
         }
     }
-    constexpr uint8_t magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
+    constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
     lin.send(0x12U, magicPacket);
     if (errorCount != 0U)
     {
-        playTone(0b1U << 11U);
+        playTone(0b1U << 8U);
         Serial1.printf("I%u\n", errorCount);
     }
 }
 
-uint8_t DeskService::sendPacket(uint8_t byte1, uint8_t byte2, uint8_t byte3, uint8_t byte4)
+unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3,
+                                      unsigned char byte4)
 {
-    const uint8_t packet[8U]{byte1, byte2, byte3, byte4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
+    const unsigned char packet[8U]{byte1, byte2, byte3, byte4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
     lin.send(0x3C, packet);
     delay(sizeof(packet));
-    uint8_t response[sizeof(packet)]{};
+    unsigned char response[sizeof(packet)]{};
     return lin.request(0x3DU, response);
 }
 
@@ -122,11 +124,7 @@ void DeskService::readButtons()
             lastMillisButton = millis();
             --buttonCount;
         }
-        else if (move)
-        {
-            encoderTarget = max(encoderA, encoderB) - (0b1U << 8U);
-        }
-        Serial1.printf("d%u\n", static_cast<uint8_t>(buttonDown));
+        Serial1.printf("d%u\n", static_cast<unsigned char>(buttonDown));
     }
     if (_buttonUp != buttonUp)
     {
@@ -136,11 +134,7 @@ void DeskService::readButtons()
             lastMillisButton = millis();
             ++buttonCount;
         }
-        else if (move)
-        {
-            encoderTarget = min(encoderA, encoderB) + (0b1U << 8U);
-        }
-        Serial1.printf("u%u\n", static_cast<uint8_t>(buttonUp));
+        Serial1.printf("u%u\n", static_cast<unsigned char>(buttonUp));
     }
 }
 
@@ -150,39 +144,33 @@ void DeskService::handleButtons()
     if (buttonDown && buttonUp && millis() - lastMillisButton > 0b1U << 13U)
     {
         buttonCount = 0;
-        playTone(0b1U << 10U);
         state = State::RECAL_PREPARE;
     }
     else if (buttonDown && !buttonUp && millis() - lastMillisButton > 0b1U << 9U)
     {
         buttonCount = 0;
-        encoderTarget = max(encoderA, encoderB) - (0b1U << 8U);
-        move = true;
+        targetLower();
     }
     else if (buttonUp && !buttonDown && millis() - lastMillisButton > 0b1U << 9U)
     {
         buttonCount = 0;
-        encoderTarget = min(encoderA, encoderB) + (0b1U << 8U);
-        move = true;
+        targetRise();
     }
     else if (buttonCount == -2 && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
         presetLow = max(encoderA, encoderB);
-        savePreset('l', presetLow);
-        playTone(0b1U << 9U);
+        EEPROM.put(static_cast<int>('l'), presetLow);
     }
     else if (buttonCount == -1 && presetLow != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        Serial1.printf("l%u\n", presetLow);
         encoderTarget = presetLow;
         move = true;
     }
     else if (buttonCount == 1 && presetHigh != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        Serial1.printf("h%u\n", presetHigh);
         encoderTarget = presetHigh;
         move = true;
     }
@@ -190,8 +178,7 @@ void DeskService::handleButtons()
     {
         buttonCount = 0;
         presetHigh = min(encoderA, encoderB);
-        savePreset('h', presetHigh);
-        playTone(0b1U << 9U);
+        EEPROM.put(static_cast<int>('h'), presetHigh);
     }
     else if (buttonCount != 0 && millis() - lastMillisButton > 0b1U << 8U)
     {
@@ -214,7 +201,7 @@ void DeskService::handleBuffer()
     {
         if (bufferLength < sizeof(buffer))
         {
-            buffer[bufferLength] = static_cast<char>(byte);
+            buffer[bufferLength] = static_cast<unsigned char>(byte);
         }
         ++bufferLength;
     }
@@ -229,7 +216,7 @@ void DeskService::parseBuffer()
     }
     else if (buffer[0U] == 'e')
     {
-        const uint16_t _target{parseDigits()};
+        const unsigned int _target{parseDigits()};
         if (_target != 0U)
         {
             encoderTarget = _target;
@@ -243,11 +230,11 @@ void DeskService::parseBuffer()
     }
     else if (buffer[0U] == 'h' && bufferLength != 1U)
     {
-        const uint16_t _high{parseDigits()};
+        const unsigned int _high{parseDigits()};
         if (_high != 0U && _high != presetHigh)
         {
             presetHigh = _high;
-            savePreset(buffer[0U], presetHigh);
+            EEPROM.put(static_cast<int>(buffer[0U]), presetHigh);
         }
     }
     else if (buffer[0U] == 'l' && bufferLength == 1U && presetLow != 0xFFFFU)
@@ -257,16 +244,16 @@ void DeskService::parseBuffer()
     }
     else if (buffer[0U] == 'l' && bufferLength != 1U)
     {
-        const uint16_t _low{parseDigits()};
+        const unsigned int _low{parseDigits()};
         if (_low != 0U && _low != presetLow)
         {
             presetLow = _low;
-            savePreset(buffer[0U], presetLow);
+            EEPROM.put(static_cast<int>(buffer[0U]), presetLow);
         }
     }
     else if (buffer[0U] == 't')
     {
-        const uint16_t _frequency{parseDigits()};
+        const unsigned int _frequency{parseDigits()};
         if (_frequency != 0U)
         {
             playTone(_frequency);
@@ -274,7 +261,7 @@ void DeskService::parseBuffer()
     }
 }
 
-uint16_t DeskService::parseDigits()
+unsigned int DeskService::parseDigits()
 {
     unsigned int value{0U};
     for (size_t idx{1U}; idx < bufferLength; ++idx)
@@ -286,26 +273,34 @@ uint16_t DeskService::parseDigits()
         value *= 10U;
         value += static_cast<unsigned int>(buffer[idx] - '0');
     }
-    return static_cast<uint16_t>(value);
+    return value;
 }
 
-void DeskService::savePreset(char preset, uint16_t value)
+void DeskService::targetLower()
 {
-    EEPROM.put(static_cast<int>(preset), value);
-    Serial1.printf("%c%u\n", preset, value);
+    const unsigned int current{max(encoderA, encoderB)};
+    encoderTarget = current > (0b1U << 8U) ? current - (0b1U << 8U) : (0b1U << 8U);
+    move = true;
+}
+
+void DeskService::targetRise()
+{
+    const unsigned int current{min(encoderA, encoderB)};
+    encoderTarget = current < (0b1U << 13U) ? current + (0b1U << 8U) : (0b1U << 13U);
+    move = true;
 }
 
 void DeskService::handleEncoders()
 {
-    constexpr uint8_t empty[3U]{0U, 0U, 0U};
+    constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    const uint8_t charsA{lin.request(0x8U, nodeA)};
-    const uint8_t charsB{lin.request(0x9U, nodeB)};
-    const uint16_t _encoderA{static_cast<uint16_t>(nodeA[0U]) | static_cast<uint16_t>(nodeA[1U] << 8U)};
-    const uint16_t _encoderB{static_cast<uint16_t>(nodeB[0U]) | static_cast<uint16_t>(nodeB[1U] << 8U)};
+    const unsigned char charsA{lin.request(0x8U, nodeA)};
+    const unsigned char charsB{lin.request(0x9U, nodeB)};
+    const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
+    const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
     if (_encoderA != encoderA)
     {
-        if (charsA != static_cast<uint8_t>(sizeof(nodeA) + 1ULL))
+        if (charsA != static_cast<unsigned char>(sizeof(nodeA) + 1ULL))
         {
             Serial1.printf("A%u\n", _encoderA);
             if (move)
@@ -320,7 +315,7 @@ void DeskService::handleEncoders()
     }
     if (_encoderB != encoderB)
     {
-        if (charsB != static_cast<uint8_t>(sizeof(nodeB) + 1ULL))
+        if (charsB != static_cast<unsigned char>(sizeof(nodeB) + 1ULL))
         {
             Serial1.printf("B%u\n", _encoderB);
             if (move)
@@ -393,12 +388,18 @@ void DeskService::handleStatePrepare()
 {
     if (encoderTarget < min(encoderA, encoderB))
     {
-        encoderTarget -= 137U;
+        if (encoderTarget > Encoder::minLimit + Encoder::targetOffset)
+        {
+            encoderTarget -= Encoder::targetOffset;
+        }
         state = State::DOWN;
     }
     else if (encoderTarget > max(encoderA, encoderB))
     {
-        encoderTarget += 137U;
+        if (encoderTarget < Encoder::maxLimit - Encoder::targetOffset)
+        {
+            encoderTarget += Encoder::targetOffset;
+        }
         state = State::UP;
     }
     else
@@ -454,30 +455,34 @@ void DeskService::handleStateRecalOngoing()
 
 void DeskService::sendCommand(Command command)
 {
-    sendCommand(
-        command,
-        constrain(encoderTarget,
-                  static_cast<uint16_t>(max(static_cast<int>(0b1U << 8U),
-                                            static_cast<int>(max(encoderA, encoderB)) - static_cast<int>(0b1U << 8U))),
-                  static_cast<uint16_t>(min(encoderA, encoderB) + (0b1U << 8U))));
+    const unsigned int encoderMax{static_cast<unsigned int>(max(encoderA, encoderB))};
+    const unsigned int encoderMin{static_cast<unsigned int>(min(encoderA, encoderB))};
+    sendCommand(command,
+                constrain(static_cast<unsigned int>(encoderTarget),
+                          encoderMax > Encoder::maxDelta ? max(encoderMax - Encoder::maxDelta, Encoder::minLimit)
+                                                         : Encoder::minLimit,
+                          encoderMin < Encoder::maxLimit - Encoder::maxDelta
+                              ? min(encoderMin + Encoder::maxDelta, Encoder::maxLimit)
+                              : Encoder::maxLimit));
 }
 
-void DeskService::sendCommand(Command command, uint16_t payload)
+void DeskService::sendCommand(Command command, unsigned int payload)
 {
-    for (uint8_t idx{0U}; idx < 6U; ++idx)
+    for (unsigned char idx{0U}; idx < 6U; ++idx)
     {
         lin.send(0x10U);
     }
     lin.send(0x1U);
-    const uint8_t packet[3U]{
-        static_cast<uint8_t>(payload & 0xFFU), static_cast<uint8_t>(payload >> 8U), static_cast<uint8_t>(command)};
+    const unsigned char packet[3U]{static_cast<unsigned char>(payload & 0xFFU),
+                                   static_cast<unsigned char>(payload >> 8U),
+                                   static_cast<unsigned char>(command)};
     lin.send(0x12U, packet);
 }
 
-void DeskService::playTone(uint16_t frequency)
+void DeskService::playTone(unsigned int frequency)
 {
-    const uint16_t halfperiod{static_cast<uint16_t>(500'000UL / frequency)};
-    const uint16_t delay{static_cast<uint16_t>(halfperiod - (48'000'000UL / F_CPU))};
+    const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
+    const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
     for (uint32_t idx{0U}; idx < (0b1UL << 17U) / halfperiod; ++idx)
     {
         digitalWrite(Pin::tone, HIGH);

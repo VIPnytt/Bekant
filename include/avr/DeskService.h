@@ -9,7 +9,7 @@
 class DeskService
 {
 private:
-    enum class Command : uint8_t
+    enum class Command : unsigned char
     {
         FINISH = 0x84U,
         LOWER = 0x85U,
@@ -21,7 +21,7 @@ private:
         IDLE = 0xFCU,
     };
 
-    enum class State : uint8_t
+    enum class State : unsigned char
     {
         IDLE,
         PREPARE,
@@ -39,22 +39,20 @@ private:
     bool move{false};
 
     char buffer[5U]{'\n'};
+    char buttonCount{0};
 
-    int8_t buttonCount{0};
+    unsigned char nodeA[3U]{0U};
+    unsigned char nodeB[3U]{0U};
 
-    uint8_t nodeA[3U]{0U};
-    uint8_t nodeB[3U]{0U};
-
-    uint16_t encoderA{0U};
-    uint16_t encoderB{0U};
-    uint16_t encoderTarget{0U};
-    uint16_t presetHigh{0xFFFFU};
-    uint16_t presetLow{0xFFFFU};
+    unsigned int bufferLength{0U};
+    unsigned int encoderA{0U};
+    unsigned int encoderB{0U};
+    unsigned int encoderTarget{0};
+    unsigned int presetHigh{0xFFFFU};
+    unsigned int presetLow{0xFFFFU};
 
     unsigned long lastMillisButton{0U};
     unsigned long lastMillisEncoder{0U};
-
-    size_t bufferLength{0U};
 
     LinHandler lin;
 
@@ -70,18 +68,19 @@ private:
     void handleStateUp();
     void handleStateDone();
     void handleStateRecalOngoing();
-    void parseEncoders();
-    void sendCommand(Command command);
-    void sendCommand(Command command, uint16_t target);
     void parseBuffer();
-    void playTone(uint16_t frequency);
-    void savePreset(char preset, uint16_t value);
+    void parseEncoders();
+    void playTone(unsigned int frequency);
+    void sendCommand(Command command);
+    void sendCommand(Command command, unsigned int target);
+    void targetLower();
+    void targetRise();
 
     bool isIdle();
 
-    uint8_t sendPacket(uint8_t byte1, uint8_t byte2, uint8_t byte3, uint8_t byte4);
+    unsigned char sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
 
-    uint16_t parseDigits();
+    unsigned int parseDigits();
 
 public:
     void begin();

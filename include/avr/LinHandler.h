@@ -12,15 +12,15 @@ class LinHandler
 private:
     static constexpr unsigned long baud{19'200UL};
 
-    uint8_t addressParity(unsigned int identifier);
+    unsigned char addressParity(unsigned int identifier);
 
     int readWithTimeout(int16_t &countDown);
 
     void serialBreak();
 
-    template <size_t N> uint8_t calcChecksum(const uint8_t (&data)[N], uint16_t sum)
+    template <size_t N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
-        for (const uint8_t byte : data)
+        for (const unsigned char byte : data)
         {
             sum += byte;
         }
@@ -28,20 +28,20 @@ private:
         {
             sum = (sum & 0xFFU) + (sum >> 8U);
         }
-        return static_cast<uint8_t>(~sum);
+        return static_cast<unsigned char>(~sum);
     }
 
 public:
     void begin();
-    void send(uint8_t identifier);
+    void send(unsigned char identifier);
 
-    template <size_t N> uint8_t request(uint8_t identifier, uint8_t (&data)[N])
+    template <size_t N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
     {
         delay(static_cast<unsigned long>(N) + 1U);
-        uint8_t bytesReceived{0U};
-        int16_t byte{0U};
-        const uint8_t idByte{
-            static_cast<uint8_t>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
+        unsigned char bytesReceived{0U};
+        int _byte{0U};
+        const unsigned char idByte{
+            static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
         int16_t countdown{static_cast<int16_t>(124'000'000UL / baud)};
         serialBreak();
         Serial.write(0x55U);
@@ -49,27 +49,27 @@ public:
         Serial.flush();
         do
         {
-            byte = readWithTimeout(countdown);
-        } while (byte != -1 && byte != 0x55);
+            _byte = readWithTimeout(countdown);
+        } while (_byte != -1 && _byte != 0x55);
         do
         {
-            byte = readWithTimeout(countdown);
-        } while (byte != -1 && byte != idByte);
+            _byte = readWithTimeout(countdown);
+        } while (_byte != -1 && _byte != idByte);
         bytesReceived = 0U;
-        for (size_t idx{0U}; idx < N; idx++)
+        for (unsigned char &byte : data)
         {
-            byte = readWithTimeout(countdown);
-            data[idx] = byte;
-            if (byte == -1)
+            _byte = readWithTimeout(countdown);
+            if (_byte == -1)
             {
                 Serial.flush();
                 return bytesReceived;
             }
+            byte = static_cast<unsigned char>(_byte);
             ++bytesReceived;
         }
-        byte = readWithTimeout(countdown);
+        _byte = readWithTimeout(countdown);
         ++bytesReceived;
-        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != byte)
+        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != _byte)
         {
             bytesReceived = 0xFFU;
         }
@@ -77,10 +77,10 @@ public:
         return bytesReceived;
     }
 
-    template <size_t N> void send(uint8_t identifier, const uint8_t (&data)[N])
+    template <size_t N> void send(unsigned char identifier, const unsigned char (&data)[N])
     {
-        const uint8_t addressByte{
-            static_cast<uint8_t>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
+        const unsigned char addressByte{
+            static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
         serialBreak();
         Serial.write(0x55U);
         Serial.write(addressByte);
