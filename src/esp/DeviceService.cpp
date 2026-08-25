@@ -2,10 +2,8 @@
 
 #include "esp/DeviceService.h"
 
-#include "esp/DeskHandler.h"
 #include "esp/constants.h"
 
-#include <ESPmDNS.h>
 #include <WiFi.h>
 #include <format>
 #include <nvs.h>
@@ -245,13 +243,13 @@ void DeviceService::transmit(JsonDocument &doc)
 void DeviceService::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGI("MQTT", "connected");
-    Device.mqtt.subscribe("bekant/" HOSTNAME "/set",
+    device.mqtt.subscribe("bekant/" HOSTNAME "/set",
                           static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2));
-    Device.mqtt.publish("bekant/" HOSTNAME "/availability",
+    device.mqtt.publish("bekant/" HOSTNAME "/availability",
                         static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS1),
                         true,
                         "online");
-    Device.statusWhite();
+    device.statusWhite();
 }
 
 void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-parameters)
@@ -259,13 +257,13 @@ void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-
     ESP_LOGI("Wi-Fi", "connected");
     ESP_LOGV("Wi-Fi", "RSSI %d dBm", WiFi.RSSI());
     ESP_LOGI("Wi-Fi", "hostname " HOSTNAME ".local");
-    Device.statusWhite();
+    device.statusWhite();
 }
 
 void DeviceService::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 {
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
-    Device.statusRed();
+    device.statusRed();
 }
 
 // NOLINTNEXTLINE(misc-unused-parameters)
@@ -276,7 +274,7 @@ void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_
     ESP_LOGD("Wi-Fi",
              "disconnect reason %s",
              WiFi.disconnectReasonName(static_cast<wifi_err_reason_t>(info.wifi_sta_disconnected.reason)));
-    Device.statusRed();
+    device.statusRed();
 }
 
 // NOLINTNEXTLINE(misc-unused-parameters)
@@ -288,7 +286,7 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
         JsonDocument doc{}; // NOLINT(misc-const-correctness)
         if (deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
         {
-            Device.handleRequest(doc.as<JsonObjectConst>());
+            device.handleRequest(doc.as<JsonObjectConst>());
         }
     }
 }
@@ -300,11 +298,11 @@ void DeviceService::handleRequest(JsonObjectConst doc)
         const std::string_view action{doc["action"].as<std::string_view>()};
         if (action == "calibrate")
         {
-            Device.sendTx("c");
+            device.sendTx("c");
         }
         else if (action == "restart")
         {
-            Device.statusRed();
+            device.statusRed();
             mqtt.disconnect();
             digitalWrite(PIN_RST, LOW);
             ESP.restart();
@@ -312,43 +310,43 @@ void DeviceService::handleRequest(JsonObjectConst doc)
     }
     if (doc["button"]["down"].is<bool>())
     {
-        Device.setButton(false, doc["button"]["down"].as<bool>());
+        device.setButton(false, doc["button"]["down"].as<bool>());
     }
     if (doc["button"]["up"].is<bool>())
     {
-        Device.setButton(true, doc["button"]["up"].as<bool>());
+        device.setButton(true, doc["button"]["up"].as<bool>());
     }
     if (doc["desk"].is<float>())
     {
-        Device.sendTx('e', doc["desk"].as<float>());
+        device.sendTx('e', doc["desk"].as<float>());
     }
     if (doc["oe"].is<bool>())
     {
-        Device.setOutputEnable(doc["oe"].as<bool>());
+        device.setOutputEnable(doc["oe"].as<bool>());
     }
     if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
     {
-        Device.sendTx("h");
+        device.sendTx("h");
     }
     if (doc["preset"]["high"].is<float>())
     {
-        Device.sendTx('h', doc["preset"]["high"].as<float>());
+        device.sendTx('h', doc["preset"]["high"].as<float>());
     }
     if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
     {
-        Device.sendTx("l");
+        device.sendTx("l");
     }
     if (doc["preset"]["low"].is<float>())
     {
-        Device.sendTx('l', doc["preset"]["low"].as<float>());
+        device.sendTx('l', doc["preset"]["low"].as<float>());
     }
     if (doc["reset"].is<bool>())
     {
-        Device.setReset(doc["reset"].as<bool>());
+        device.setReset(doc["reset"].as<bool>());
     }
     if (doc["tx"].is<std::string_view>())
     {
-        Device.sendTx(doc["tx"].as<std::string_view>());
+        device.sendTx(doc["tx"].as<std::string_view>());
     }
 }
 
@@ -409,7 +407,7 @@ void DeviceService::setReset(bool state)
     if (state != reset)
     {
         reset = state;
-        Device.statusRed();
+        device.statusRed();
         digitalWrite(PIN_RST, reset ? LOW : HIGH);
         JsonDocument doc{};
         desk.metadata(doc);
@@ -619,6 +617,6 @@ DeviceService &DeviceService::getInstance()
     return instance;
 }
 
-DeviceService &Device{DeviceService::getInstance()};
+DeviceService &device{DeviceService::getInstance()};
 
 #endif // ARDUINO_ARCH_ESP32

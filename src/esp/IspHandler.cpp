@@ -126,7 +126,7 @@ void IspHandler::handle()
     }
     else if (server.hasClient())
     {
-        Device.safeMode();
+        device.safeMode();
         digitalWrite(PIN_RST, HIGH);
         client = server.accept();
         client.setNoDelay(true);

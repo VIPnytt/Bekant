@@ -91,9 +91,9 @@ void DeskService::begin()
     }
 }
 
-uint8_t DeskService::sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4)
+uint8_t DeskService::sendPacket(uint8_t byte1, uint8_t byte2, uint8_t byte3, uint8_t byte4)
 {
-    const uint8_t packet[8U]{payload1, payload2, payload3, payload4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
+    const uint8_t packet[8U]{byte1, byte2, byte3, byte4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
     lin.send(0x3C, packet);
     delay(sizeof(packet));
     uint8_t response[sizeof(packet)]{};
@@ -484,5 +484,13 @@ void DeskService::playTone(uint16_t frequency)
         delayMicroseconds(delay);
     }
 }
+
+DeskService &DeskService::getInstance()
+{
+    static DeskService instance;
+    return instance;
+}
+
+DeskService &desk{DeskService::getInstance()};
 
 #endif // ARDUINO_ARCH_AVR

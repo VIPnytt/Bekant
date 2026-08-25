@@ -79,13 +79,17 @@ private:
 
     bool isIdle();
 
-    uint8_t sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4);
+    uint8_t sendPacket(uint8_t byte1, uint8_t byte2, uint8_t byte3, uint8_t byte4);
 
     uint16_t parseDigits();
 
 public:
     void begin();
     void handle();
+
+    static DeskService &getInstance();
 };
+
+extern DeskService &desk;
 
 #endif // ARDUINO_ARCH_AVR

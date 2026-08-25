@@ -4,8 +4,6 @@
 
 #include <avr/wdt.h>
 
-DeskService desk{};
-
 void setup()
 {
     wdt_enable(WDTO_8S);

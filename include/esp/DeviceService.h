@@ -22,7 +22,7 @@ private:
 
     unsigned long lastMillis{0U};
 
-    ArduinoOTAClass ota{};
+    ArduinoOTAClass ota;
 
     DeskHandler desk{};
 
@@ -68,6 +68,6 @@ public:
     static DeviceService &getInstance();
 };
 
-extern DeviceService &Device;
+extern DeviceService &device;
 
 #endif // ARDUINO_ARCH_ESP32
