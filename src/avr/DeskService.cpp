@@ -8,6 +8,12 @@
 #include <HardwareSerial.h>
 #include <wiring.h>
 
+/**
+ * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
+ *
+ * Transmits valid stored presets and the required LIN initialization packets. Reports
+ * initialization errors with a tone and a serial status message.
+ */
 void DeskService::begin()
 {
     Serial1.begin(115'200UL);
@@ -92,6 +98,15 @@ void DeskService::begin()
     }
 }
 
+/**
+ * @brief Sends a four-byte LIN command packet and requests a response.
+ *
+ * @param byte1 First command byte.
+ * @param byte2 Second command byte.
+ * @param byte3 Third command byte.
+ * @param byte4 Fourth command byte.
+ * @return Length or status of the received response.
+ */
 unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3,
                                       unsigned char byte4)
 {
@@ -102,6 +117,9 @@ unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, 
     return lin.request(0x3DU, response);
 }
 
+/**
+ * @brief Processes encoder updates and handles user input when recalibration is inactive.
+ */
 void DeskService::handle()
 {
     handleEncoders();
@@ -112,6 +130,12 @@ void DeskService::handle()
     }
 }
 
+/**
+ * @brief Processes button state changes and initiates movement targets.
+ *
+ * Reports button transitions over the serial interface and updates the button
+ * sequence count when buttons are pressed.
+ */
 void DeskService::readButtons()
 {
     const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
@@ -146,6 +170,13 @@ void DeskService::readButtons()
     }
 }
 
+/**
+ * @brief Processes button input for desk movement, recalibration, and preset operations.
+ *
+ * Handles button combinations and press sequences to start movement, initiate
+ * recalibration, store or recall low and high position presets, and reset
+ * incomplete sequences after a timeout.
+ */
 void DeskService::handleButtons()
 {
     readButtons();
@@ -198,6 +229,11 @@ void DeskService::handleButtons()
     }
 }
 
+/**
+ * @brief Buffers serial input and parses each completed newline-terminated command.
+ *
+ * Discards empty lines and prevents writes beyond the command buffer capacity.
+ */
 void DeskService::handleBuffer()
 {
     const int byte{Serial1.read()};
@@ -219,6 +255,12 @@ void DeskService::handleBuffer()
     }
 }
 
+/**
+ * @brief Processes the buffered serial command and applies the requested action.
+ *
+ * Supports recalibration, movement targets, high and low preset recall or updates,
+ * and tone frequency commands.
+ */
 void DeskService::parseBuffer()
 {
     if (buffer[0U] == 'c')
@@ -275,6 +317,11 @@ void DeskService::parseBuffer()
     }
 }
 
+/**
+ * @brief Parses the numeric characters following the first character in the command buffer.
+ *
+ * @return The parsed unsigned integer, or zero if the suffix contains a non-digit character.
+ */
 unsigned int DeskService::parseDigits()
 {
     unsigned int value{0U};
@@ -290,6 +337,11 @@ unsigned int DeskService::parseDigits()
     return value;
 }
 
+/**
+ * @brief Sets a bounded target for lowering the desk.
+ *
+ * @return void
+ */
 void DeskService::targetLower()
 {
     const unsigned int maxCurrent{max(encoderA, encoderB)};
@@ -298,6 +350,11 @@ void DeskService::targetLower()
     move = true;
 }
 
+/**
+ * @brief Sets the desk's upward movement target and starts movement.
+ *
+ * @return None.
+ */
 void DeskService::targetRise()
 {
     const unsigned int minCurrent{min(encoderA, encoderB)};
@@ -306,6 +363,12 @@ void DeskService::targetRise()
     move = true;
 }
 
+/**
+ * @brief Polls both desk encoders and advances movement processing.
+ *
+ * Updates encoder readings when communication succeeds and reports communication
+ * errors, optionally sounding an alert while the desk is moving.
+ */
 void DeskService::handleEncoders()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
@@ -347,6 +410,12 @@ void DeskService::handleEncoders()
     parseEncoders();
 }
 
+/**
+ * @brief Advances the desk movement and recalibration state machine.
+ *
+ * Processes the current state, issues required movement or calibration commands,
+ * and transitions to the next state.
+ */
 void DeskService::parseEncoders()
 {
     switch (state)
@@ -384,12 +453,20 @@ void DeskService::parseEncoders()
     }
 }
 
+/**
+ * @brief Determines whether both desk nodes report an idle-compatible status.
+ *
+ * @return `true` if both nodes report an idle-compatible status, `false` otherwise.
+ */
 bool DeskService::isIdle()
 {
     return (nodeA[2U] == 0U || nodeA[2U] == 0x25U || nodeA[2U] == 0x60U) &&
            (nodeB[2U] == 0U || nodeB[2U] == 0x25U || nodeB[2U] == 0x60U);
 }
 
+/**
+ * @brief Waits for a requested movement or maintains the idle command.
+ */
 void DeskService::handleStateIdle()
 {
     if (move && isIdle())
@@ -400,6 +477,13 @@ void DeskService::handleStateIdle()
     sendCommand(Command::IDLE);
 }
 
+/**
+ * @brief Prepares the requested desk movement and starts the corresponding motion.
+ *
+ * Adjusts the target with the encoder offset when the target is outside the current
+ * encoder range, selects the movement direction, and sends the pre-movement command.
+ * Clears the movement request when the target has already been reached.
+ */
 void DeskService::handleStatePrepare()
 {
     if (encoderTarget < min(encoderA, encoderB))
@@ -428,6 +512,11 @@ void DeskService::handleStatePrepare()
     sendCommand(Command::PRE_MOVE);
 }
 
+/**
+ * @brief Continues lowering the desk until the target is reached or movement times out.
+ *
+ * Transitions to the stop state when either encoder reaches the target or the encoder response timeout expires.
+ */
 void DeskService::handleStateDown()
 {
     if (encoderTarget >= min(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
@@ -438,6 +527,9 @@ void DeskService::handleStateDown()
     sendCommand(Command::LOWER);
 }
 
+/**
+ * @brief Continues raising the desk until the target is reached or encoder updates time out.
+ */
 void DeskService::handleStateUp()
 {
     if (encoderTarget <= max(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
@@ -448,6 +540,9 @@ void DeskService::handleStateUp()
     sendCommand(Command::RAISE);
 }
 
+/**
+ * @brief Completes a movement operation once both desk nodes are idle.
+ */
 void DeskService::handleStateDone()
 {
     if (isIdle())
@@ -459,6 +554,13 @@ void DeskService::handleStateDone()
     sendCommand(Command::FINISH);
 }
 
+/**
+ * @brief Advances the ongoing recalibration process.
+ *
+ * Completes recalibration when both nodes report the required state and the
+ * encoder readings are within the calibration limit; otherwise, continues
+ * issuing the calibration command.
+ */
 void DeskService::handleStateRecalOngoing()
 {
     if (nodeA[2U] == 1U && nodeB[2U] == 1U && max(encoderA, encoderB) <= 99U)
@@ -469,6 +571,11 @@ void DeskService::handleStateRecalOngoing()
     sendCommand(Command::CALIBRATE_BEGIN, 0U);
 }
 
+/**
+ * @brief Sends a movement command with the target constrained to a safe range.
+ *
+ * @param command Movement command to send.
+ */
 void DeskService::sendCommand(Command command)
 {
     const unsigned int maxCurrent{max(encoderA, encoderB)};
@@ -480,6 +587,12 @@ void DeskService::sendCommand(Command command)
     sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
 }
 
+/**
+ * @brief Sends a command with its payload over the LIN interface.
+ *
+ * @param command Command code to transmit.
+ * @param payload Command payload.
+ */
 void DeskService::sendCommand(Command command, unsigned int payload)
 {
     for (unsigned char idx{0U}; idx < 6U; ++idx)
@@ -493,6 +606,11 @@ void DeskService::sendCommand(Command command, unsigned int payload)
     lin.send(0x12U, packet);
 }
 
+/**
+ * @brief Generates a square-wave tone at the specified frequency.
+ *
+ * @param frequency Tone frequency in hertz.
+ */
 void DeskService::playTone(unsigned int frequency)
 {
     const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
@@ -506,6 +624,11 @@ void DeskService::playTone(unsigned int frequency)
     }
 }
 
+/**
+ * @brief Provides access to the singleton DeskService instance.
+ *
+ * @return DeskService& Reference to the shared DeskService instance.
+ */
 DeskService &DeskService::getInstance()
 {
     static DeskService instance;

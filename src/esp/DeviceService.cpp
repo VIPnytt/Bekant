@@ -8,6 +8,9 @@
 #include <format>
 #include <nvs.h>
 
+/**
+ * @brief Initializes the desk controller, hardware interfaces, network services, and MQTT discovery.
+ */
 void DeviceService::begin()
 {
     Serial.begin(115'200UL);
@@ -72,6 +75,13 @@ void DeviceService::begin()
     mqttDiscovery();
 }
 
+/**
+ * @brief Processes service updates, status indicators, connectivity, and desk state publication.
+ *
+ * Advances OTA, desk, and ISP services, applies pending LED changes, manages status
+ * indicators and button states, saves desk state when required, reconnects network
+ * services, and publishes desk metadata when connected.
+ */
 void DeviceService::handle()
 {
     ota.handle();
@@ -145,6 +155,9 @@ void DeviceService::unsetButtons()
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Publishes the Home Assistant device discovery configuration.
+ */
 void DeviceService::mqttDiscovery()
 {
     JsonDocument doc{};
@@ -216,6 +229,14 @@ void DeviceService::statusWhite()
     pending = true;
 }
 
+/**
+ * @brief Publishes the current device state.
+ *
+ * Adds device status and telemetry fields to the JSON document, then publishes it
+ * to the MQTT state topic.
+ *
+ * @param doc JSON document to augment and publish.
+ */
 void DeviceService::transmit(JsonDocument &doc)
 {
 #ifdef PIN_OE
@@ -240,6 +261,12 @@ void DeviceService::transmit(JsonDocument &doc)
                  length);
 }
 
+/**
+ * @brief Handles a successful MQTT connection.
+ *
+ * Subscribes to command messages, publishes retained online availability, and
+ * sets the device status indicator to white.
+ */
 void DeviceService::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGI("MQTT", "connected");
@@ -252,6 +279,11 @@ void DeviceService::onConnect(bool sessionPresent) // NOLINT(misc-unused-paramet
     device.statusWhite();
 }
 
+/**
+ * @brief Handles notification that the Wi-Fi connection has been established.
+ *
+ * Sets the device status indicator to white.
+ */
 void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGI("Wi-Fi", "connected");
@@ -260,16 +292,26 @@ void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-
     device.statusWhite();
 }
 
+/**
+ * @brief Handles MQTT disconnection events by setting the device status to red.
+ *
+ * @param reason Reason for the MQTT disconnection.
+ */
 void DeviceService::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 {
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
     device.statusRed();
 }
 
-// NOLINTNEXTLINE(misc-unused-parameters)
-void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_t info)
+/**
+ * @brief Handles Wi-Fi disconnection events by logging the disconnect reason and setting the status indicator to red.
+ *
+ * @param event Wi-Fi event identifier.
+ * @param info Wi-Fi event information containing the disconnect reason.
+ */
+void DeviceService::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused-parameters)
+                                   arduino_event_info_t info)
 {
-
     ESP_LOGI("Wi-Fi", "disconnected");
     ESP_LOGD("Wi-Fi",
              "disconnect reason %s",
@@ -277,8 +319,18 @@ void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_
     device.statusRed();
 }
 
-// NOLINTNEXTLINE(misc-unused-parameters)
-void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
+/**
+ * @brief Processes a complete MQTT message containing a JSON command.
+ *
+ * @param properties MQTT message properties.
+ * @param topic MQTT topic that received the message.
+ * @param payload Message payload.
+ * @param len Payload length for the current fragment.
+ * @param index Offset of the current fragment within the message.
+ * @param total Total message length.
+ */
+void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, // NOLINT(misc-unused-parameters)
+                              const char *topic,                                       // NOLINT(misc-unused-parameters)
                               const uint8_t *payload, size_t len, size_t index, size_t total)
 {
     if (index == 0U && len == total)
@@ -291,6 +343,14 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
     }
 }
 
+/**
+ * @brief Processes commands from a JSON request.
+ *
+ * Handles desk actions, button controls, height and preset commands, output-enable and reset state changes, and raw
+ * transmissions.
+ *
+ * @param doc JSON object containing the requested commands.
+ */
 void DeviceService::handleRequest(JsonObjectConst doc)
 {
     if (doc["action"].is<std::string_view>())
@@ -354,6 +414,12 @@ void DeviceService::handleRequest(JsonObjectConst doc)
     }
 }
 
+/**
+ * @brief Sends a desk command for the specified user height.
+ *
+ * @param command Command prefix to send.
+ * @param userHeight Target height in user units.
+ */
 void DeviceService::sendTx(char command, float userHeight)
 {
     sendTx(command +
@@ -363,6 +429,11 @@ void DeviceService::sendTx(char command, float userHeight)
                                   static_cast<float>(ReferenceHeight::encoderLow))));
 }
 
+/**
+ * @brief Publishes desk metadata and sends a command payload to the desk controller.
+ *
+ * @param payload Command payload to transmit.
+ */
 void DeviceService::sendTx(std::string_view payload)
 {
     JsonDocument _doc{};
@@ -374,6 +445,13 @@ void DeviceService::sendTx(std::string_view payload)
     Serial1.write('\n');
 }
 
+/**
+ * @brief Sets the optional desk down-button control state.
+ *
+ * Pressing the button sets the status indicator to red.
+ *
+ * @param state Whether the down button should be active.
+ */
 void DeviceService::setButtonDown(bool state)
 {
 #ifdef PIN_TPDN
@@ -385,6 +463,11 @@ void DeviceService::setButtonDown(bool state)
 #endif // PIN_TPDN
 }
 
+/**
+ * @brief Sets the optional up button control state.
+ *
+ * @param state `true` to activate the up button and `false` to release it.
+ */
 void DeviceService::setButtonUp(bool state)
 {
 #ifdef PIN_TPUP
@@ -396,6 +479,14 @@ void DeviceService::setButtonUp(bool state)
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Sets the desk's output-enable state.
+ *
+ * Updates the output-enable hardware, publishes refreshed desk metadata, and
+ * persists the changed state when output-enable support is available.
+ *
+ * @param state Whether output should be enabled.
+ */
 void DeviceService::setOutputEnable(bool state)
 {
 #ifdef PIN_OE
@@ -417,6 +508,11 @@ void DeviceService::setOutputEnable(bool state)
 #endif // PIN_OE
 }
 
+/**
+ * @brief Sets the desk reset state and publishes updated metadata when it changes.
+ *
+ * @param state Whether reset should be asserted.
+ */
 void DeviceService::setReset(bool state)
 {
     if (state != reset)
@@ -430,6 +526,11 @@ void DeviceService::setReset(bool state)
     }
 }
 
+/**
+ * @brief Adds Home Assistant MQTT entity discovery configuration to a JSON document.
+ *
+ * @param doc JSON document to populate with entity configurations.
+ */
 void DeviceService::onHomeAssistant(JsonDocument &doc)
 {
 #ifdef PIN_ADC
@@ -626,6 +727,11 @@ void DeviceService::onHomeAssistant(JsonDocument &doc)
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Returns the singleton device service instance.
+ *
+ * @return DeviceService& Reference to the shared device service instance.
+ */
 DeviceService &DeviceService::getInstance()
 {
     static DeviceService instance;
