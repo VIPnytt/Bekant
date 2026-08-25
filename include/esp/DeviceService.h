@@ -37,8 +37,13 @@ private:
     static inline espMqttClient mqtt{};
 
     void onHomeAssistant(JsonDocument &doc);
+    void sendTx(std::string_view data);
+    void sendTx(char prefix, float userHeight);
+    void setButton(bool direction, bool state);
+    void setOutputEnable(bool state);
+    void setReset(bool state);
 
-    uint16_t encode(float userHeight);
+    static void handleRequest(JsonObjectConst doc);
 
     static void onConnect(bool sessionPresent);
     static void onConnected(arduino_event_id_t event);
@@ -46,24 +51,19 @@ private:
     static void onDisconnected(arduino_event_id_t event, arduino_event_info_t info);
     static void onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                           const uint8_t *payload, size_t len, size_t index, size_t total);
-    static void sendTx(std::string_view data);
-    static void setButton(bool direction, bool state);
-    static void setOutputEnable(bool state);
-    static void setReset(bool state);
-    static void restart();
 
 public:
     static inline NetworkServer avrServer{328U};
 
     void begin();
     void handle();
-    void safeMode();
-    void unsetButtons();
 
     void mqttDiscovery();
+    void safeMode();
     void statusBlue();
     void statusGreen();
     void statusNone();
+    void unsetButtons();
 
     static void statusRed();
     static void statusWhite();

@@ -24,7 +24,6 @@ void IspHandler::handle()
             {
             case 0x20U:
                 client.print(stkNoSync);
-                ESP_LOGE("ISP", "error");
                 break;
             case 0x30U:
                 emptyReply();
@@ -115,7 +114,6 @@ void IspHandler::handle()
                 readSignature();
                 break;
             default:
-                ESP_LOGE("ISP", "error");
                 client.print(getChar() == stkCrcEop ? '\x12' : stkNoSync);
             }
         }
@@ -159,7 +157,6 @@ void IspHandler::emptyReply()
     else
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
     }
 }
 
@@ -236,7 +233,6 @@ void IspHandler::programPage()
         else
         {
             client.print(stkNoSync);
-            ESP_LOGE("ISP", "error");
         }
     }
     else if (memtype == 'F')
@@ -256,7 +252,6 @@ void IspHandler::readPage()
     if (getChar() != stkCrcEop)
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
         return;
     }
     client.print(stkInSync);
@@ -275,7 +270,6 @@ void IspHandler::readSignature()
     if (getChar() != stkCrcEop)
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
         return;
     }
     client.print(stkInSync);
@@ -310,7 +304,6 @@ bool IspHandler::writeEeprom(size_t length)
 {
     if (length > eepromSize)
     {
-        ESP_LOGE("ISP", "error");
         return false;
     }
     size_t start{here * 2U};
@@ -383,7 +376,6 @@ void IspHandler::writeFlash(size_t length)
     else
     {
         client.print(stkNoSync);
-        ESP_LOGE("ISP", "error");
     }
 }
 

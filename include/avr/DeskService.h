@@ -42,6 +42,9 @@ private:
 
     int8_t buttonCount{0};
 
+    uint8_t nodeA[3U]{0U};
+    uint8_t nodeB[3U]{0U};
+
     uint16_t encoderA{0U};
     uint16_t encoderB{0U};
     uint16_t encoderTarget{0U};
@@ -61,12 +64,20 @@ private:
     void readButtons();
     void handleButtons();
     void handleEncoders();
-    void parseEncoders(uint8_t nodeA, uint8_t nodeB);
+    void handleStateIdle();
+    void handleStatePrepare();
+    void handleStateDown();
+    void handleStateUp();
+    void handleStateDone();
+    void handleStateRecalOngoing();
+    void parseEncoders();
     void sendCommand(Command command);
     void sendCommand(Command command, uint16_t target);
     void parseBuffer();
     void playTone(uint16_t frequency);
     void savePreset(char preset, uint16_t value);
+
+    bool isIdle();
 
     uint8_t sendPacket(uint8_t payload1, uint8_t payload2, uint8_t payload3, uint8_t payload4);
 

@@ -172,23 +172,17 @@ void DeskService::handleButtons()
         savePreset('l', presetLow);
         playTone(0b1U << 9U);
     }
-    else if (buttonCount == -1 && millis() - lastMillisButton > 0b1U << 8U)
+    else if (buttonCount == -1 && presetLow != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        if (presetLow != 0xFFFFU)
-        {
-            Serial1.printf("l%u\n", presetLow);
-            encoderTarget = presetLow;
-        }
+        Serial1.printf("l%u\n", presetLow);
+        encoderTarget = presetLow;
     }
-    else if (buttonCount == 1 && millis() - lastMillisButton > 0b1U << 8U)
+    else if (buttonCount == 1 && presetHigh != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
     {
         buttonCount = 0;
-        if (presetHigh != 0xFFFFU)
-        {
-            Serial1.printf("h%u\n", presetHigh);
-            encoderTarget = presetHigh;
-        }
+        Serial1.printf("h%u\n", presetHigh);
+        encoderTarget = presetHigh;
     }
     else if (buttonCount == 2 && millis() - lastMillisButton > 0b1U << 8U)
     {
@@ -303,8 +297,6 @@ void DeskService::handleEncoders()
 {
     constexpr uint8_t empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    uint8_t nodeA[3U]{0U};
-    uint8_t nodeB[3U]{0U};
     const uint8_t charsA{lin.request(0x8U, nodeA)};
     const uint8_t charsB{lin.request(0x9U, nodeB)};
     const uint16_t _encoderA{static_cast<uint16_t>(nodeA[0U]) | static_cast<uint16_t>(nodeA[1U] << 8U)};
@@ -339,98 +331,123 @@ void DeskService::handleEncoders()
         lastMillisEncoder = millis();
         Serial1.printf("b%u\n", encoderB);
     }
-    parseEncoders(nodeA[2U], nodeB[2U]);
+    parseEncoders();
 }
 
-void DeskService::parseEncoders(uint8_t nodeA, uint8_t nodeB)
+void DeskService::parseEncoders()
 {
     switch (state)
     {
     case State::IDLE:
-        if (move && (nodeA == 0U || nodeA == 0x25U || nodeA == 0x60U) &&
-            (nodeB == 0U || nodeB == 0x25U || nodeB == 0x60U))
-        {
-            state = State::PREPARE;
-        }
-        else
-        {
-            sendCommand(Command::IDLE);
-        }
+        handleStateIdle();
         break;
     case State::PREPARE:
-        if (encoderTarget < min(encoderA, encoderB))
-        {
-            encoderTarget -= 137U;
-            state = State::DOWN;
-        }
-        else if (encoderTarget > max(encoderA, encoderB))
-        {
-            encoderTarget += 137U;
-            state = State::UP;
-        }
-        else
-        {
-            move = false;
-            state = State::IDLE;
-            break;
-        }
-        lastMillisEncoder = millis();
-        sendCommand(Command::PRE_MOVE);
+        handleStatePrepare();
         break;
     case State::DOWN:
-        if (encoderTarget >= min(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
-        {
-            state = State::STOP;
-        }
-        else
-        {
-            sendCommand(Command::LOWER);
-        }
+        handleStateDown();
         break;
     case State::UP:
-        if (encoderTarget <= max(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
-        {
-            state = State::STOP;
-        }
-        else
-        {
-            sendCommand(Command::RAISE);
-        }
+        handleStateUp();
         break;
     case State::STOP:
         state = State::DONE;
         sendCommand(Command::OK);
         break;
     case State::DONE:
-        if ((nodeA == 0U || nodeA == 0x25U || nodeA == 0x60U) && (nodeB == 0U || nodeB == 0x25U || nodeB == 0x60U))
-        {
-            move = false;
-            state = State::IDLE;
-        }
-        else
-        {
-            sendCommand(Command::FINISH);
-        }
+        handleStateDone();
         break;
     case State::RECAL_PREPARE:
         state = State::RECAL_ONGOING;
         sendCommand(Command::PRE_MOVE);
         break;
     case State::RECAL_ONGOING:
-        if (nodeA == 1U && nodeB == 1U && max(encoderA, encoderB) <= 99U)
-        {
-            state = State::RECAL_DONE;
-        }
-        else
-        {
-            sendCommand(Command::CALIBRATE_BEGIN, 0U);
-        }
+        handleStateRecalOngoing();
         break;
     case State::RECAL_DONE:
         state = State::IDLE;
         sendCommand(Command::CALIBRATE_END, 99U);
         break;
     }
+}
+
+bool DeskService::isIdle()
+{
+    return (nodeA[2U] == 0U || nodeA[2U] == 0x25U || nodeA[2U] == 0x60U) &&
+           (nodeB[2U] == 0U || nodeB[2U] == 0x25U || nodeB[2U] == 0x60U);
+}
+
+void DeskService::handleStateIdle()
+{
+    if (move && isIdle())
+    {
+        state = State::PREPARE;
+        return;
+    }
+    sendCommand(Command::IDLE);
+}
+
+void DeskService::handleStatePrepare()
+{
+    if (encoderTarget < min(encoderA, encoderB))
+    {
+        encoderTarget -= 137U;
+        state = State::DOWN;
+    }
+    else if (encoderTarget > max(encoderA, encoderB))
+    {
+        encoderTarget += 137U;
+        state = State::UP;
+    }
+    else
+    {
+        move = false;
+        state = State::IDLE;
+        return;
+    }
+    lastMillisEncoder = millis();
+    sendCommand(Command::PRE_MOVE);
+}
+
+void DeskService::handleStateDown()
+{
+    if (encoderTarget >= min(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
+    {
+        state = State::STOP;
+        return;
+    }
+    sendCommand(Command::LOWER);
+}
+
+void DeskService::handleStateUp()
+{
+    if (encoderTarget <= max(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
+    {
+        state = State::STOP;
+        return;
+    }
+    sendCommand(Command::RAISE);
+}
+
+void DeskService::handleStateDone()
+{
+    if (isIdle())
+    {
+        move = false;
+        state = State::IDLE;
+        return;
+    }
+    sendCommand(Command::FINISH);
+}
+
+void DeskService::handleStateRecalOngoing()
+{
+    if (nodeA[2U] == 1U && nodeB[2U] == 1U && max(encoderA, encoderB) <= 99U)
+    {
+        state = State::RECAL_DONE;
+        return;
+    }
+    sendCommand(Command::CALIBRATE_BEGIN, 0U);
 }
 
 void DeskService::sendCommand(Command command)
