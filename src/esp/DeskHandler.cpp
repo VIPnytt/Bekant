@@ -229,7 +229,8 @@ void DeskHandler::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
 }
 
 /**
- * @brief Adds Home Assistant MQTT discovery configurations for desk controls, measurements, presets, and serial diagnostics.
+ * @brief Adds Home Assistant MQTT discovery configurations for desk controls, measurements, presets, and serial
+ * diagnostics.
  *
  * @param doc JSON document to populate with the Home Assistant component definitions.
  */

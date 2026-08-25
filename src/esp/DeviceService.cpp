@@ -309,9 +309,9 @@ void DeviceService::onDisconnect(espMqttClientTypes::DisconnectReason reason)
  * @param event Wi-Fi event identifier.
  * @param info Wi-Fi event information containing the disconnect reason.
  */
-void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_t info)
+void DeviceService::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused-parameters)
+                                   arduino_event_info_t info)
 {
-
     ESP_LOGI("Wi-Fi", "disconnected");
     ESP_LOGD("Wi-Fi",
              "disconnect reason %s",
@@ -329,7 +329,8 @@ void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_
  * @param index Offset of the current fragment within the message.
  * @param total Total message length.
  */
-void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
+void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, // NOLINT(misc-unused-parameters)
+                              const char *topic,                                       // NOLINT(misc-unused-parameters)
                               const uint8_t *payload, size_t len, size_t index, size_t total)
 {
     if (index == 0U && len == total)
@@ -345,7 +346,8 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
 /**
  * @brief Processes commands from a JSON request.
  *
- * Handles desk actions, button controls, height and preset commands, output-enable and reset state changes, and raw transmissions.
+ * Handles desk actions, button controls, height and preset commands, output-enable and reset state changes, and raw
+ * transmissions.
  *
  * @param doc JSON object containing the requested commands.
  */
