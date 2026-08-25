@@ -70,39 +70,27 @@ void DeskHandler::parse(std::string message)
     const char first{message.at(0U)};
     if (first == 'a' && (message.size() == 4U || message.size() == 5U))
     {
-        decode(legA, static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
-        buttonDown || buttonUp ? Device.statusGreen() : Device.statusBlue();
+        parseEncoder(legA, static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
     }
     else if (first == 'b' && (message.size() == 4U || message.size() == 5U))
     {
-        decode(legB, static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
-        buttonDown || buttonUp ? Device.statusGreen() : Device.statusBlue();
+        parseEncoder(legB, static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
     }
     else if (first == 'd' && message.size() == 2U)
     {
-        buttonDown = message.at(1U) == '1';
-        buttonDown ? Device.statusGreen() : DeviceService::statusWhite();
+        parseButton(buttonDown, message.at(1U) == '1');
     }
     else if (first == 'h' && (message.size() == 4U || message.size() == 5U))
     {
-        const uint16_t encoded{static_cast<uint16_t>(atoi(message.substr(1U).c_str()))};
-        if (encoded != presetHigh.first)
-        {
-            decode(presetHigh, encoded);
-        }
+        parsePreset(presetHigh, static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
     }
     else if (first == 'l' && (message.size() == 4U || message.size() == 5U))
     {
-        const uint16_t encoded{static_cast<uint16_t>(atoi(message.substr(1U).c_str()))};
-        if (encoded != presetLow.first)
-        {
-            decode(presetLow, encoded);
-        }
+        parsePreset(presetLow, static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
     }
     else if (first == 'u' && message.size() == 2U)
     {
-        buttonUp = message.at(1U) == '1';
-        buttonUp ? Device.statusGreen() : DeviceService::statusWhite();
+        parseButton(buttonUp, message.at(1U) == '1');
     }
     else
     {
@@ -113,17 +101,46 @@ void DeskHandler::parse(std::string message)
     DeviceService::transmit(doc);
 }
 
+void DeskHandler::parseButton(bool &button, bool state)
+{
+    button = state;
+    buttonDown || buttonUp ? Device.statusGreen() : DeviceService::statusWhite();
+}
+
+void DeskHandler::parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded)
+{
+    if (encoded != leg.first)
+    {
+        decode(leg, encoded);
+        saved = false;
+        buttonDown || buttonUp ? Device.statusGreen() : Device.statusBlue();
+    }
+}
+
+void DeskHandler::parsePreset(std::pair<uint16_t, float> &preset, uint16_t encoded)
+{
+    if (encoded != preset.first)
+    {
+        decode(preset, encoded);
+        saved = false;
+        DeviceService::statusWhite();
+    }
+}
+
 void DeskHandler::save()
 {
-    nvs_handle_t handle{};
-    if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    if (!saved)
     {
-        nvs_set_u16(handle, "a", legA.first);
-        nvs_set_u16(handle, "b", legB.first);
-        nvs_set_u16(handle, "h", presetHigh.first);
-        nvs_set_u16(handle, "l", presetLow.first);
-        nvs_commit(handle);
-        nvs_close(handle);
+        nvs_handle_t handle{};
+        if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+        {
+            nvs_set_u16(handle, "a", legA.first);
+            nvs_set_u16(handle, "b", legB.first);
+            nvs_set_u16(handle, "h", presetHigh.first);
+            nvs_set_u16(handle, "l", presetLow.first);
+            saved = nvs_commit(handle) == ESP_OK;
+            nvs_close(handle);
+        }
     }
 }
 

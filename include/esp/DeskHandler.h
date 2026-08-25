@@ -11,6 +11,7 @@ class DeskHandler
 private:
     bool buttonDown{false};
     bool buttonUp{false};
+    bool saved{true};
 
     std::pair<uint16_t, float> legA{0U, .0F};
     std::pair<uint16_t, float> legB{0U, .0F};
@@ -23,6 +24,9 @@ private:
 
     void decode(std::pair<uint16_t, float> &height, uint16_t encoded);
     void parse(std::string message);
+    void parseButton(bool &button, bool state);
+    void parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded);
+    void parsePreset(std::pair<uint16_t, float> &preset, uint16_t encoded);
 
     static void onReceiveError(hardwareSerial_error_t error);
 

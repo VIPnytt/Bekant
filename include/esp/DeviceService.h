@@ -4,7 +4,7 @@
 
 #include "esp/DeskHandler.h"
 #include "esp/IspHandler.h"
-#include "secrets.h"
+#include "esp/secrets.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <ArduinoOTA.h>
@@ -36,14 +36,13 @@ private:
 
     static inline espMqttClient mqtt{};
 
+    void handleRequest(JsonObjectConst doc);
     void onHomeAssistant(JsonDocument &doc);
     void sendTx(std::string_view data);
     void sendTx(char prefix, float userHeight);
     void setButton(bool direction, bool state);
     void setOutputEnable(bool state);
     void setReset(bool state);
-
-    static void handleRequest(JsonObjectConst doc);
 
     static void onConnect(bool sessionPresent);
     static void onConnected(arduino_event_id_t event);

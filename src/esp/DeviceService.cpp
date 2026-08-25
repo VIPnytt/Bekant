@@ -4,7 +4,6 @@
 
 #include "esp/DeskHandler.h"
 #include "esp/constants.h"
-#include "esp/secrets.h"
 
 #include <ESPmDNS.h>
 #include <WiFi.h>
