@@ -2,7 +2,7 @@
 
 #include "esp/DeviceService.h"
 
-#include "esp/constants.h"
+#include "esp/constants.h" // NOLINT(misc-include-cleaner)
 
 #include <WiFi.h>
 #include <format>
@@ -617,6 +617,6 @@ DeviceService &DeviceService::getInstance()
     return instance;
 }
 
-DeviceService &device{DeviceService::getInstance()};
+DeviceService &device{DeviceService::getInstance()}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // ARDUINO_ARCH_ESP32

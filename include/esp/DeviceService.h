@@ -68,6 +68,6 @@ public:
     static DeviceService &getInstance();
 };
 
-extern DeviceService &device;
+extern DeviceService &device; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // ARDUINO_ARCH_ESP32

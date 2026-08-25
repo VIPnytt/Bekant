@@ -90,6 +90,6 @@ public:
     static DeskService &getInstance();
 };
 
-extern DeskService &desk;
+extern DeskService &desk; // NOLINT(bugprone-dynamic-static-initializers)
 
 #endif // ARDUINO_ARCH_AVR

@@ -491,6 +491,6 @@ DeskService &DeskService::getInstance()
     return instance;
 }
 
-DeskService &desk{DeskService::getInstance()};
+DeskService &desk{DeskService::getInstance()}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // ARDUINO_ARCH_AVR

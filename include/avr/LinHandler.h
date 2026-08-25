@@ -50,11 +50,11 @@ public:
         do
         {
             byte = readWithTimeout(countdown);
-        } while (byte != 0x55U && byte != -1);
+        } while (byte != -1 && byte != 0x55);
         do
         {
             byte = readWithTimeout(countdown);
-        } while (byte != idByte && byte != -1);
+        } while (byte != -1 && byte != idByte);
         bytesReceived = 0U;
         for (size_t idx{0U}; idx < N; idx++)
         {
