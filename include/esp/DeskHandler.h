@@ -20,62 +20,7 @@ private:
 
     std::string buffer{};
 
-    /**
- * Converts an encoded height value into a height record.
- * @param height Height record to update.
- * @param encoded Encoded height value.
- */
-
-/**
- * Processes a received desk message.
- * @param message Received desk message.
- */
-
-/**
- * Updates a desk button state.
- * @param button Button state to update.
- * @param state New button state.
- */
-
-/**
- * Updates a leg position from an encoded value.
- * @param leg Leg position record to update.
- * @param encoded Encoded leg-position value.
- */
-
-/**
- * Updates a preset height from an encoded value.
- * @param preset Preset record to update.
- * @param encoded Encoded preset value.
- */
-
-/**
- * Records a hardware serial receive error.
- * @param error Hardware serial error.
- */
-
-/**
- * Initializes desk control handling.
- */
-
-/**
- * Processes desk communication and state updates.
- */
-
-/**
- * Adds desk state and metadata to a JSON document.
- * @param doc JSON document to update.
- */
-
-/**
- * Persists the current desk settings.
- */
-
-/**
- * Processes data received through Home Assistant.
- * @param doc JSON document containing the received data.
- */
-static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
+    static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
     void decode(std::pair<uint16_t, float> &height, uint16_t encoded);
     void parse(std::string message);

@@ -54,12 +54,7 @@ private:
 
     LinHandler lin;
 
-    /**
- * Provides access to the shared desk service instance.
- *
- * @returns The singleton desk service instance.
- */
-State state{State::IDLE};
+    State state{State::IDLE};
 
     void handleBuffer();
     void readButtons();

@@ -28,137 +28,13 @@ private:
 
     espMqttClient mqtt{};
 
-    /**
- * Handles in-system programming operations for the device.
- */
-IspHandler isp{};
+    IspHandler isp{};
 
 #ifdef PIN_LED
     NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};
 #endif // PIN_LED
 
-    /**
- * Processes an incoming desk control request.
- * @param doc JSON object containing the request.
- */
-
-/**
- * Processes Home Assistant-related data.
- * @param doc JSON document containing the data.
- */
-
-/**
- * Transmits string data to the desk controller.
- * @param data Data to transmit.
- */
-
-/**
- * Transmits a height command to the desk controller.
- * @param prefix Command prefix.
- * @param userHeight Target user height.
- */
-
-/**
- * Sets the desk's down button state.
- * @param state Whether the button is pressed.
- */
-
-/**
- * Sets the desk's up button state.
- * @param state Whether the button is pressed.
- */
-
-/**
- * Enables or disables device output.
- * @param state Whether output should be enabled.
- */
-
-/**
- * Sets the device reset state.
- * @param state Whether reset should be active.
- */
-
-/**
- * Handles an MQTT connection event.
- * @param sessionPresent Whether the broker has an existing session.
- */
-
-/**
- * Handles an Arduino connectivity event.
- * @param event Event identifier.
- */
-
-/**
- * Handles an MQTT disconnection event.
- * @param reason Reason for the disconnection.
- */
-
-/**
- * Handles an Arduino disconnection event.
- * @param event Event identifier.
- * @param info Event information.
- */
-
-/**
- * Handles an incoming MQTT message.
- * @param properties Message properties.
- * @param topic Message topic.
- * @param payload Message payload.
- * @param len Payload length.
- * @param index Message fragment offset.
- * @param total Total message length.
- */
-
-/**
- * Initializes the device service and its integrations.
- */
-
-/**
- * Processes ongoing device service tasks.
- */
-
-/**
- * Publishes MQTT discovery information.
- */
-
-/**
- * Places the device in safe mode.
- */
-
-/**
- * Sets the status indication to blue.
- */
-
-/**
- * Sets the status indication to green.
- */
-
-/**
- * Clears the status indication.
- */
-
-/**
- * Sets the status indication to red.
- */
-
-/**
- * Sets the status indication to white.
- */
-
-/**
- * Releases the desk button controls.
- */
-
-/**
- * Transmits a JSON document.
- * @param doc JSON document to transmit.
- */
-
-/**
- * Provides the singleton device service instance.
- * @return The singleton device service instance.
- */
-RgbColor color{0xFFU, 0xFFU, 0xFFU};
+    RgbColor color{0xFFU, 0xFFU, 0xFFU};
 
     void handleRequest(JsonObjectConst doc);
     void onHomeAssistant(JsonDocument &doc);
