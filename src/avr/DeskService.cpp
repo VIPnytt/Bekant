@@ -124,6 +124,10 @@ void DeskService::readButtons()
             lastMillisButton = millis();
             --buttonCount;
         }
+        else if (move)
+        {
+            targetLower();
+        }
         Serial1.printf("d%u\n", static_cast<unsigned char>(buttonDown));
     }
     if (_buttonUp != buttonUp)
@@ -133,6 +137,10 @@ void DeskService::readButtons()
         {
             lastMillisButton = millis();
             ++buttonCount;
+        }
+        else if (move)
+        {
+            targetRise();
         }
         Serial1.printf("u%u\n", static_cast<unsigned char>(buttonUp));
     }
@@ -161,6 +169,8 @@ void DeskService::handleButtons()
         buttonCount = 0;
         presetLow = max(encoderA, encoderB);
         EEPROM.put(static_cast<int>('l'), presetLow);
+        Serial1.printf("l%u\n", presetLow);
+        playTone(0b1U << 12U);
     }
     else if (buttonCount == -1 && presetLow != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
     {
@@ -179,6 +189,8 @@ void DeskService::handleButtons()
         buttonCount = 0;
         presetHigh = min(encoderA, encoderB);
         EEPROM.put(static_cast<int>('h'), presetHigh);
+        Serial1.printf("h%u\n", presetHigh);
+        playTone(0b1U << 12U);
     }
     else if (buttonCount != 0 && millis() - lastMillisButton > 0b1U << 8U)
     {
@@ -201,7 +213,7 @@ void DeskService::handleBuffer()
     {
         if (bufferLength < sizeof(buffer))
         {
-            buffer[bufferLength] = static_cast<unsigned char>(byte);
+            buffer[bufferLength] = static_cast<char>(byte);
         }
         ++bufferLength;
     }
@@ -211,7 +223,7 @@ void DeskService::parseBuffer()
 {
     if (buffer[0U] == 'c')
     {
-        playTone(0b1U << 10U);
+        playTone(0b1U << 12U);
         state = State::RECAL_PREPARE;
     }
     else if (buffer[0U] == 'e')
@@ -235,6 +247,7 @@ void DeskService::parseBuffer()
         {
             presetHigh = _high;
             EEPROM.put(static_cast<int>(buffer[0U]), presetHigh);
+            Serial1.printf("%c%u\n", buffer[0U], presetHigh);
         }
     }
     else if (buffer[0U] == 'l' && bufferLength == 1U && presetLow != 0xFFFFU)
@@ -249,6 +262,7 @@ void DeskService::parseBuffer()
         {
             presetLow = _low;
             EEPROM.put(static_cast<int>(buffer[0U]), presetLow);
+            Serial1.printf("%c%u\n", buffer[0U], presetLow);
         }
     }
     else if (buffer[0U] == 't')
@@ -305,7 +319,7 @@ void DeskService::handleEncoders()
             Serial1.printf("A%u\n", _encoderA);
             if (move)
             {
-                playTone(0b1U << 12U);
+                playTone(0b1U << 8U);
             }
             return;
         }
@@ -320,7 +334,7 @@ void DeskService::handleEncoders()
             Serial1.printf("B%u\n", _encoderB);
             if (move)
             {
-                playTone(0b1U << 12U);
+                playTone(0b1U << 8U);
             }
             return;
         }
@@ -455,15 +469,14 @@ void DeskService::handleStateRecalOngoing()
 
 void DeskService::sendCommand(Command command)
 {
-    const unsigned int encoderMax{static_cast<unsigned int>(max(encoderA, encoderB))};
-    const unsigned int encoderMin{static_cast<unsigned int>(min(encoderA, encoderB))};
-    sendCommand(command,
-                constrain(static_cast<unsigned int>(encoderTarget),
-                          encoderMax > Encoder::maxDelta ? max(encoderMax - Encoder::maxDelta, Encoder::minLimit)
-                                                         : Encoder::minLimit,
-                          encoderMin < Encoder::maxLimit - Encoder::maxDelta
-                              ? min(encoderMin + Encoder::maxDelta, Encoder::maxLimit)
-                              : Encoder::maxLimit));
+    const unsigned int encoderMax{max(encoderA, encoderB)};
+    const unsigned int encoderMin{min(encoderA, encoderB)};
+    const unsigned int maxTarget{encoderMin < Encoder::maxLimit - Encoder::maxDelta
+                                     ? min(encoderMin + Encoder::maxDelta, Encoder::maxLimit)
+                                     : Encoder::maxLimit};
+    const unsigned int minTarget{encoderMax > Encoder::maxDelta ? max(encoderMax - Encoder::maxDelta, Encoder::minLimit)
+                                                                : Encoder::minLimit};
+    sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
 }
 
 void DeskService::sendCommand(Command command, unsigned int payload)

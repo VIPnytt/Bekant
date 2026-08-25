@@ -4,8 +4,6 @@
 
 #include "avr/LinHandler.h"
 
-#include <stddef.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
-
 class DeskService
 {
 private:

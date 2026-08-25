@@ -3,7 +3,6 @@
 #ifdef ARDUINO_ARCH_AVR
 
 #include <core_pins.h>
-#include <stdint.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
 
 namespace Encoder
 {

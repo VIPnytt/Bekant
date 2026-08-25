@@ -3,8 +3,6 @@
 #ifdef ARDUINO_ARCH_AVR
 
 #include <HardwareSerial.h>
-#include <stddef.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
-#include <stdint.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
 #include <wiring.h>
 
 class LinHandler
