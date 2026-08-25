@@ -90,6 +90,7 @@ public:
     static DeskService &getInstance();
 };
 
-extern DeskService &desk; // NOLINT(bugprone-dynamic-static-initializers)
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
+extern DeskService &desk;
 
 #endif // ARDUINO_ARCH_AVR
