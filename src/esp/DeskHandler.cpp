@@ -54,13 +54,13 @@ void DeskHandler::handle()
     }
     else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)
     {
-        DeviceService::statusRed();
+        Device.statusRed();
         const uint8_t _error{static_cast<uint8_t>(lastError)};
         lastError = hardwareSerial_error_t::UART_NO_ERROR;
         ESP_LOGW("hardwareSerial_error_t", "%d", _error);
         JsonDocument doc{};
         doc["hardwareSerial_error_t"].set(_error);
-        DeviceService::transmit(doc);
+        Device.transmit(doc);
     }
 }
 
@@ -94,17 +94,17 @@ void DeskHandler::parse(std::string message)
     }
     else
     {
-        DeviceService::statusRed();
+        Device.statusRed();
     }
     metadata(doc);
     doc["rx"].set(message);
-    DeviceService::transmit(doc);
+    Device.transmit(doc);
 }
 
-void DeskHandler::parseButton(bool &button, bool state)
+void DeskHandler::parseButton(bool &button, bool state) const
 {
     button = state;
-    buttonDown || buttonUp ? Device.statusGreen() : DeviceService::statusWhite();
+    buttonDown || buttonUp ? Device.statusGreen() : Device.statusWhite();
 }
 
 void DeskHandler::parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded)
@@ -123,7 +123,7 @@ void DeskHandler::parsePreset(std::pair<uint16_t, float> &preset, uint16_t encod
     {
         decode(preset, encoded);
         saved = false;
-        DeviceService::statusWhite();
+        Device.statusWhite();
     }
 }
 

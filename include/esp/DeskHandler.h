@@ -24,7 +24,7 @@ private:
 
     void decode(std::pair<uint16_t, float> &height, uint16_t encoded);
     void parse(std::string message);
-    void parseButton(bool &button, bool state);
+    void parseButton(bool &button, bool state) const;
     void parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded);
     void parsePreset(std::pair<uint16_t, float> &preset, uint16_t encoded);
 

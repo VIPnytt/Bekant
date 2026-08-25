@@ -52,13 +52,11 @@ void DeviceService::begin()
     WiFi.onEvent(&onDisconnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
     WiFi.begin(WIFI_SSID, WIFI_KEY);
     WiFi.waitForConnectResult();
-    ArduinoOTA.setHostname(HOSTNAME);
+    ota.setHostname(HOSTNAME);
 #ifdef OTA_KEY
-    ArduinoOTA.setPassword(OTA_KEY);
+    ota.setPassword(OTA_KEY);
 #endif // OTA_KEY
-    ArduinoOTA.begin();
-    avrServer.begin();
-    MDNS.addService("avrisp", "tcp", 328U);
+    ota.begin();
     mqtt.onConnect(&onConnect);
     mqtt.onMessage(&onMessage);
     mqtt.onDisconnect(&onDisconnect);
@@ -71,16 +69,16 @@ void DeviceService::begin()
                  will.data(),
                  will.size() - 1U);
     mqtt.connect();
-    Desk.begin();
-    ISP.begin();
+    desk.begin();
+    isp.begin();
     mqttDiscovery();
 }
 
 void DeviceService::handle()
 {
-    ArduinoOTA.handle();
-    Desk.handle();
-    ISP.handle();
+    ota.handle();
+    desk.handle();
+    isp.handle();
     if (pending)
     {
         pending = false;
@@ -107,7 +105,7 @@ void DeviceService::handle()
     else if (color.B != 0U && color.G != 0U && color.R != 0U && millis() - lastMillis > (0b1U << 16U))
     {
         statusNone();
-        Desk.save();
+        desk.save();
     }
     else if (millis() - lastMillis > 0b1U << 17U)
     {
@@ -122,7 +120,7 @@ void DeviceService::handle()
         else
         {
             JsonDocument doc{};
-            Desk.metadata(doc);
+            desk.metadata(doc);
             transmit(doc);
         }
         lastMillis = millis();
@@ -152,7 +150,7 @@ void DeviceService::unsetButtons()
 void DeviceService::mqttDiscovery()
 {
     JsonDocument doc{};
-    Desk.onHomeAssistant(doc);
+    desk.onHomeAssistant(doc);
     onHomeAssistant(doc);
     doc[HomeAssistantAbbreviations::availability][HomeAssistantAbbreviations::payload_not_available].set("");
     doc[HomeAssistantAbbreviations::availability][HomeAssistantAbbreviations::topic].set("bekant/" HOSTNAME
@@ -247,12 +245,13 @@ void DeviceService::transmit(JsonDocument &doc)
 void DeviceService::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGI("MQTT", "connected");
-    mqtt.subscribe("bekant/" HOSTNAME "/set", static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2));
-    mqtt.publish("bekant/" HOSTNAME "/availability",
-                 static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS1),
-                 true,
-                 "online");
-    statusWhite();
+    Device.mqtt.subscribe("bekant/" HOSTNAME "/set",
+                          static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2));
+    Device.mqtt.publish("bekant/" HOSTNAME "/availability",
+                        static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS1),
+                        true,
+                        "online");
+    Device.statusWhite();
 }
 
 void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-parameters)
@@ -260,13 +259,13 @@ void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-
     ESP_LOGI("Wi-Fi", "connected");
     ESP_LOGV("Wi-Fi", "RSSI %d dBm", WiFi.RSSI());
     ESP_LOGI("Wi-Fi", "hostname " HOSTNAME ".local");
-    statusWhite();
+    Device.statusWhite();
 }
 
 void DeviceService::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 {
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
-    statusRed();
+    Device.statusRed();
 }
 
 // NOLINTNEXTLINE(misc-unused-parameters)
@@ -277,7 +276,7 @@ void DeviceService::onDisconnected(arduino_event_id_t event, arduino_event_info_
     ESP_LOGD("Wi-Fi",
              "disconnect reason %s",
              WiFi.disconnectReasonName(static_cast<wifi_err_reason_t>(info.wifi_sta_disconnected.reason)));
-    statusRed();
+    Device.statusRed();
 }
 
 // NOLINTNEXTLINE(misc-unused-parameters)
@@ -305,7 +304,7 @@ void DeviceService::handleRequest(JsonObjectConst doc)
         }
         else if (action == "restart")
         {
-            DeviceService::statusRed();
+            Device.statusRed();
             mqtt.disconnect();
             digitalWrite(PIN_RST, LOW);
             ESP.restart();
@@ -365,7 +364,7 @@ void DeviceService::sendTx(char command, float userHeight)
 void DeviceService::sendTx(std::string_view payload)
 {
     JsonDocument _doc{};
-    Desk.metadata(_doc);
+    desk.metadata(_doc);
     _doc["tx"].set(payload);
     transmit(_doc);
     statusRed();
@@ -392,7 +391,7 @@ void DeviceService::setOutputEnable(bool state)
         accessory = state;
         digitalWrite(PIN_OE, accessory ? HIGH : LOW);
         JsonDocument doc{};
-        Desk.metadata(doc);
+        desk.metadata(doc);
         transmit(doc);
         nvs_handle_t handle{};
         if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
@@ -410,10 +409,10 @@ void DeviceService::setReset(bool state)
     if (state != reset)
     {
         reset = state;
-        DeviceService::statusRed();
+        Device.statusRed();
         digitalWrite(PIN_RST, reset ? LOW : HIGH);
         JsonDocument doc{};
-        Desk.metadata(doc);
+        desk.metadata(doc);
         transmit(doc);
     }
 }

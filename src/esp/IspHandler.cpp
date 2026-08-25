@@ -10,7 +10,7 @@
 
 void IspHandler::begin()
 {
-    digitalWrite(PIN_RST, HIGH);
+    server.begin();
     MDNS.addService("avrisp", "tcp", 328U);
 }
 
@@ -50,7 +50,7 @@ void IspHandler::handle()
                     byteReply(18U);
                     break;
                 case 0x93U:
-                    byteReply('S');
+                    byteReply(static_cast<uint8_t>('S'));
                     break;
                 default:
                     byteReply(0U);
@@ -89,7 +89,7 @@ void IspHandler::handle()
                 break;
             case 0x55U:
                 here = getChar();
-                here += 256U * getChar();
+                here += (0b1U << 8U) * getChar();
                 emptyReply();
                 break;
             case 0x56U:
@@ -124,11 +124,11 @@ void IspHandler::handle()
             ESP.restart();
         }
     }
-    else if (DeviceService::avrServer.hasClient())
+    else if (server.hasClient())
     {
         Device.safeMode();
         digitalWrite(PIN_RST, HIGH);
-        client = DeviceService::avrServer.accept();
+        client = server.accept();
         client.setNoDelay(true);
         active = true;
     }
@@ -220,7 +220,7 @@ uint8_t IspHandler::getChar()
 
 void IspHandler::programPage()
 {
-    const size_t length{(256U * getChar()) + getChar()};
+    const size_t length{((0b1U << 8U) * getChar()) + getChar()};
     const char memtype{getChar()};
     if (memtype == 'E')
     {
@@ -247,7 +247,7 @@ void IspHandler::programPage()
 
 void IspHandler::readPage()
 {
-    const size_t length{(256U * getChar()) + getChar()};
+    const size_t length{((0b1U << 8U) * getChar()) + getChar()};
     const char memtype{getChar()};
     if (getChar() != stkCrcEop)
     {

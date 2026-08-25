@@ -16,25 +16,25 @@ class DeviceService
 private:
     static constexpr std::array<uint8_t, 1U> will{0U};
 
+    bool accessory{true};
+    bool pending{false};
+    bool reset{false};
+
     unsigned long lastMillis{0U};
 
-    static inline bool accessory{true};
-    static inline bool pending{false};
-    static inline bool reset{false};
+    ArduinoOTAClass ota{};
 
-    static inline ArduinoOTAClass ArduinoOTA{};
+    DeskHandler desk{};
 
-    static inline DeskHandler Desk{};
+    espMqttClient mqtt{};
 
-    IspHandler ISP{};
+    IspHandler isp{};
 
 #ifdef PIN_LED
     NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};
 #endif // PIN_LED
 
-    static inline RgbColor color{0xFFU, 0xFFU, 0xFFU};
-
-    static inline espMqttClient mqtt{};
+    RgbColor color{0xFFU, 0xFFU, 0xFFU};
 
     void handleRequest(JsonObjectConst doc);
     void onHomeAssistant(JsonDocument &doc);
@@ -52,8 +52,6 @@ private:
                           const uint8_t *payload, size_t len, size_t index, size_t total);
 
 public:
-    static inline NetworkServer avrServer{328U};
-
     void begin();
     void handle();
 
@@ -62,11 +60,10 @@ public:
     void statusBlue();
     void statusGreen();
     void statusNone();
+    void statusRed();
+    void statusWhite();
     void unsetButtons();
-
-    static void statusRed();
-    static void statusWhite();
-    static void transmit(JsonDocument &doc);
+    void transmit(JsonDocument &doc);
 
     static DeviceService &getInstance();
 };
