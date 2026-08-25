@@ -4,12 +4,22 @@
 
 #include "avr/constants.h"
 
+/**
+ * @brief Initializes the LIN pin and serial interface.
+ */
 void LinHandler::begin()
 {
     pinMode(Pin::lin, OUTPUT);
     Serial.begin(baud);
 }
 
+/**
+ * @brief Generates a LIN break signal on the configured pin.
+ *
+ * Stops serial communication while driving the LIN pin low for the break
+ * duration, then high for one bit duration before restarting serial
+ * communication.
+ */
 void LinHandler::serialBreak()
 {
     Serial.end();
@@ -21,6 +31,12 @@ void LinHandler::serialBreak()
     Serial.begin(baud);
 }
 
+/**
+ * @brief Calculates the LIN protected identifier parity bits.
+ *
+ * @param identifier Six-bit LIN identifier.
+ * @return Parity bits positioned in bits 6 and 7.
+ */
 unsigned char LinHandler::addressParity(unsigned int identifier)
 {
     const unsigned int parity0{((identifier >> 0U) & 1U) ^ ((identifier >> 1U) & 1U) ^ ((identifier >> 2U) & 1U) ^
@@ -31,6 +47,12 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
     return static_cast<unsigned char>((parity0 | (parity1 << 1U)) << 6U);
 }
 
+/**
+ * @brief Reads the next available byte within the specified countdown.
+ *
+ * @param countdown Remaining timeout in microseconds; decremented while waiting.
+ * @return int The received byte, or -1 if the countdown expires.
+ */
 int LinHandler::readWithTimeout(int16_t &countdown)
 {
     while (Serial.available() == 0)
@@ -45,6 +67,11 @@ int LinHandler::readWithTimeout(int16_t &countdown)
     return Serial.read();
 }
 
+/**
+ * @brief Sends a LIN header for the specified identifier.
+ *
+ * @param identifier Six-bit LIN identifier used to construct the protected identifier.
+ */
 void LinHandler::send(unsigned char identifier)
 {
     const unsigned char addressByte{

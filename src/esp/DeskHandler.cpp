@@ -7,6 +7,9 @@
 
 #include <nvs.h>
 
+/**
+ * @brief Loads persisted desk settings and initializes the serial interface.
+ */
 void DeskHandler::begin()
 {
     nvs_handle_t handle{};
@@ -35,6 +38,9 @@ void DeskHandler::begin()
     Serial1.begin(115'200UL, SerialConfig::SERIAL_8N1, PIN_MISO, PIN_SCK);
 }
 
+/**
+ * @brief Processes one byte from the serial input and handles completed messages or serial errors.
+ */
 void DeskHandler::handle()
 {
     const int byte{Serial1.read()};
@@ -64,6 +70,15 @@ void DeskHandler::handle()
     }
 }
 
+/**
+ * @brief Processes a desk controller message and publishes the resulting state.
+ *
+ * Recognized messages update leg encoder values, button states, or height presets.
+ * Invalid messages set the device status to red. Each message is included with
+ * current metadata in the transmitted document.
+ *
+ * @param message Newline-delimited desk controller message.
+ */
 void DeskHandler::parse(std::string message)
 {
     JsonDocument doc{};
@@ -101,12 +116,24 @@ void DeskHandler::parse(std::string message)
     device.transmit(doc);
 }
 
+/**
+ * @brief Updates a button state and sets the device status based on button activity.
+ *
+ * @param button Button state to update.
+ * @param state New button state.
+ */
 void DeskHandler::parseButton(bool &button, bool state) const
 {
     button = state;
     buttonDown || buttonUp ? device.statusGreen() : device.statusWhite();
 }
 
+/**
+ * @brief Updates a leg's decoded height when its encoded value changes.
+ *
+ * @param leg Encoded value and decoded height for the leg.
+ * @param encoded New encoded leg value.
+ */
 void DeskHandler::parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded)
 {
     if (encoded != leg.first)
@@ -117,6 +144,12 @@ void DeskHandler::parseEncoder(std::pair<uint16_t, float> &leg, uint16_t encoded
     }
 }
 
+/**
+ * @brief Updates a preset when its encoded value changes.
+ *
+ * @param preset Preset value and its encoded representation.
+ * @param encoded New encoded preset value.
+ */
 void DeskHandler::parsePreset(std::pair<uint16_t, float> &preset, uint16_t encoded)
 {
     if (encoded != preset.first)
@@ -127,6 +160,9 @@ void DeskHandler::parsePreset(std::pair<uint16_t, float> &preset, uint16_t encod
     }
 }
 
+/**
+ * @brief Persists unsaved encoder and preset values to non-volatile storage.
+ */
 void DeskHandler::save()
 {
     if (!saved)
@@ -144,6 +180,11 @@ void DeskHandler::save()
     }
 }
 
+/**
+ * @brief Adds desk controls, measurements, encoder values, leg heights, and presets to a JSON document.
+ *
+ * @param doc JSON document to populate.
+ */
 void DeskHandler::metadata(JsonDocument &doc)
 {
     doc["button"]["down"].set(buttonDown);
@@ -172,6 +213,12 @@ void DeskHandler::metadata(JsonDocument &doc)
     }
 }
 
+/**
+ * @brief Decodes an encoder value into a physical desk height.
+ *
+ * @param height Pair to populate with the raw encoder value and calculated height.
+ * @param encoded Encoded 16-bit encoder value.
+ */
 void DeskHandler::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
 {
     height.first = encoded;
@@ -181,6 +228,11 @@ void DeskHandler::decode(std::pair<uint16_t, float> &height, uint16_t encoded)
                     ReferenceHeight::heightLow;
 }
 
+/**
+ * @brief Adds Home Assistant MQTT discovery configurations for desk controls, measurements, presets, and serial diagnostics.
+ *
+ * @param doc JSON document to populate with the Home Assistant component definitions.
+ */
 void DeskHandler::onHomeAssistant(JsonDocument &doc)
 {
     {
@@ -312,6 +364,11 @@ void DeskHandler::onHomeAssistant(JsonDocument &doc)
     }
 }
 
+/**
+ * @brief Stores the latest hardware serial error for processing.
+ *
+ * @param error Hardware serial error to store.
+ */
 void DeskHandler::onReceiveError(hardwareSerial_error_t error) { lastError = error; }
 
 #endif // ARDUINO_ARCH_ESP32

@@ -5,6 +5,13 @@
 #include <HardwareSerial.h>
 #include <wiring.h>
 
+/**
+ * Requests a LIN response and stores its payload in the supplied buffer.
+ *
+ * @param identifier Six-bit LIN frame identifier.
+ * @param data Buffer receiving the response payload.
+ * @return Number of bytes received, or 0xFF if checksum validation fails.
+ */
 class LinHandler
 {
 private:

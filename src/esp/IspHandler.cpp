@@ -8,12 +8,21 @@
 #include <ESPmDNS.h>
 #include <SPI.h>
 
+/**
+ * @brief Starts the ISP TCP server and registers its mDNS service.
+ */
 void IspHandler::begin()
 {
     server.begin();
     MDNS.addService("avrisp", "tcp", 328U);
 }
 
+/**
+ * @brief Processes pending AVR ISP commands or accepts a new client connection.
+ *
+ * Handles protocol commands for programming and reading the target device, and
+ * terminates the active connection when the client disconnects.
+ */
 void IspHandler::handle()
 {
     if (active)
@@ -134,6 +143,11 @@ void IspHandler::handle()
     }
 }
 
+/**
+ * @brief Sends a synchronized response containing one byte.
+ *
+ * @param byte Byte to include in the response.
+ */
 void IspHandler::byteReply(uint8_t byte)
 {
     if (getChar() == stkCrcEop)
@@ -147,6 +161,9 @@ void IspHandler::byteReply(uint8_t byte)
     }
 }
 
+/**
+ * @brief Sends a successful empty ISP response when the command terminator is valid.
+ */
 void IspHandler::emptyReply()
 {
     if (getChar() == stkCrcEop)
@@ -160,6 +177,11 @@ void IspHandler::emptyReply()
     }
 }
 
+/**
+ * @brief Enters the target device's programming mode.
+ *
+ * Initializes SPI and sends the programming-enable command to the target.
+ */
 void IspHandler::enterProgrammingMode()
 {
     SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, GPIO_NUM_NC);
@@ -173,6 +195,11 @@ void IspHandler::enterProgrammingMode()
     SPI.transfer(0U);
 }
 
+/**
+ * @brief Reads EEPROM data from the target device and sends it to the client.
+ *
+ * @param length Number of EEPROM bytes to read.
+ */
 void IspHandler::eepromReadPage(size_t length) // NOLINT(readability-make-member-function-const)
 {
     std::vector<uint8_t> data(length + 1U);
@@ -189,6 +216,11 @@ void IspHandler::eepromReadPage(size_t length) // NOLINT(readability-make-member
     client.write(data.data(), data.size());
 }
 
+/**
+ * @brief Reads flash memory and sends the requested bytes to the client.
+ *
+ * @param length Number of flash bytes to read.
+ */
 void IspHandler::flashReadPage(size_t length)
 {
     for (size_t idx{0U}; idx < length; idx += 2U)
@@ -209,6 +241,11 @@ void IspHandler::flashReadPage(size_t length)
     client.write(&status, sizeof(status));
 }
 
+/**
+ * @brief Reads the next byte from the connected client.
+ *
+ * @return uint8_t The byte read from the client.
+ */
 uint8_t IspHandler::getChar()
 {
     while (!client.available())
@@ -218,6 +255,11 @@ uint8_t IspHandler::getChar()
     return static_cast<uint8_t>(client.read());
 }
 
+/**
+ * @brief Programs EEPROM or flash memory using the current ISP address.
+ *
+ * @param length The number of bytes to program.
+ */
 void IspHandler::programPage()
 {
     const size_t length{((0b1U << 8U) * getChar()) + getChar()};
@@ -245,6 +287,11 @@ void IspHandler::programPage()
     }
 }
 
+/**
+ * @brief Reads a requested EEPROM or flash memory range and sends the result to the client.
+ *
+ * @return void
+ */
 void IspHandler::readPage()
 {
     const size_t length{((0b1U << 8U) * getChar()) + getChar()};
@@ -265,6 +312,11 @@ void IspHandler::readPage()
     }
 }
 
+/**
+ * @brief Reads the target device signature and sends it to the client.
+ *
+ * Sends a no-sync response when the command terminator is invalid.
+ */
 void IspHandler::readSignature()
 {
     if (getChar() != stkCrcEop)
@@ -288,6 +340,11 @@ void IspHandler::readSignature()
     client.print(stkOk);
 }
 
+/**
+ * @brief Processes a four-byte universal ISP command.
+ *
+ * @return The SPI response to the command's fourth byte through the standard byte response.
+ */
 void IspHandler::universal()
 {
     for (size_t idx{0U}; idx < 4U; ++idx)
@@ -300,6 +357,12 @@ void IspHandler::universal()
     byteReply(SPI.transfer(buffer.at(3U)));
 }
 
+/**
+ * @brief Writes data from the client to EEPROM.
+ *
+ * @param length Number of bytes to write.
+ * @return `true` if the requested length fits within the configured EEPROM size and is written; `false` otherwise.
+ */
 bool IspHandler::writeEeprom(size_t length)
 {
     if (length > eepromSize)
@@ -317,6 +380,12 @@ bool IspHandler::writeEeprom(size_t length)
     return true;
 }
 
+/**
+ * @brief Writes a chunk of data to EEPROM.
+ *
+ * @param start EEPROM address at which to begin writing.
+ * @param length Number of bytes to read and write.
+ */
 void IspHandler::writeEepromChunk(size_t start, size_t length)
 {
     for (size_t idx{0U}; idx < length; ++idx)
@@ -334,6 +403,15 @@ void IspHandler::writeEepromChunk(size_t start, size_t length)
     }
 }
 
+/**
+ * @brief Programs a flash page buffer on the target device.
+ *
+ * Reads the specified number of bytes from the client, programs them as flash
+ * words, and commits each affected flash page. The request must have an even
+ * length and a valid terminator.
+ *
+ * @param length Number of flash data bytes to read and program.
+ */
 void IspHandler::writeFlash(size_t length)
 {
     for (size_t idx{0U}; idx < length; ++idx)

@@ -4,6 +4,9 @@
 
 #include <avr/wdt.h>
 
+/**
+ * @brief Initializes the desk service and enables the AVR watchdog timer.
+ */
 void setup()
 {
     wdt_enable(WDTO_8S);
