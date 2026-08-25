@@ -292,15 +292,17 @@ unsigned int DeskService::parseDigits()
 
 void DeskService::targetLower()
 {
-    const unsigned int current{max(encoderA, encoderB)};
-    encoderTarget = current > (0b1U << 8U) ? current - (0b1U << 8U) : (0b1U << 8U);
+    const unsigned int maxCurrent{max(encoderA, encoderB)};
+    encoderTarget =
+        maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta : Encoder::minLimit;
     move = true;
 }
 
 void DeskService::targetRise()
 {
-    const unsigned int current{min(encoderA, encoderB)};
-    encoderTarget = current < (0b1U << 13U) ? current + (0b1U << 8U) : (0b1U << 13U);
+    const unsigned int minCurrent{min(encoderA, encoderB)};
+    encoderTarget =
+        minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta : Encoder::maxLimit;
     move = true;
 }
 
@@ -402,7 +404,7 @@ void DeskService::handleStatePrepare()
 {
     if (encoderTarget < min(encoderA, encoderB))
     {
-        if (encoderTarget > Encoder::minLimit + Encoder::targetOffset)
+        if (encoderTarget >= Encoder::minLimit + Encoder::targetOffset)
         {
             encoderTarget -= Encoder::targetOffset;
         }
@@ -410,7 +412,7 @@ void DeskService::handleStatePrepare()
     }
     else if (encoderTarget > max(encoderA, encoderB))
     {
-        if (encoderTarget < Encoder::maxLimit - Encoder::targetOffset)
+        if (encoderTarget <= Encoder::maxLimit - Encoder::targetOffset)
         {
             encoderTarget += Encoder::targetOffset;
         }
@@ -469,13 +471,12 @@ void DeskService::handleStateRecalOngoing()
 
 void DeskService::sendCommand(Command command)
 {
-    const unsigned int encoderMax{max(encoderA, encoderB)};
-    const unsigned int encoderMin{min(encoderA, encoderB)};
-    const unsigned int maxTarget{encoderMin < Encoder::maxLimit - Encoder::maxDelta
-                                     ? min(encoderMin + Encoder::maxDelta, Encoder::maxLimit)
-                                     : Encoder::maxLimit};
-    const unsigned int minTarget{encoderMax > Encoder::maxDelta ? max(encoderMax - Encoder::maxDelta, Encoder::minLimit)
-                                                                : Encoder::minLimit};
+    const unsigned int maxCurrent{max(encoderA, encoderB)};
+    const unsigned int minCurrent{min(encoderA, encoderB)};
+    const unsigned int maxTarget{minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
+                                                                                    : Encoder::maxLimit};
+    const unsigned int minTarget{maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
+                                                                                    : Encoder::minLimit};
     sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
 }
 

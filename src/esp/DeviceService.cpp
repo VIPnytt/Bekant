@@ -303,8 +303,12 @@ void DeviceService::handleRequest(JsonObjectConst doc)
         else if (action == "restart")
         {
             device.statusRed();
-            mqtt.disconnect();
+            mqtt.publish("bekant/" HOSTNAME "/availability",
+                         static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS0),
+                         true,
+                         "");
             digitalWrite(PIN_RST, LOW);
+            vTaskDelay(0b1U << 7U);
             ESP.restart();
         }
     }
