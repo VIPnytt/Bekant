@@ -43,6 +43,11 @@ Configure the pin assignments and credentials in [`secrets.h`](https://github.co
 
 The ESP32 must be running before flashing the Megadesk controller because it acts as the programmer for the ATtiny841. Once both firmware images have been installed, verify desk movement before configuring optional features such as Home Assistant.
 
+> [!TIP]
+> The level shifter breakout board can be soldered directly to the ESP32, creating one compact assembly. Cut a small opening in the back of the controller case so the level shifter can be placed inside the desk’s controller compartment, leaving only the ESP32 exposed on the outside next to the cable.
+>
+> This eliminates the need for a separate enclosure while keeping the ESP32 firmly mounted against the underside of the desk. The RGB status LED can light the underside of the desk for visual feedback, and the USB port remains accessible for debugging.
+
 ## Connections
 
 | Pin    | Function               | Required |
@@ -95,11 +100,11 @@ The exact GPIO assignments depend on the ESP32 board and are configured in [`sec
 │       UART/SPI ├─ MISO
 │            SPI ├─ MOSI
 │                │
-│ Digital output ├─ OE
-│                │
 │    Digital I/O ├─ RST
 │    Digital I/O ├─ TPUP
 │    Digital I/O ├─ TPDN
+│                │
+│ Digital output ├─ OE
 │                │
 │   Analog input ├─ ADC
 └────────────────┘

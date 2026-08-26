@@ -31,7 +31,7 @@
 #define WIFI_KEY "password"
 
 /**
- * MQTT configuration, keep these unchanged if MQTT is not used.
+ * MQTT configuration.
  */
 #define MQTT_HOST "mqtt.local"
 #define MQTT_USER "username"
