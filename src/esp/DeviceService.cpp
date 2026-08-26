@@ -326,6 +326,8 @@ void DeviceService::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unus
  *
  * Fragmented messages and payloads that cannot be parsed as JSON are ignored.
  *
+ * @param properties MQTT message properties.
+ * @param topic MQTT topic that received the message.
  * @param payload MQTT message payload.
  * @param len Length of the current payload fragment.
  * @param index Offset of the current fragment within the message.
