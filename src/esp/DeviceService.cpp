@@ -49,6 +49,7 @@ void DeviceService::begin()
     }
     digitalWrite(PIN_OE, oe ? HIGH : LOW);
 #endif // PIN_OE
+    WiFiClass::setHostname(HOSTNAME);
     WiFi.onEvent(&onConnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
     WiFi.onEvent(&onDisconnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
     WiFi.begin(WIFI_SSID, WIFI_KEY);
@@ -57,6 +58,7 @@ void DeviceService::begin()
 #ifdef OTA_KEY
     ota.setPassword(OTA_KEY);
 #endif // OTA_KEY
+    ota.onStart(&onStart);
     ota.begin();
     mqtt.onConnect(&onConnect);
     mqtt.onMessage(&onMessage);
@@ -174,7 +176,7 @@ void DeviceService::mqttDiscovery()
         std::format("0x{:x}", ESP.getEfuseMac()));
     doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::manufacturer].set("IKEA");
     doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::model].set("BEKANT");
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::name].set(HOSTNAME);
+    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::name].set(NAME);
     doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::sw_version].set("Bekant 1.0.0");
     doc[HomeAssistantAbbreviations::origin][HomeAssistantOriginAbbreviations::name].set("Bekant");
     doc[HomeAssistantAbbreviations::origin][HomeAssistantOriginAbbreviations::support_url].set(
@@ -320,12 +322,14 @@ void DeviceService::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unus
 }
 
 /**
- * @brief Processes a complete MQTT message containing a JSON command.
+ * @brief Processes complete MQTT payloads containing valid JSON commands.
+ *
+ * Fragmented messages and payloads that cannot be parsed as JSON are ignored.
  *
  * @param properties MQTT message properties.
  * @param topic MQTT topic that received the message.
- * @param payload Message payload.
- * @param len Payload length for the current fragment.
+ * @param payload MQTT message payload.
+ * @param len Length of the current payload fragment.
  * @param index Offset of the current fragment within the message.
  * @param total Total message length.
  */
@@ -341,6 +345,17 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
             device.handleRequest(doc.as<JsonObjectConst>());
         }
     }
+}
+
+/**
+ * @brief Enters safe mode when an OTA update starts and flips the output-enable state.
+ */
+void DeviceService::onStart()
+{
+    device.safeMode();
+#ifdef PIN_OE
+    digitalWrite(PIN_OE, device.oe ? LOW : HIGH);
+#endif // PIN_OE
 }
 
 /**

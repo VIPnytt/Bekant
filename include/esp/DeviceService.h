@@ -51,6 +51,7 @@ private:
     static void onDisconnected(arduino_event_id_t event, arduino_event_info_t info);
     static void onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                           const uint8_t *payload, size_t len, size_t index, size_t total);
+    static void onStart();
 
 public:
     void begin();
