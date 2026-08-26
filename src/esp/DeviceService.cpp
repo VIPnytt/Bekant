@@ -322,12 +322,12 @@ void DeviceService::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unus
 }
 
 /**
- * @brief Processes a complete MQTT message containing a JSON command.
+ * @brief Processes complete MQTT payloads containing valid JSON commands.
  *
- * @param properties MQTT message properties.
- * @param topic MQTT topic that received the message.
- * @param payload Message payload.
- * @param len Payload length for the current fragment.
+ * Fragmented messages and payloads that cannot be parsed as JSON are ignored.
+ *
+ * @param payload MQTT message payload.
+ * @param len Length of the current payload fragment.
  * @param index Offset of the current fragment within the message.
  * @param total Total message length.
  */
@@ -345,6 +345,9 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
     }
 }
 
+/**
+ * @brief Enters safe mode when an OTA update starts and flips the output-enable state.
+ */
 void DeviceService::onStart()
 {
     device.safeMode();
