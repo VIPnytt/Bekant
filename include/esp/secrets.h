@@ -43,6 +43,11 @@
 // #define OTA_KEY "password"
 
 /**
+ * Device name displayed in Home Assistant.
+ */
+#define NAME "Bekant"
+
+/**
  * Hostname advertised on the local network.
  */
 #define HOSTNAME "bekant"

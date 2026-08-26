@@ -49,6 +49,7 @@ void DeviceService::begin()
     }
     digitalWrite(PIN_OE, oe ? HIGH : LOW);
 #endif // PIN_OE
+    WiFiClass::setHostname(HOSTNAME);
     WiFi.onEvent(&onConnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
     WiFi.onEvent(&onDisconnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
     WiFi.begin(WIFI_SSID, WIFI_KEY);
@@ -174,7 +175,7 @@ void DeviceService::mqttDiscovery()
         std::format("0x{:x}", ESP.getEfuseMac()));
     doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::manufacturer].set("IKEA");
     doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::model].set("BEKANT");
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::name].set(HOSTNAME);
+    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::name].set(NAME);
     doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::sw_version].set("Bekant 1.0.0");
     doc[HomeAssistantAbbreviations::origin][HomeAssistantOriginAbbreviations::name].set("Bekant");
     doc[HomeAssistantAbbreviations::origin][HomeAssistantOriginAbbreviations::support_url].set(
