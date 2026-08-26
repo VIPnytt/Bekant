@@ -1,64 +1,68 @@
 # 💡 Bekant
 
-**Bekant** is a hardware and firmware modification for the *IKEA Bekant* desk, combining an ESP32 with the AVR-based *Megadesk* replacement controller.
+**Bekant** is a hardware and firmware modification for the *IKEA Bekant* desk. It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add network connectivity and smart-home functionality, while the Megadesk remains responsible for the desk's core operation and works fully independently of the ESP32.
 
-It provides simple two-button control with height presets, smart-home integration through Home Assistant and MQTT, over-the-air firmware updates, and the ability to flash the Megadesk controller directly from the ESP32.
+The project provides local two-button control, height presets, Home Assistant integration through MQTT, OTA updates, remote flashing of the Megadesk's ATtiny841, and optional monitoring of the desk power supply.
 
 ## Features
 
-- Simple, intuitive two-button controls for manual movement and height presets
-- Home Assistant integration via MQTT
+- Two-button control for manual movement and height presets
+- Home Assistant integration through MQTT
+- Fully functional offline operation
 - OTA updates for the ESP32
-- Remote flashing of the ATtiny841-based Megadesk controller through the ESP32
-- RGB visual feedback and audible error indication
+- Remote flashing of the Megadesk controller through the ESP32
+- RGB status and error indication
+- Optional power-supply voltage monitoring
 
 ## Hardware
 
-- Megadesk replacement controller board
-- ESP32 with support for 29-35 V DC input, depending on your desk’s power supply
-- Logic level shifter for 5 V to 3.3 V communication
+A [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller, an ESP32, and a suitable logic level shifter are required.
+
+The Megadesk controller operates at 5 V logic levels while the ESP32 uses 3.3 V, so level shifting is required for communication between them. The optional `ADC` connection requires a resistor divider to monitor the desk's supply voltage.
+
+### ESP32 power
+
+The desk provides approximately 29–35 V DC, depending on its power supply. An ESP32 board that supports this input voltage is the preferred solution. The [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is one suitable option.
+
+A conventional ESP32 board with a suitable buck converter can also be used, but this is not recommended for new setups.
 
 > [!WARNING]
-> Do not connect the desk’s 29–35 V supply directly to the VIN pin of a typical ESP32 development board. Only use a board specifically designed for this input voltage, or use a suitable buck converter.
+> Do not connect the desk's 29–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
 
-A [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller is required for this mod. The ESP32 is used to control the Megadesk controller and provide smart-home features.
+### Logic level shifting
 
-It is recommended to get an ESP32 board with support for up to 35 V DC input, depending on the desk’s power supply. These aren’t very common, but the [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is an excellent choice. Alternatively any ESP32 board can be used, but a buck converter is then required to step down the voltage from 35 V DC to 5 V DC.
+The Megadesk controller uses 5 V logic levels while the ESP32 uses 3.3 V. Tested level-shifter families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E).
 
-For safe communication between the ESP32 and the Megadesk controller, a logic level shifter is required. The Megadesk controller operates at 5 V logic levels, while the ESP32 operates at 3.3 V logic levels. A logic level shifter ensures that the signals are properly translated between the two devices. These are commonly available and can be found as breakout boards in various forms from different manufacturers. Tested product families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E).
-
-The logic level shifter can be hidden inside the stock controller enclosure, only exposing the ESP32 partially sticking out of the enclosure on the back side next to the cable. This mounting position can be beneficial as it provides easy access to the ESP32 USB port while also allowing the ESP32’s RGB status LED to light up the underside of the desk, providing visual feedback on the desk’s status.
+Other level shifters may also be suitable. The selected solution should support the required UART communication, SPI programming, and open-drain control signals.
 
 ## Installation
 
-- Wire the ESP32 and logic level shifter to the Megadesk replacement controller.
-- Configure [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h) with pin assignments.
-- Build and upload the ESP32 firmware.
-- Flash the Megadesk firmware through the ESP32.
-- Verify operation physically and optionally through Home Assistant.
+Wire the ESP32 and level shifter to the Megadesk controller according to the diagrams below. If power-supply monitoring is used, connect the `ADC` pin through a suitable resistor divider.
 
-## Wiring
+Configure the pin assignments and credentials in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h), then build and upload the ESP32 firmware.
 
-| Pin    | Function               | Comment             |
-| ------ | ---------------------- | ------------------- |
-| `SCK`  | SPI SCLK / UART TX     | Required            |
-| `MISO` | SPI MISO / UART RX     | Required            |
-| `MOSI` | SPI MOSI               | Required            |
-| `RST`  | AVR reset              | Required            |
-| `TPUP` | Up button              |                     |
-| `TPDN` | Down button            |                     |
-| `OE`   | Level shifter control  |                     |
-| `ADC`  | Supply voltage monitor |                     |
+The ESP32 must be running before flashing the Megadesk controller because it acts as the programmer for the ATtiny841. Once both firmware images have been installed, verify desk movement before configuring optional features such as Home Assistant.
 
-During normal operation the `SCK` and `MISO` pins are used for serial communication with the Megadesk controller. The  `RST` pin is normally unused, but can be handy to reset the Megadesk controller if it becomes unresponsive. These three pins in combination with the `MOSI` pin are also used to flash the Megadesk controller through the ESP32. No special programming hardware is required, as the ESP32 can act as a programmer for the Megadesk controller.
+## Connections
 
-The `TPUP` and `TPDN` pins can be connected to enable simulation of physical button presses on the Megadesk controller. There’s normally no need to connect these pins, as the ESP32 can control the desk height through the Megadesk controller via serial communication. This is mainly useful for debugging and testing, but also allows for some interesting custom use cases.
+| Pin    | Function               | Required |
+| ------ | ---------------------- | -------- |
+| `SCK`  | SPI SCLK / UART TX     | Yes      |
+| `MISO` | SPI MISO / UART RX     | Yes      |
+| `MOSI` | SPI MOSI               | Yes      |
+| `RST`  | AVR reset              | Yes      |
+| `TPUP` | Up button              | No       |
+| `TPDN` | Down button            | No       |
+| `OE`   | Level shifter control  | No       |
+| `ADC`  | Supply voltage monitor | No       |
 
-Connecting `OE` allows the ESP32 to electrically isolate itself from the Megadesk controller by disabling the level shifter. This is mainly useful for development and debugging.
+During normal operation, `SCK` and `MISO` are used for serial communication with the Megadesk controller. Together with `MOSI` and `RST`, they are also used to flash the Megadesk's ATtiny841 through the ESP32.
 
-The IKEA Bekant desk has a bad reputation for having a power supply prone to failure. The `ADC` pin can be connected to the 35 V DC input voltage via a voltage divider, allowing the ESP32 to monitor the input voltage and report it through Home Assistant. This can be useful for detecting power supply issues before they cause problems.
+`TPUP` and `TPDN` can simulate physical button presses by pulling the corresponding Megadesk inputs low. These connections are normally unnecessary because the ESP32 can control the desk directly through serial communication, but they can be useful for testing and custom control implementations.
 
-### Megadesk pinout diagram
+Connecting `OE` allows the ESP32 to disable the level shifter and electrically isolate itself from the Megadesk controller. This is mainly useful for development and debugging.
+
+### Megadesk pinout
 
 ```text
       ┌────────────────────┐
@@ -77,11 +81,13 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
          └─────────────────── +35 V DC
 ```
 
-### ESP32 pinout diagram
+### ESP32 connections
+
+The exact GPIO assignments depend on the ESP32 board and are configured in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h).
 
 ```text
 ┌──────────────────────┐
-│                  VIN ├─ +35 V DC
+│                  VIN ├─ +35 V DC*
 │                  3V3 ├─ +3.3 V DC
 │                  GND ├─ 0 V DC
 │                      │
@@ -99,7 +105,12 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
 └──────────────────────┘
 ```
 
-### Logic level shifter pinout diagram
+> [!NOTE]
+> \* Only for ESP32 boards rated for the desk supply voltage.
+
+### Logic level shifter connections
+
+The ESP32 side operates at 3.3 V and the Megadesk side at 5 V.
 
 ```text
    0 V DC ────────┬──────── 0 V DC
@@ -110,13 +121,16 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
      MISO ─┤ A2  ◄──  B2 ├─ MISO
      MOSI ─┤ A3  ──►  B3 ├─ MOSI
       RST ─┤ A4  ──►  B4 ├─ RST
-     TPUP ─┤ A5  ◄─►  B5 ├─ TPUP
-     TPDN ─┤ A6  ◄─►  B6 ├─ TPDN
+     TPUP ─┤ A5  ──►  B5 ├─ TPUP
+     TPDN ─┤ A6  ──►  B6 ├─ TPDN
        OE ─┤ OE          │
            └─────────────┘
 ```
 
-### Cable pinout diagram
+> [!NOTE]
+> `RST`, `TPUP`, and `TPDN` are open-drain signals.
+
+### Desk controller cable
 
 ```text
 ──────┐
@@ -128,48 +142,69 @@ White ┼─ 0 V DC
 
 ## Software
 
-[PlatformIO IDE](https://platformio.org/platformio-ide) is required. It provides [integrations](https://platformio.org/install/integration) for a wide range of IDEs — use whichever editor you are most comfortable with.
+[PlatformIO IDE](https://platformio.org/platformio-ide) is required to build and upload the firmware. It provides [integrations](https://platformio.org/install/integration) for a wide range of editors, so use whichever environment you are most comfortable with.
 
 Define pin assignments and credentials in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h).
 
-Make sure to upload the ESP32 firmware before flashing the Megadesk controller, as the ESP32 is used as a programmer for the Megadesk controller.
+Make sure to upload the ESP32 firmware before flashing the Megadesk controller, as the ESP32 is used as the programmer.
 
 ### Status LED
 
-ESP32 boards with a WS2812 RGB LED can take advantage of the status LED functionality.
+ESP32 boards with a WS2812 RGB LED can use the integrated status indication.
 
-- **Red:** An error has occurred, this can mean the desk has reached a limit, is unresponsive, or that a communication error has occurred.
-- **Green:** Desk is moving in response to a physical button press
-- **Blue:** The desk is moving autonomously to a preset height or in response to a command
-- **White:** Idle
-- The light will switch off after a short period of inactivity.
+| Colour | Meaning                                                                                                                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Red    | An error has occurred. This can mean the desk has reached a limit, is unresponsive, or encountered a communication error. |
+| Green  | The desk is moving in response to a physical button press.                                                                |
+| Blue   | The desk is moving autonomously to a preset height or in response to a command.                                           |
+| White  | The desk is idle.                                                                                                         |
+
+The light switches off after a short period of inactivity.
 
 ### Home Assistant
 
-Home Assistant with MQTT is recommended for the best experience, but the desk also works fully offline. When the ESP32 successfully connects to MQTT, the desk will be auto-discovered in Home Assistant.
+Home Assistant with MQTT is recommended for the best experience, but the desk also works fully offline. When the ESP32 successfully connects to MQTT, the desk is automatically discovered in Home Assistant.
 
-| Category      | Name          | Description                              | Requirement |
-| ------------- | ------------- | ---------------------------------------- | ----------- |
-| Controls      | Height        | Move to a specific height of choice      |             |
-| Controls      | Preset high   | Move to the preset high height           |             |
-| Controls      | Preset low    | Move to the preset low height            |             |
-| Sensors       | Desk          | Current height of the desk               |             |
-| Sensors       | Preset high   | Preset high height                       |             |
-| Sensors       | Preset low    | Preset low height                        |             |
-| Configuration | Output enable | Control the logic level shifter’s OE pin | `PIN_OE`    |
-| Configuration | Preset high   | Set the preset high height               |             |
-| Configuration | Preset low    | Set the preset low height                |             |
-| Configuration | Reboot        | Reboot the ESP32                         |             |
-| Configuration | Reset         | Hold the Megadesk controller in reset    |             |
-| Diagnostics   | Button down   | Simulate a physical button down press    | `PIN_TPDN`  |
-| Diagnostics   | Button up     | Simulate a physical button up press      | `PIN_TPUP`  |
-| Diagnostics   | Calibrate     | Recalibrate the leg encoder sensors      |             |
-| Diagnostics   | Encoders      | Encoder raw height in average            |             |
-| Diagnostics   | Offset        | Displays the current leg offset height   |             |
-| Diagnostics   | Power supply  | Input voltage of the desk’s power supply | `PIN_ADC`   |
-| Diagnostics   | Serial RX     | Last UART message received               |             |
-| Diagnostics   | Serial TX     | Last UART message sent                   |             |
-| Diagnostics   | Temperature   | Internal temperature of the ESP32        |             |
-| Diagnostics   | Wi-Fi signal  | Wi-Fi RSSI signal strength of the ESP32  |             |
+#### Controls
 
-To avoid cluttering the Home Assistant interface, only a handful are enabled by default.
+| Name        | Description               |
+| ----------- | ------------------------- |
+| Height      | Move to a specific height |
+| Preset high | Move to the high preset   |
+| Preset low  | Move to the low preset    |
+
+#### Sensors
+
+| Name        | Description            |
+| ----------- | ---------------------- |
+| Desk        | Current desk height    |
+| Preset high | Configured high preset |
+| Preset low  | Configured low preset  |
+
+#### Configuration
+
+| Name          | Description                                | Requirement |
+| ------------- | ------------------------------------------ | ----------- |
+| Output enable | Control the logic level shifter's `OE` pin | `PIN_OE`    |
+| Preset high   | Set the high preset                        |             |
+| Preset low    | Set the low preset                         |             |
+| Reboot        | Reboot the ESP32                           |             |
+| Reset         | Hold the Megadesk controller in reset      |             |
+
+#### Diagnostics
+
+| Name         | Description                              | Requirement |
+| ------------ | ---------------------------------------- | ----------- |
+| Button down  | Simulate a physical down-button press    | `PIN_TPDN`  |
+| Button up    | Simulate a physical up-button press      | `PIN_TPUP`  |
+| Calibrate    | Recalibrate the leg encoder sensors      |             |
+| Encoders     | Raw average leg-encoder height           |             |
+| Offset       | Current leg offset                       |             |
+| Power supply | Input voltage of the desk's power supply | `PIN_ADC`   |
+| Serial RX    | Last UART message received               |             |
+| Serial TX    | Last UART message sent                   |             |
+| Temperature  | Internal temperature of the ESP32        |             |
+| Wi-Fi signal | ESP32 Wi-Fi RSSI                         |             |
+
+> [!NOTE]
+> To avoid cluttering the Home Assistant interface, only a handful of entities are enabled by default.
