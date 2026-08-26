@@ -58,6 +58,7 @@ void DeviceService::begin()
 #ifdef OTA_KEY
     ota.setPassword(OTA_KEY);
 #endif // OTA_KEY
+    ota.onStart(&onStart);
     ota.begin();
     mqtt.onConnect(&onConnect);
     mqtt.onMessage(&onMessage);
@@ -342,6 +343,14 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
             device.handleRequest(doc.as<JsonObjectConst>());
         }
     }
+}
+
+void DeviceService::onStart()
+{
+    device.safeMode();
+#ifdef PIN_OE
+    digitalWrite(PIN_OE, device.oe ? LOW : HIGH);
+#endif // PIN_OE
 }
 
 /**
