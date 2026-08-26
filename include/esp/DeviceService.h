@@ -34,7 +34,132 @@ private:
     NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};
 #endif // PIN_LED
 
-    RgbColor color{0xFFU, 0xFFU, 0xFFU};
+    /**
+ * Processes an incoming JSON request.
+ * @param doc JSON request to process.
+ */
+
+/**
+ * Processes Home Assistant JSON data.
+ * @param doc JSON document containing Home Assistant data.
+ */
+
+/**
+ * Transmits string data.
+ * @param data Data to transmit.
+ */
+
+/**
+ * Transmits a height command for the specified user height.
+ * @param prefix Command prefix.
+ * @param userHeight User height to transmit.
+ */
+
+/**
+ * Sets the desk down-button state.
+ * @param state Whether the button is pressed.
+ */
+
+/**
+ * Sets the desk up-button state.
+ * @param state Whether the button is pressed.
+ */
+
+/**
+ * Sets the output-enable state.
+ * @param state Whether outputs are enabled.
+ */
+
+/**
+ * Sets the reset state.
+ * @param state Whether reset is active.
+ */
+
+/**
+ * Handles an MQTT connection event.
+ * @param sessionPresent Whether the MQTT session is already present.
+ */
+
+/**
+ * Handles a network connection event.
+ * @param event Network event identifier.
+ */
+
+/**
+ * Handles an MQTT disconnection event.
+ * @param reason Reason for the disconnection.
+ */
+
+/**
+ * Handles a network disconnection event.
+ * @param event Network event identifier.
+ * @param info Network event information.
+ */
+
+/**
+ * Handles an incoming MQTT message.
+ * @param properties MQTT message properties.
+ * @param topic Message topic.
+ * @param payload Message payload.
+ * @param len Length of the current payload segment.
+ * @param index Offset of the current payload segment.
+ * @param total Total payload length.
+ */
+
+/**
+ * Handles OTA startup.
+ */
+
+/**
+ * Initializes the device service.
+ */
+
+/**
+ * Processes ongoing device service activity.
+ */
+
+/**
+ * Publishes MQTT discovery information.
+ */
+
+/**
+ * Activates safe-mode behavior.
+ */
+
+/**
+ * Sets the status indication to blue.
+ */
+
+/**
+ * Sets the status indication to green.
+ */
+
+/**
+ * Clears the status indication.
+ */
+
+/**
+ * Sets the status indication to red.
+ */
+
+/**
+ * Sets the status indication to white.
+ */
+
+/**
+ * Releases both desk buttons.
+ */
+
+/**
+ * Transmits JSON data.
+ * @param doc JSON document to transmit.
+ */
+
+/**
+ * Provides the singleton device service instance.
+ * @returns The singleton device service instance.
+ */
+RgbColor color{0xFFU, 0xFFU, 0xFFU};
 
     void handleRequest(JsonObjectConst doc);
     void onHomeAssistant(JsonDocument &doc);
