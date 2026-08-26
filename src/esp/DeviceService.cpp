@@ -346,7 +346,7 @@ void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &prope
 }
 
 /**
- * @brief Enters safe mode when an OTA update starts and restores the output-enable state.
+ * @brief Enters safe mode when an OTA update starts and flips the output-enable state.
  */
 void DeviceService::onStart()
 {
