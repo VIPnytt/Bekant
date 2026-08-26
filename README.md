@@ -1,8 +1,8 @@
 # 💡 Bekant
 
-**Bekant** is a hardware and firmware modification for the *IKEA Bekant* desk. It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add network connectivity and smart-home functionality, while the Megadesk remains responsible for the desk's core operation and works fully independently of the ESP32.
+**Bekant** is a hardware and firmware modification for the *IKEA Bekant* desk. It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add network connectivity and smart-home functionality, while the Megadesk remains responsible for the desk’s core operation and works fully independently of the ESP32.
 
-The project provides local two-button control, height presets, Home Assistant integration through MQTT, OTA updates, remote flashing of the Megadesk's ATtiny841, and optional monitoring of the desk power supply.
+The project provides local two-button control, height presets, Home Assistant integration through MQTT, OTA updates, remote flashing of the Megadesk’s ATtiny841, and optional monitoring of the desk power supply.
 
 ## Features
 
@@ -18,7 +18,7 @@ The project provides local two-button control, height presets, Home Assistant in
 
 A [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller, an ESP32, and a suitable logic level shifter are required.
 
-The Megadesk controller operates at 5 V logic levels while the ESP32 uses 3.3 V, so level shifting is required for communication between them. The optional `ADC` connection requires a resistor divider to monitor the desk's supply voltage.
+The Megadesk controller operates at 5 V logic levels while the ESP32 uses 3.3 V, so level shifting is required for communication between them. The optional `ADC` connection requires a resistor divider to monitor the desk’s supply voltage.
 
 ### ESP32 power
 
@@ -27,7 +27,7 @@ The desk provides approximately 29–35 V DC, depending on its power supply. An 
 A conventional ESP32 board with a suitable buck converter can also be used, but this is not recommended for new setups.
 
 > [!WARNING]
-> Do not connect the desk's 29–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
+> Do not connect the desk’s 29–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
 
 ### Logic level shifting
 
@@ -56,7 +56,7 @@ The ESP32 must be running before flashing the Megadesk controller because it act
 | `OE`   | Level shifter control  | No       |
 | `ADC`  | Supply voltage monitor | No       |
 
-During normal operation, `SCK` and `MISO` are used for serial communication with the Megadesk controller. Together with `MOSI` and `RST`, they are also used to flash the Megadesk's ATtiny841 through the ESP32.
+During normal operation, `SCK` and `MISO` are used for serial communication with the Megadesk controller. Together with `MOSI` and `RST`, they are also used to flash the Megadesk’s ATtiny841 through the ESP32.
 
 `TPUP` and `TPDN` can simulate physical button presses by pulling the corresponding Megadesk inputs low. These connections are normally unnecessary because the ESP32 can control the desk directly through serial communication, but they can be useful for testing and custom control implementations.
 
@@ -86,27 +86,26 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
 The exact GPIO assignments depend on the ESP32 board and are configured in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h).
 
 ```text
-┌──────────────────────┐
-│                  VIN ├─ +35 V DC*
-│                  3V3 ├─ +3.3 V DC
-│                  GND ├─ 0 V DC
-│                      │
-│             UART/SPI ├─ SCK
-│             UART/SPI ├─ MISO
-│                  SPI ├─ MOSI
-│                      │
-│       Digital output ├─ RST
-│       Digital output ├─ OE
-│                      │
-│ Digital input/output ├─ TPUP
-│ Digital input/output ├─ TPDN
-│                      │
-│         Analog input ├─ ADC
-└──────────────────────┘
+┌────────────────┐
+│            VIN ├─ +35 V DC*
+│            3V3 ├─ +3.3 V DC
+│            GND ├─ 0 V DC
+│                │
+│       UART/SPI ├─ SCK
+│       UART/SPI ├─ MISO
+│            SPI ├─ MOSI
+│                │
+│ Digital output ├─ OE
+│                │
+│    Digital I/O ├─ RST
+│    Digital I/O ├─ TPUP
+│    Digital I/O ├─ TPDN
+│                │
+│   Analog input ├─ ADC
+└────────────────┘
 ```
 
-> [!NOTE]
-> \* Only for ESP32 boards rated for the desk supply voltage.
+\* Only for ESP32 boards rated for the desk supply voltage.
 
 ### Logic level shifter connections
 
@@ -117,18 +116,17 @@ The ESP32 side operates at 3.3 V and the Megadesk side at 5 V.
 +3.3 V DC ────┐   │   ┌──── +5 V DC
            ┌──┴───┴───┴──┐
            │ VCC GND VCC │
-      SCK ─┤ A1  ──►  B1 ├─ SCK
-     MISO ─┤ A2  ◄──  B2 ├─ MISO
-     MOSI ─┤ A3  ──►  B3 ├─ MOSI
-      RST ─┤ A4  ──►  B4 ├─ RST
-     TPUP ─┤ A5  ──►  B5 ├─ TPUP
-     TPDN ─┤ A6  ──►  B6 ├─ TPDN
+      SCK ─┤ A   ──►   B ├─ SCK
+     MISO ─┤ A   ◄──   B ├─ MISO
+     MOSI ─┤ A   ──►   B ├─ MOSI
+      RST ─┤ A   ◄─►   B ├─ RST
+     TPUP ─┤ A   ◄─►   B ├─ TPUP
+     TPDN ─┤ A   ◄─►   B ├─ TPDN
        OE ─┤ OE          │
            └─────────────┘
 ```
 
-> [!NOTE]
-> `RST`, `TPUP`, and `TPDN` are open-drain signals.
+`RST`, `TPUP`, and `TPDN` are open-drain signals.
 
 ### Desk controller cable
 
@@ -185,7 +183,7 @@ Home Assistant with MQTT is recommended for the best experience, but the desk al
 
 | Name          | Description                                | Requirement |
 | ------------- | ------------------------------------------ | ----------- |
-| Output enable | Control the logic level shifter's `OE` pin | `PIN_OE`    |
+| Output enable | Control the logic level shifter’s `OE` pin | `PIN_OE`    |
 | Preset high   | Set the high preset                        |             |
 | Preset low    | Set the low preset                         |             |
 | Reboot        | Reboot the ESP32                           |             |
@@ -200,11 +198,10 @@ Home Assistant with MQTT is recommended for the best experience, but the desk al
 | Calibrate    | Recalibrate the leg encoder sensors      |             |
 | Encoders     | Raw average leg-encoder height           |             |
 | Offset       | Current leg offset                       |             |
-| Power supply | Input voltage of the desk's power supply | `PIN_ADC`   |
+| Power supply | Input voltage of the desk’s power supply | `PIN_ADC`   |
 | Serial RX    | Last UART message received               |             |
 | Serial TX    | Last UART message sent                   |             |
 | Temperature  | Internal temperature of the ESP32        |             |
 | Wi-Fi signal | ESP32 Wi-Fi RSSI                         |             |
 
-> [!NOTE]
-> To avoid cluttering the Home Assistant interface, only a handful of entities are enabled by default.
+To avoid cluttering the Home Assistant interface, only a handful of entities are enabled by default.
