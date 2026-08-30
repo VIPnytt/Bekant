@@ -26,9 +26,12 @@ void ConsoleHandler::handle()
     {
         if (length < sizeof(buffer))
         {
-            buffer[length] = static_cast<char>(byte);
+            buffer[length++] = static_cast<char>(byte);
         }
-        ++length;
+        else if (length == sizeof(buffer))
+        {
+            ++length;
+        }
     }
 }
 
