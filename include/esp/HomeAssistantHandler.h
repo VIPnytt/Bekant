@@ -12,7 +12,7 @@ private:
     static constexpr std::string_view commandTopic{"bekant/" HOSTNAME "/set"};
     static constexpr std::string_view stateTopic{"bekant/" HOSTNAME "/state"};
 
-    JsonDocument *const discovery;
+    JsonDocument &discovery; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void configuration();
     void controls();
@@ -20,7 +20,7 @@ private:
     void sensors();
 
 public:
-    explicit HomeAssistantHandler(JsonDocument &doc) : discovery(&doc) {};
+    explicit HomeAssistantHandler(JsonDocument &doc) : discovery(doc) {};
 
     void availability();
     void components();

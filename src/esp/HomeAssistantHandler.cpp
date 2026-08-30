@@ -9,7 +9,7 @@
 
 void HomeAssistantHandler::availability()
 {
-    JsonObject _availability{(*discovery)[ComponentAbbreviations::availability].to<JsonObject>()};
+    JsonObject _availability{discovery[ComponentAbbreviations::availability].to<JsonObject>()};
     _availability[ComponentAbbreviations::payload_not_available].set("");
     _availability[ComponentAbbreviations::topic].set("bekant/" HOSTNAME "/availability");
 }
@@ -24,7 +24,7 @@ void HomeAssistantHandler::components()
 
 void HomeAssistantHandler::device()
 {
-    JsonObject _device{(*discovery)[ComponentAbbreviations::device].to<JsonObject>()};
+    JsonObject _device{discovery[ComponentAbbreviations::device].to<JsonObject>()};
     _device[DeviceAbbreviations::connections][0U][0U].set("mac");
     _device[DeviceAbbreviations::connections][0U][1U].set(WiFi.macAddress());
     _device[DeviceAbbreviations::hw_version].set(ARDUINO_BOARD);
@@ -37,7 +37,7 @@ void HomeAssistantHandler::device()
 
 void HomeAssistantHandler::origin()
 {
-    JsonObject _origin{(*discovery)[ComponentAbbreviations::origin].to<JsonObject>()};
+    JsonObject _origin{discovery[ComponentAbbreviations::origin].to<JsonObject>()};
     _origin[OriginAbbreviations::name].set("Bekant");
     _origin[OriginAbbreviations::support_url].set("https://github.com/VIPnytt/Bekant");
 }
@@ -45,7 +45,7 @@ void HomeAssistantHandler::origin()
 void HomeAssistantHandler::controls()
 {
     {
-        JsonObject height{(*discovery)[ComponentAbbreviations::components]["height"].to<JsonObject>()};
+        JsonObject height{discovery[ComponentAbbreviations::components]["height"].to<JsonObject>()};
         height[ComponentAbbreviations::command_template].set(R"({"desk":{{value}}})");
         height[ComponentAbbreviations::command_topic].set(commandTopic);
         height[ComponentAbbreviations::device_class].set("distance");
@@ -65,7 +65,7 @@ void HomeAssistantHandler::controls()
         height[ComponentAbbreviations::value_template].set("{{value_json.desk|round(1)}}");
     }
     {
-        JsonObject presetHigh{(*discovery)[ComponentAbbreviations::components]["recall_high"].to<JsonObject>()};
+        JsonObject presetHigh{discovery[ComponentAbbreviations::components]["recall_high"].to<JsonObject>()};
         presetHigh[ComponentAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
         presetHigh[ComponentAbbreviations::command_topic].set(commandTopic);
         presetHigh[ComponentAbbreviations::icon].set("mdi:menu-up-outline");
@@ -77,7 +77,7 @@ void HomeAssistantHandler::controls()
         presetHigh[ComponentAbbreviations::unique_id].set("recall_high");
     }
     {
-        JsonObject presetLow{(*discovery)[ComponentAbbreviations::components]["recall_low"].to<JsonObject>()};
+        JsonObject presetLow{discovery[ComponentAbbreviations::components]["recall_low"].to<JsonObject>()};
         presetLow[ComponentAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
         presetLow[ComponentAbbreviations::command_topic].set(commandTopic);
         presetLow[ComponentAbbreviations::icon].set("mdi:menu-down-outline");
@@ -93,7 +93,7 @@ void HomeAssistantHandler::controls()
 void HomeAssistantHandler::sensors()
 {
     {
-        JsonObject desk{(*discovery)[ComponentAbbreviations::components]["desk"].to<JsonObject>()};
+        JsonObject desk{discovery[ComponentAbbreviations::components]["desk"].to<JsonObject>()};
         desk[ComponentAbbreviations::device_class].set("distance");
         desk[ComponentAbbreviations::icon].set("mdi:desk");
         desk[ComponentAbbreviations::json_attributes_template].set(
@@ -109,7 +109,7 @@ void HomeAssistantHandler::sensors()
         desk[ComponentAbbreviations::value_template].set(R"({{value_json.desk}})");
     }
     {
-        JsonObject presetHigh{(*discovery)[ComponentAbbreviations::components]["high_sensor"].to<JsonObject>()};
+        JsonObject presetHigh{discovery[ComponentAbbreviations::components]["high_sensor"].to<JsonObject>()};
         presetHigh[ComponentAbbreviations::device_class].set("distance");
         presetHigh[ComponentAbbreviations::icon].set("mdi:menu-up-outline");
         presetHigh[ComponentAbbreviations::name].set("Preset high");
@@ -122,7 +122,7 @@ void HomeAssistantHandler::sensors()
         presetHigh[ComponentAbbreviations::value_template].set(R"({{value_json.preset.high|round(1)}})");
     }
     {
-        JsonObject presetLow{(*discovery)[ComponentAbbreviations::components]["low_sensor"].to<JsonObject>()};
+        JsonObject presetLow{discovery[ComponentAbbreviations::components]["low_sensor"].to<JsonObject>()};
         presetLow[ComponentAbbreviations::device_class].set("distance");
         presetLow[ComponentAbbreviations::icon].set("mdi:menu-down-outline");
         presetLow[ComponentAbbreviations::name].set("Preset low");
@@ -141,7 +141,7 @@ void HomeAssistantHandler::configuration()
     constexpr std::string_view entityCategory{"config"};
 #ifdef PIN_OE
     {
-        JsonObject outputEnable{(*discovery)[ComponentAbbreviations::components]["oe"].to<JsonObject>()};
+        JsonObject outputEnable{discovery[ComponentAbbreviations::components]["oe"].to<JsonObject>()};
         outputEnable[ComponentAbbreviations::command_template].set(R"({"oe":{{value}}})");
         outputEnable[ComponentAbbreviations::command_topic].set(commandTopic);
         outputEnable[ComponentAbbreviations::entity_category].set(entityCategory);
@@ -158,7 +158,7 @@ void HomeAssistantHandler::configuration()
     }
 #endif // PIN_OE
     {
-        JsonObject presetHigh{(*discovery)[ComponentAbbreviations::components]["preset_high"].to<JsonObject>()};
+        JsonObject presetHigh{discovery[ComponentAbbreviations::components]["preset_high"].to<JsonObject>()};
         presetHigh[ComponentAbbreviations::command_template].set(R"({"preset":{"high":{{value}}}})");
         presetHigh[ComponentAbbreviations::command_topic].set(commandTopic);
         presetHigh[ComponentAbbreviations::device_class].set("distance");
@@ -176,7 +176,7 @@ void HomeAssistantHandler::configuration()
         presetHigh[ComponentAbbreviations::value_template].set("{{value_json.preset.high|round(1)}}");
     }
     {
-        JsonObject presetLow{(*discovery)[ComponentAbbreviations::components]["preset_low"].to<JsonObject>()};
+        JsonObject presetLow{discovery[ComponentAbbreviations::components]["preset_low"].to<JsonObject>()};
         presetLow[ComponentAbbreviations::command_template].set(R"({"preset":{"low":{{value}}}})");
         presetLow[ComponentAbbreviations::command_topic].set(commandTopic);
         presetLow[ComponentAbbreviations::device_class].set("distance");
@@ -194,7 +194,7 @@ void HomeAssistantHandler::configuration()
         presetLow[ComponentAbbreviations::value_template].set("{{value_json.preset.low|round(1)}}");
     }
     {
-        JsonObject reboot{(*discovery)[ComponentAbbreviations::components]["reboot"].to<JsonObject>()};
+        JsonObject reboot{discovery[ComponentAbbreviations::components]["reboot"].to<JsonObject>()};
         reboot[ComponentAbbreviations::command_template].set(R"({"action":"{{value}}"})");
         reboot[ComponentAbbreviations::command_topic].set(commandTopic);
         reboot[ComponentAbbreviations::device_class].set("restart");
@@ -206,7 +206,7 @@ void HomeAssistantHandler::configuration()
         reboot[ComponentAbbreviations::unique_id].set("reboot");
     }
     {
-        JsonObject reset{(*discovery)[ComponentAbbreviations::components]["reset"].to<JsonObject>()};
+        JsonObject reset{discovery[ComponentAbbreviations::components]["reset"].to<JsonObject>()};
         reset[ComponentAbbreviations::command_template].set(R"({"reset":{{value}}})");
         reset[ComponentAbbreviations::command_topic].set(commandTopic);
         reset[ComponentAbbreviations::enabled_by_default].set(false);
@@ -229,7 +229,7 @@ void HomeAssistantHandler::diagnostic()
     constexpr std::string_view entityCategory{"diagnostic"};
 #ifdef PIN_TPDN
     {
-        JsonObject buttonDown{(*discovery)[ComponentAbbreviations::components]["tpdn"].to<JsonObject>()};
+        JsonObject buttonDown{discovery[ComponentAbbreviations::components]["tpdn"].to<JsonObject>()};
         buttonDown[ComponentAbbreviations::command_template].set(R"({"button":{"down":{{value}}}})");
         buttonDown[ComponentAbbreviations::command_topic].set(commandTopic);
         buttonDown[ComponentAbbreviations::enabled_by_default].set(false);
@@ -248,7 +248,7 @@ void HomeAssistantHandler::diagnostic()
 #endif // PIN_TPDN
 #ifdef PIN_TPUP
     {
-        JsonObject buttonUp{(*discovery)[ComponentAbbreviations::components]["tpup"].to<JsonObject>()};
+        JsonObject buttonUp{discovery[ComponentAbbreviations::components]["tpup"].to<JsonObject>()};
         buttonUp[ComponentAbbreviations::command_template].set(R"({"button":{"up":{{value}}}})");
         buttonUp[ComponentAbbreviations::command_topic].set(commandTopic);
         buttonUp[ComponentAbbreviations::enabled_by_default].set(false);
@@ -266,7 +266,7 @@ void HomeAssistantHandler::diagnostic()
     }
 #endif // PIN_TPUP
     {
-        JsonObject calibrate{(*discovery)[ComponentAbbreviations::components]["calibrate"].to<JsonObject>()};
+        JsonObject calibrate{discovery[ComponentAbbreviations::components]["calibrate"].to<JsonObject>()};
         calibrate[ComponentAbbreviations::command_template].set(R"({"action":"{{value}}"})");
         calibrate[ComponentAbbreviations::command_topic].set(commandTopic);
         calibrate[ComponentAbbreviations::entity_category].set(entityCategory);
@@ -277,7 +277,7 @@ void HomeAssistantHandler::diagnostic()
         calibrate[ComponentAbbreviations::unique_id].set("calibrate");
     }
     {
-        JsonObject encoders{(*discovery)[ComponentAbbreviations::components]["encoders"].to<JsonObject>()};
+        JsonObject encoders{discovery[ComponentAbbreviations::components]["encoders"].to<JsonObject>()};
         encoders[ComponentAbbreviations::entity_category].set(entityCategory);
         encoders[ComponentAbbreviations::icon].set("mdi:counter");
         encoders[ComponentAbbreviations::json_attributes_template].set(R"({"raw":{{value_json.encoders}}})");
@@ -292,7 +292,7 @@ void HomeAssistantHandler::diagnostic()
             R"({{value_json.encoders|sum/value_json.encoders|length}})");
     }
     {
-        JsonObject offset{(*discovery)[ComponentAbbreviations::components]["offset"].to<JsonObject>()};
+        JsonObject offset{discovery[ComponentAbbreviations::components]["offset"].to<JsonObject>()};
         offset[ComponentAbbreviations::device_class].set("distance");
         offset[ComponentAbbreviations::enabled_by_default].set(false);
         offset[ComponentAbbreviations::entity_category].set(entityCategory);
@@ -311,7 +311,7 @@ void HomeAssistantHandler::diagnostic()
     }
 #ifdef PIN_ADC
     {
-        JsonObject powerSupply{(*discovery)[ComponentAbbreviations::components]["adc"].to<JsonObject>()};
+        JsonObject powerSupply{discovery[ComponentAbbreviations::components]["adc"].to<JsonObject>()};
         powerSupply[ComponentAbbreviations::device_class].set("voltage");
         powerSupply[ComponentAbbreviations::enabled_by_default].set(false);
         powerSupply[ComponentAbbreviations::entity_category].set(entityCategory);
@@ -327,7 +327,7 @@ void HomeAssistantHandler::diagnostic()
     }
 #endif // PIN_ADC
     {
-        JsonObject serialRx{(*discovery)[ComponentAbbreviations::components]["rx"].to<JsonObject>()};
+        JsonObject serialRx{discovery[ComponentAbbreviations::components]["rx"].to<JsonObject>()};
         serialRx[ComponentAbbreviations::enabled_by_default].set(false);
         serialRx[ComponentAbbreviations::entity_category].set(entityCategory);
         serialRx[ComponentAbbreviations::icon].set("mdi:message-cog-outline");
@@ -338,7 +338,7 @@ void HomeAssistantHandler::diagnostic()
         serialRx[ComponentAbbreviations::value_template].set("{{value_json.rx}}");
     }
     {
-        JsonObject serialTx{(*discovery)[ComponentAbbreviations::components]["tx"].to<JsonObject>()};
+        JsonObject serialTx{discovery[ComponentAbbreviations::components]["tx"].to<JsonObject>()};
         serialTx[ComponentAbbreviations::enabled_by_default].set(false);
         serialTx[ComponentAbbreviations::entity_category].set(entityCategory);
         serialTx[ComponentAbbreviations::icon].set("mdi:email-arrow-right");
@@ -349,7 +349,7 @@ void HomeAssistantHandler::diagnostic()
         serialTx[ComponentAbbreviations::value_template].set("{{value_json.tx}}");
     }
     {
-        JsonObject temperature{(*discovery)[ComponentAbbreviations::components]["temperature"].to<JsonObject>()};
+        JsonObject temperature{discovery[ComponentAbbreviations::components]["temperature"].to<JsonObject>()};
         temperature[ComponentAbbreviations::device_class].set("temperature");
         temperature[ComponentAbbreviations::enabled_by_default].set(false);
         temperature[ComponentAbbreviations::entity_category].set(entityCategory);
@@ -362,7 +362,7 @@ void HomeAssistantHandler::diagnostic()
         temperature[ComponentAbbreviations::value_template].set("{{value_json.temperature}}");
     }
     {
-        JsonObject wifiSignal{(*discovery)[ComponentAbbreviations::components]["rssi"].to<JsonObject>()};
+        JsonObject wifiSignal{discovery[ComponentAbbreviations::components]["rssi"].to<JsonObject>()};
         wifiSignal[ComponentAbbreviations::device_class].set("signal_strength");
         wifiSignal[ComponentAbbreviations::entity_category].set(entityCategory);
         wifiSignal[ComponentAbbreviations::name].set("Wi-Fi signal");
