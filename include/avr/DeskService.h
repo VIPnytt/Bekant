@@ -71,15 +71,7 @@ private:
 
     LinHandler lin{};
 
-    /**
- * Sends a four-byte packet.
- * @param byte1 First packet byte.
- * @param byte2 Second packet byte.
- * @param byte3 Third packet byte.
- * @param byte4 Fourth packet byte.
- * @return The response byte.
- */
-State state{State::IDLE};
+    State state{State::IDLE};
 
     void read();
     void process();

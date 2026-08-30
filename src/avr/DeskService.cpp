@@ -232,7 +232,8 @@ bool DeskService::isIdle()
 }
 
 /**
- * @brief Begins movement preparation when a target is pending and the desk is idle; otherwise maintains the idle command.
+ * @brief Begins movement preparation when a target is pending and the desk is idle; otherwise maintains the idle
+ * command.
  */
 void DeskService::handleStateIdle()
 {

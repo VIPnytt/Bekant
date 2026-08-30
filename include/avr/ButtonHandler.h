@@ -10,10 +10,7 @@ private:
 
     char count{0};
 
-    /**
- * Handles button input and updates the button state.
- */
-unsigned long lastMillis{0U};
+    unsigned long lastMillis{0U};
 
     void process();
     void incrementDown();

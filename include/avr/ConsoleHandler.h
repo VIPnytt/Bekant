@@ -7,10 +7,7 @@ class ConsoleHandler
 private:
     char buffer[5U]{'\n'};
 
-    /**
- * Handles console input.
- */
-unsigned char length{0U};
+    unsigned char length{0U};
 
     void process();
 
