@@ -8,10 +8,10 @@
 #include <HardwareSerial.h>
 
 /**
- * @brief Processes button state changes and initiates movement targets.
+ * @brief Handles button state transitions and processes the resulting input.
  *
- * Reports button transitions over the serial interface and updates the button
- * sequence count when buttons are pressed.
+ * Updates the press sequence count, records press timing, cancels movement on
+ * release, and reports transitions over the serial interface.
  */
 void ButtonHandler::handle()
 {
@@ -120,6 +120,9 @@ void ButtonHandler::incrementUp()
                                                                       : Encoder::maxLimit);
 }
 
+/**
+ * @brief Resumes movement in the direction indicated by the desk state.
+ */
 void ButtonHandler::cancel()
 {
     const DeskService::State state{desk.getState()};

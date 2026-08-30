@@ -232,7 +232,8 @@ bool DeskService::isIdle()
 }
 
 /**
- * @brief Waits for a requested movement or maintains the idle command.
+ * @brief Begins movement preparation when a target is pending and the desk is idle; otherwise maintains the idle
+ * command.
  */
 void DeskService::handleStateIdle()
 {
@@ -245,11 +246,10 @@ void DeskService::handleStateIdle()
 }
 
 /**
- * @brief Prepares the requested desk movement and starts the corresponding motion.
+ * @brief Determines the movement direction and prepares the desk to move toward the target.
  *
- * Adjusts the target with the encoder offset when the target is outside the current
- * encoder range, selects the movement direction, and sends the pre-movement command.
- * Clears the movement request when the target has already been reached.
+ * Adjusts the target within the configured limits when necessary, sends the pre-movement
+ * command, or clears the pending request when the target is already within range.
  */
 void DeskService::handleStatePrepare()
 {
@@ -394,6 +394,9 @@ void DeskService::tone(unsigned int frequency)
     }
 }
 
+/**
+ * @brief Starts desk recalibration when both desk nodes are idle.
+ */
 void DeskService::recalibrate()
 {
     if (isIdle())
@@ -404,6 +407,11 @@ void DeskService::recalibrate()
     }
 }
 
+/**
+ * @brief Stores a new upper desk-height preset.
+ *
+ * @param preset Upper desk-height preset to store.
+ */
 void DeskService::setPresetHigh(unsigned int preset)
 {
     if (preset != 0U && preset != presetHigh)
@@ -414,6 +422,13 @@ void DeskService::setPresetHigh(unsigned int preset)
     }
 }
 
+/**
+ * @brief Stores and reports a new lower desk preset.
+ *
+ * Zero and unchanged preset values are ignored.
+ *
+ * @param preset Lower desk position to store.
+ */
 void DeskService::setPresetLow(unsigned int preset)
 {
     if (preset != 0U && preset != presetLow)
@@ -424,6 +439,11 @@ void DeskService::setPresetLow(unsigned int preset)
     }
 }
 
+/**
+ * @brief Sets a valid target position and marks movement as pending.
+ *
+ * @param target Target position to move the desk to. Zero and `0xFFFF` are ignored.
+ */
 void DeskService::setTarget(unsigned int target)
 {
     if (target != 0U && target != 0xFFFFU)
@@ -433,14 +453,39 @@ void DeskService::setTarget(unsigned int target)
     }
 }
 
+/**
+ * @brief Gets the greater of the two encoder values.
+ *
+ * @return unsigned int The greater encoder value.
+ */
 unsigned int DeskService::getEncoderMax() const { return encoderA > encoderB ? encoderA : encoderB; }
 
+/**
+ * @brief Gets the smaller current encoder value.
+ *
+ * @return unsigned int The lower value reported by the encoder nodes.
+ */
 unsigned int DeskService::getEncoderMin() const { return encoderA < encoderB ? encoderA : encoderB; }
 
+/**
+ * @brief Retrieves the configured high preset height.
+ *
+ * @return unsigned int The stored high preset value.
+ */
 unsigned int DeskService::getPresetHigh() const { return presetHigh; }
 
+/**
+ * @brief Retrieves the configured low preset.
+ *
+ * @return unsigned int The stored low preset value.
+ */
 unsigned int DeskService::getPresetLow() const { return presetLow; }
 
+/**
+ * @brief Gets the current desk service state.
+ *
+ * @return State Current movement or recalibration state.
+ */
 DeskService::State DeskService::getState() const { return state; }
 
 /**
