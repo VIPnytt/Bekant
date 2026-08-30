@@ -6,7 +6,6 @@
 
 #include <EEPROM.h>
 #include <HardwareSerial.h>
-#include <wiring.h>
 
 /**
  * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
@@ -93,7 +92,7 @@ void DeskService::begin()
     lin.send(0x12U, magicPacket);
     if (errorCount != 0U)
     {
-        playTone(0b1U << 8U);
+        tone(0b1U << 8U);
         Serial1.printf("I%u\n", errorCount);
     }
 }
@@ -122,245 +121,14 @@ unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, 
  */
 void DeskService::handle()
 {
-    handleEncoders();
+    read();
+    process();
     if (state != State::RECAL_PREPARE && state != State::RECAL_ONGOING && state != State::RECAL_DONE)
     {
-        handleBuffer();
-        handleButtons();
+        console.handle();
+        button.handle();
+        Serial1.flush();
     }
-}
-
-/**
- * @brief Processes button state changes and initiates movement targets.
- *
- * Reports button transitions over the serial interface and updates the button
- * sequence count when buttons are pressed.
- */
-void DeskService::readButtons()
-{
-    const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
-    const bool _buttonUp{digitalRead(Pin::buttonUp) == LOW};
-    if (_buttonDown != buttonDown)
-    {
-        buttonDown = _buttonDown;
-        if (buttonDown)
-        {
-            lastMillisButton = millis();
-            --buttonCount;
-        }
-        else if (move)
-        {
-            targetLower();
-        }
-        Serial1.printf("d%u\n", static_cast<unsigned char>(buttonDown));
-    }
-    if (_buttonUp != buttonUp)
-    {
-        buttonUp = _buttonUp;
-        if (buttonUp)
-        {
-            lastMillisButton = millis();
-            ++buttonCount;
-        }
-        else if (move)
-        {
-            targetRise();
-        }
-        Serial1.printf("u%u\n", static_cast<unsigned char>(buttonUp));
-    }
-}
-
-/**
- * @brief Processes button input for desk movement, recalibration, and preset operations.
- *
- * Handles button combinations and press sequences to start movement, initiate
- * recalibration, store or recall low and high position presets, and reset
- * incomplete sequences after a timeout.
- */
-void DeskService::handleButtons()
-{
-    readButtons();
-    if (buttonDown && buttonUp && millis() - lastMillisButton > 0b1U << 13U)
-    {
-        buttonCount = 0;
-        state = State::RECAL_PREPARE;
-    }
-    else if (buttonDown && !buttonUp && millis() - lastMillisButton > 0b1U << 9U)
-    {
-        buttonCount = 0;
-        targetLower();
-    }
-    else if (buttonUp && !buttonDown && millis() - lastMillisButton > 0b1U << 9U)
-    {
-        buttonCount = 0;
-        targetRise();
-    }
-    else if (buttonCount == -2 && millis() - lastMillisButton > 0b1U << 8U)
-    {
-        buttonCount = 0;
-        presetLow = max(encoderA, encoderB);
-        EEPROM.put(static_cast<int>('l'), presetLow);
-        Serial1.printf("l%u\n", presetLow);
-        playTone(0b1U << 12U);
-    }
-    else if (buttonCount == -1 && presetLow != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
-    {
-        buttonCount = 0;
-        encoderTarget = presetLow;
-        move = true;
-    }
-    else if (buttonCount == 1 && presetHigh != 0xFFFFU && millis() - lastMillisButton > 0b1U << 8U)
-    {
-        buttonCount = 0;
-        encoderTarget = presetHigh;
-        move = true;
-    }
-    else if (buttonCount == 2 && millis() - lastMillisButton > 0b1U << 8U)
-    {
-        buttonCount = 0;
-        presetHigh = min(encoderA, encoderB);
-        EEPROM.put(static_cast<int>('h'), presetHigh);
-        Serial1.printf("h%u\n", presetHigh);
-        playTone(0b1U << 12U);
-    }
-    else if (buttonCount != 0 && millis() - lastMillisButton > 0b1U << 8U)
-    {
-        buttonCount = 0;
-    }
-}
-
-/**
- * @brief Buffers serial input and parses each completed newline-terminated command.
- *
- * Discards empty lines and prevents writes beyond the command buffer capacity.
- */
-void DeskService::handleBuffer()
-{
-    const int byte{Serial1.read()};
-    if (byte == static_cast<int>('\n') && bufferLength != 0U)
-    {
-        if (bufferLength <= sizeof(buffer))
-        {
-            parseBuffer();
-        }
-        bufferLength = 0U;
-    }
-    else if (byte != -1 && byte != static_cast<int>('\n'))
-    {
-        if (bufferLength < sizeof(buffer))
-        {
-            buffer[bufferLength] = static_cast<char>(byte);
-        }
-        ++bufferLength;
-    }
-}
-
-/**
- * @brief Processes the buffered serial command and applies the requested action.
- *
- * Supports recalibration, movement targets, high and low preset recall or updates,
- * and tone frequency commands.
- */
-void DeskService::parseBuffer()
-{
-    if (buffer[0U] == 'c')
-    {
-        playTone(0b1U << 12U);
-        state = State::RECAL_PREPARE;
-    }
-    else if (buffer[0U] == 'e')
-    {
-        const unsigned int _target{parseDigits()};
-        if (_target != 0U)
-        {
-            encoderTarget = _target;
-            move = true;
-        }
-    }
-    else if (buffer[0U] == 'h' && bufferLength == 1U && presetHigh != 0xFFFFU)
-    {
-        encoderTarget = presetHigh;
-        move = true;
-    }
-    else if (buffer[0U] == 'h' && bufferLength != 1U)
-    {
-        const unsigned int _high{parseDigits()};
-        if (_high != 0U && _high != presetHigh)
-        {
-            presetHigh = _high;
-            EEPROM.put(static_cast<int>(buffer[0U]), presetHigh);
-            Serial1.printf("%c%u\n", buffer[0U], presetHigh);
-        }
-    }
-    else if (buffer[0U] == 'l' && bufferLength == 1U && presetLow != 0xFFFFU)
-    {
-        encoderTarget = presetLow;
-        move = true;
-    }
-    else if (buffer[0U] == 'l' && bufferLength != 1U)
-    {
-        const unsigned int _low{parseDigits()};
-        if (_low != 0U && _low != presetLow)
-        {
-            presetLow = _low;
-            EEPROM.put(static_cast<int>(buffer[0U]), presetLow);
-            Serial1.printf("%c%u\n", buffer[0U], presetLow);
-        }
-    }
-    else if (buffer[0U] == 't')
-    {
-        const unsigned int _frequency{parseDigits()};
-        if (_frequency != 0U)
-        {
-            playTone(_frequency);
-        }
-    }
-}
-
-/**
- * @brief Parses the numeric characters following the first character in the command buffer.
- *
- * @return The parsed unsigned integer, or zero if the suffix contains a non-digit character.
- */
-unsigned int DeskService::parseDigits()
-{
-    unsigned int value{0U};
-    for (size_t idx{1U}; idx < bufferLength; ++idx)
-    {
-        if (buffer[idx] < '0' || buffer[idx] > '9')
-        {
-            return 0U;
-        }
-        value *= 10U;
-        value += static_cast<unsigned int>(buffer[idx] - '0');
-    }
-    return value;
-}
-
-/**
- * @brief Sets a bounded target for lowering the desk.
- *
- * @return void
- */
-void DeskService::targetLower()
-{
-    const unsigned int maxCurrent{max(encoderA, encoderB)};
-    encoderTarget =
-        maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta : Encoder::minLimit;
-    move = true;
-}
-
-/**
- * @brief Sets the desk's upward movement target and starts movement.
- *
- * @return None.
- */
-void DeskService::targetRise()
-{
-    const unsigned int minCurrent{min(encoderA, encoderB)};
-    encoderTarget =
-        minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta : Encoder::maxLimit;
-    move = true;
 }
 
 /**
@@ -369,7 +137,7 @@ void DeskService::targetRise()
  * Updates encoder readings when communication succeeds and reports communication
  * errors, optionally sounding an alert while the desk is moving.
  */
-void DeskService::handleEncoders()
+void DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
@@ -382,14 +150,14 @@ void DeskService::handleEncoders()
         if (charsA != static_cast<unsigned char>(sizeof(nodeA) + 1ULL))
         {
             Serial1.printf("A%u\n", _encoderA);
-            if (move)
+            if (pending)
             {
-                playTone(0b1U << 8U);
+                tone(0b1U << 8U);
             }
             return;
         }
         encoderA = _encoderA;
-        lastMillisEncoder = millis();
+        lastMillis = millis();
         Serial1.printf("a%u\n", encoderA);
     }
     if (_encoderB != encoderB)
@@ -397,17 +165,16 @@ void DeskService::handleEncoders()
         if (charsB != static_cast<unsigned char>(sizeof(nodeB) + 1ULL))
         {
             Serial1.printf("B%u\n", _encoderB);
-            if (move)
+            if (pending)
             {
-                playTone(0b1U << 8U);
+                tone(0b1U << 8U);
             }
             return;
         }
         encoderB = _encoderB;
-        lastMillisEncoder = millis();
+        lastMillis = millis();
         Serial1.printf("b%u\n", encoderB);
     }
-    parseEncoders();
 }
 
 /**
@@ -416,7 +183,7 @@ void DeskService::handleEncoders()
  * Processes the current state, issues required movement or calibration commands,
  * and transitions to the next state.
  */
-void DeskService::parseEncoders()
+void DeskService::process()
 {
     switch (state)
     {
@@ -465,11 +232,12 @@ bool DeskService::isIdle()
 }
 
 /**
- * @brief Waits for a requested movement or maintains the idle command.
+ * @brief Begins movement preparation when a target is pending and the desk is idle; otherwise maintains the idle
+ * command.
  */
 void DeskService::handleStateIdle()
 {
-    if (move && isIdle())
+    if (pending && isIdle())
     {
         state = State::PREPARE;
         return;
@@ -478,15 +246,14 @@ void DeskService::handleStateIdle()
 }
 
 /**
- * @brief Prepares the requested desk movement and starts the corresponding motion.
+ * @brief Determines the movement direction and prepares the desk to move toward the target.
  *
- * Adjusts the target with the encoder offset when the target is outside the current
- * encoder range, selects the movement direction, and sends the pre-movement command.
- * Clears the movement request when the target has already been reached.
+ * Adjusts the target within the configured limits when necessary, sends the pre-movement
+ * command, or clears the pending request when the target is already within range.
  */
 void DeskService::handleStatePrepare()
 {
-    if (encoderTarget < min(encoderA, encoderB))
+    if (encoderTarget < getEncoderMin())
     {
         if (encoderTarget >= Encoder::minLimit + Encoder::targetOffset)
         {
@@ -494,7 +261,7 @@ void DeskService::handleStatePrepare()
         }
         state = State::DOWN;
     }
-    else if (encoderTarget > max(encoderA, encoderB))
+    else if (encoderTarget > getEncoderMax())
     {
         if (encoderTarget <= Encoder::maxLimit - Encoder::targetOffset)
         {
@@ -504,11 +271,11 @@ void DeskService::handleStatePrepare()
     }
     else
     {
-        move = false;
+        pending = false;
         state = State::IDLE;
         return;
     }
-    lastMillisEncoder = millis();
+    lastMillis = millis();
     sendCommand(Command::PRE_MOVE);
 }
 
@@ -519,7 +286,7 @@ void DeskService::handleStatePrepare()
  */
 void DeskService::handleStateDown()
 {
-    if (encoderTarget >= min(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
+    if (encoderTarget >= getEncoderMin() || millis() - lastMillis > (0b1U << 8U))
     {
         state = State::STOP;
         return;
@@ -532,7 +299,7 @@ void DeskService::handleStateDown()
  */
 void DeskService::handleStateUp()
 {
-    if (encoderTarget <= max(encoderA, encoderB) || millis() - lastMillisEncoder > (0b1U << 8U))
+    if (encoderTarget <= getEncoderMax() || millis() - lastMillis > (0b1U << 8U))
     {
         state = State::STOP;
         return;
@@ -547,7 +314,7 @@ void DeskService::handleStateDone()
 {
     if (isIdle())
     {
-        move = false;
+        pending = false;
         state = State::IDLE;
         return;
     }
@@ -563,7 +330,7 @@ void DeskService::handleStateDone()
  */
 void DeskService::handleStateRecalOngoing()
 {
-    if (nodeA[2U] == 1U && nodeB[2U] == 1U && max(encoderA, encoderB) <= 99U)
+    if (nodeA[2U] == 1U && nodeB[2U] == 1U && getEncoderMax() <= 99U)
     {
         state = State::RECAL_DONE;
         return;
@@ -578,8 +345,8 @@ void DeskService::handleStateRecalOngoing()
  */
 void DeskService::sendCommand(Command command)
 {
-    const unsigned int maxCurrent{max(encoderA, encoderB)};
-    const unsigned int minCurrent{min(encoderA, encoderB)};
+    const unsigned int maxCurrent{getEncoderMax()};
+    const unsigned int minCurrent{getEncoderMin()};
     const unsigned int maxTarget{minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
                                                                                     : Encoder::maxLimit};
     const unsigned int minTarget{maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
@@ -611,18 +378,115 @@ void DeskService::sendCommand(Command command, unsigned int payload)
  *
  * @param frequency Tone frequency in hertz.
  */
-void DeskService::playTone(unsigned int frequency)
+void DeskService::tone(unsigned int frequency)
 {
-    const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
-    const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
-    for (uint32_t idx{0U}; idx < (0b1UL << 17U) / halfperiod; ++idx)
+    if (frequency != 0U)
     {
-        digitalWrite(Pin::tone, HIGH);
-        delayMicroseconds(delay);
-        digitalWrite(Pin::tone, LOW);
-        delayMicroseconds(delay);
+        const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
+        const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
+        for (uint32_t idx{0U}; idx < (0b1UL << 17U) / halfperiod; ++idx)
+        {
+            digitalWrite(Pin::tone, HIGH);
+            delayMicroseconds(delay);
+            digitalWrite(Pin::tone, LOW);
+            delayMicroseconds(delay);
+        }
     }
 }
+
+/**
+ * @brief Starts desk recalibration when both desk nodes are idle.
+ */
+void DeskService::recalibrate()
+{
+    if (isIdle())
+    {
+        tone(0b1U << 12U);
+        pending = false;
+        state = State::RECAL_PREPARE;
+    }
+}
+
+/**
+ * @brief Stores a new upper desk-height preset.
+ *
+ * @param preset Upper desk-height preset to store.
+ */
+void DeskService::setPresetHigh(unsigned int preset)
+{
+    if (preset != 0U && preset != presetHigh)
+    {
+        presetHigh = preset;
+        EEPROM.put(static_cast<int>('h'), presetHigh);
+        Serial1.printf("h%u\n", presetHigh);
+    }
+}
+
+/**
+ * @brief Stores and reports a new lower desk preset.
+ *
+ * Zero and unchanged preset values are ignored.
+ *
+ * @param preset Lower desk position to store.
+ */
+void DeskService::setPresetLow(unsigned int preset)
+{
+    if (preset != 0U && preset != presetLow)
+    {
+        presetLow = preset;
+        EEPROM.put(static_cast<int>('l'), presetLow);
+        Serial1.printf("l%u\n", presetLow);
+    }
+}
+
+/**
+ * @brief Sets a valid target position and marks movement as pending.
+ *
+ * @param target Target position to move the desk to. Zero and `0xFFFF` are ignored.
+ */
+void DeskService::setTarget(unsigned int target)
+{
+    if (target != 0U && target != 0xFFFFU)
+    {
+        encoderTarget = target;
+        pending = true;
+    }
+}
+
+/**
+ * @brief Gets the greater of the two encoder values.
+ *
+ * @return unsigned int The greater encoder value.
+ */
+unsigned int DeskService::getEncoderMax() const { return encoderA > encoderB ? encoderA : encoderB; }
+
+/**
+ * @brief Gets the smaller current encoder value.
+ *
+ * @return unsigned int The lower value reported by the encoder nodes.
+ */
+unsigned int DeskService::getEncoderMin() const { return encoderA < encoderB ? encoderA : encoderB; }
+
+/**
+ * @brief Retrieves the configured high preset height.
+ *
+ * @return unsigned int The stored high preset value.
+ */
+unsigned int DeskService::getPresetHigh() const { return presetHigh; }
+
+/**
+ * @brief Retrieves the configured low preset.
+ *
+ * @return unsigned int The stored low preset value.
+ */
+unsigned int DeskService::getPresetLow() const { return presetLow; }
+
+/**
+ * @brief Gets the current desk service state.
+ *
+ * @return State Current movement or recalibration state.
+ */
+DeskService::State DeskService::getState() const { return state; }
 
 /**
  * @brief Provides access to the singleton DeskService instance.
