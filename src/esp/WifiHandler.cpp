@@ -5,6 +5,8 @@
 #include "esp/DeviceService.h"
 #include "esp/secrets.h"
 
+#include <WiFi.h>
+
 void WifiHandler::begin()
 {
     WiFiClass::setHostname(HOSTNAME);

@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include <WiFi.h>
+#include <NetworkEvents.h>
 
 class WifiHandler
 {

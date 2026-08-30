@@ -8,10 +8,8 @@
 #include "esp/OtaHandler.h"
 #include "esp/StatusHandler.h"
 #include "esp/WifiHandler.h"
-#include "esp/secrets.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
-#include <espMqttClient.h>
 
 class DeviceService
 {
