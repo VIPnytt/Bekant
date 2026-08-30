@@ -30,12 +30,12 @@ public:
     void setTarget(unsigned int target);
     void tone(unsigned int frequency);
 
-    unsigned int getEncoderMax() const;
-    unsigned int getEncoderMin() const;
-    unsigned int getPresetHigh() const;
-    unsigned int getPresetLow() const;
+    [[nodiscard]] unsigned int getEncoderMax() const;
+    [[nodiscard]] unsigned int getEncoderMin() const;
+    [[nodiscard]] unsigned int getPresetHigh() const;
+    [[nodiscard]] unsigned int getPresetLow() const;
 
-    State getState() const;
+    [[nodiscard]] State getState() const;
 
     static DeskService &getInstance();
 
@@ -74,6 +74,8 @@ private:
     State state{State::IDLE};
 
     void read();
+    void process();
+
     void handleStateIdle();
     void handleStatePrepare();
     void handleStateDown();
@@ -81,12 +83,10 @@ private:
     void handleStateDone();
     void handleStateRecalOngoing();
 
-    void process();
-
     void sendCommand(Command command);
     void sendCommand(Command command, unsigned int target);
 
-    bool isIdle();
+    [[nodiscard]] bool isIdle();
 
     unsigned char sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
 };
