@@ -4,7 +4,7 @@
 
 #include "esp/constants.h" // NOLINT(misc-include-cleaner)
 
-#include <WiFi.h>
+#include <WiFi.h> // NOLINT(misc-include-cleaner)
 #include <format>
 #include <nvs.h>
 
