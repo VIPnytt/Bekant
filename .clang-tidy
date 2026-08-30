@@ -32,6 +32,4 @@ CheckOptions:
     value: true
   - key: misc-include-cleaner.MissingIncludes
     value: false
-  - key: readability-identifier-length.IgnoredVariableNames
-    value: ^(oe|rx|tx)$
 FormatStyle: file

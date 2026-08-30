@@ -21,60 +21,54 @@ void DeviceService::begin()
 #ifdef PIN_LED
     pinMode(PIN_LED, OUTPUT);
 #endif // PIN_LED
-    pinMode(PIN_MISO, INPUT);
     pinMode(PIN_MOSI, OUTPUT);
 #ifdef PIN_OE
     pinMode(PIN_OE, OUTPUT);
 #endif // PIN_OE
     pinMode(PIN_RST, OUTPUT_OPEN_DRAIN);
-    pinMode(PIN_SCK, OUTPUT);
 #ifdef PIN_TPDN
     pinMode(PIN_TPDN, OUTPUT_OPEN_DRAIN);
 #endif // PIN_TPDN
 #ifdef PIN_TPUP
     pinMode(PIN_TPUP, OUTPUT_OPEN_DRAIN);
 #endif // PIN_TPUP
-    unsetButtons();
-    digitalWrite(PIN_RST, HIGH);
-#ifdef PIN_OE
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        uint8_t _oe{};
-        if (nvs_get_u8(handle, "oe", &_oe) == ESP_OK)
+        nvs_get_u16(handle, "a", &encoderA);
+        nvs_get_u16(handle, "b", &encoderB);
+        nvs_get_u16(handle, "h", &presetHigh);
+        nvs_get_u16(handle, "l", &presetLow);
+#ifdef PIN_OE
+        uint8_t _enable{};
+        if (nvs_get_u8(handle, "oe", &_enable) == ESP_OK)
         {
-            oe = static_cast<bool>(_oe);
+            enable = static_cast<bool>(_enable);
+            digitalWrite(PIN_OE, enable ? HIGH : LOW);
         }
-        nvs_close(handle);
-    }
-    digitalWrite(PIN_OE, oe ? HIGH : LOW);
 #endif // PIN_OE
-    WiFiClass::setHostname(HOSTNAME);
-    WiFi.onEvent(&onConnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
-    WiFi.onEvent(&onDisconnected, arduino_event_id_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-    WiFi.begin(WIFI_SSID, WIFI_KEY);
-    WiFi.waitForConnectResult();
-    ota.setHostname(HOSTNAME);
-#ifdef OTA_KEY
-    ota.setPassword(OTA_KEY);
-#endif // OTA_KEY
-    ota.onStart(&onStart);
+        nvs_close(handle);
+        saved = true;
+    }
+#ifdef PIN_TPDN
+    digitalWrite(PIN_TPDN, HIGH);
+#endif // PIN_TPDN
+#ifdef PIN_TPUP
+    digitalWrite(PIN_TPUP, HIGH);
+#endif // PIN_TPUP
+    attachInterrupt(PIN_RST, onInterruptReset, CHANGE);
+#ifdef PIN_TPDN
+    attachInterrupt(PIN_TPDN, onInterruptDown, CHANGE);
+#endif // PIN_TPDN
+#ifdef PIN_TPUP
+    attachInterrupt(PIN_TPUP, onInterruptUp, CHANGE);
+#endif // PIN_TPUP
+    digitalWrite(PIN_RST, HIGH);
+    wifi.begin();
     ota.begin();
-    mqtt.onConnect(&onConnect);
-    mqtt.onMessage(&onMessage);
-    mqtt.onDisconnect(&onDisconnect);
-    mqtt.setClientId(HOSTNAME);
-    mqtt.setCredentials(MQTT_USER, MQTT_KEY);
-    mqtt.setServer(MQTT_HOST, 1883U);
-    mqtt.setWill("bekant/" HOSTNAME "/availability",
-                 static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2),
-                 true,
-                 will.data(),
-                 will.size() - 1U);
-    mqtt.connect();
-    desk.begin();
     isp.begin();
-    mqttDiscovery();
+    console.begin();
+    mqtt.begin();
 }
 
 /**
@@ -86,149 +80,164 @@ void DeviceService::begin()
  */
 void DeviceService::handle()
 {
+    wifi.handle();
     ota.handle();
-    desk.handle();
     isp.handle();
-    if (pending)
+    status.handle();
+    if (!process)
     {
+        status.setNone(true);
+        return;
+    }
+    console.handle();
+    mqtt.handle();
+    if (pending || millis() - lastMillis > 0b1U << 16U)
+    {
+#ifdef PIN_TPDN
+        if (driveDown.first && !pending)
+        {
+            digitalWrite(PIN_TPDN, HIGH);
+            driveDown.first = false;
+        }
+#endif // PIN_TPDN
+#ifdef PIN_TPUP
+        if (driveUp.first && !pending)
+        {
+            digitalWrite(PIN_TPUP, HIGH);
+            driveUp.first = false;
+        }
+#endif // PIN_TPUP
+        if (!saved && !pending)
+        {
+            save();
+        }
+        JsonDocument doc{};
+        transmit(doc);
+        lastMillis = millis();
         pending = false;
-#ifdef PIN_LED
-        led.SetPixelColor(0U, color);
-        led.Show();
-#endif // PIN_LED
-        lastMillis = millis();
     }
-    else if (color.B != 0U && color.G == 0U && color.R == 0U && millis() - lastMillis > (0b1U << 7U))
+}
+
+/**
+ * @brief Decodes an encoder value into a physical desk height.
+ *
+ * @param encoder Encoded 16-bit encoder value.
+ */
+float DeviceService::decode(float encoder)
+{
+    return ((encoder - static_cast<float>(ReferenceHeight::encoderLow)) *
+            (ReferenceHeight::heightHigh - ReferenceHeight::heightLow) /
+            static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow)) +
+           ReferenceHeight::heightLow;
+}
+
+uint16_t DeviceService::encode(float height)
+{
+    return static_cast<uint16_t>(
+        lroundf(((height - ReferenceHeight::heightLow) *
+                 static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
+                 (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
+                static_cast<float>(ReferenceHeight::encoderLow)));
+}
+
+/**
+ * @brief Processes commands from a JSON request.
+ *
+ * Handles desk actions, button controls, height and preset commands, output-enable and reset state changes, and raw
+ * transmissions.
+ *
+ * @param doc JSON object containing the requested commands.
+ */
+void DeviceService::request(JsonObjectConst doc)
+{
+    if (doc["action"].is<std::string_view>())
     {
-        statusWhite();
-    }
-    else if (color.B == 0U && color.G != 0U && color.R == 0U && millis() - lastMillis > 0b1U << 11U)
-    {
-        unsetButtons();
-        statusWhite();
-    }
-    else if (color.B == 0U && color.G == 0U && color.R != 0U && millis() - lastMillis > (0b1U << 15U))
-    {
-        unsetButtons();
-        statusNone();
-    }
-    else if (color.B != 0U && color.G != 0U && color.R != 0U && millis() - lastMillis > (0b1U << 16U))
-    {
-        statusNone();
-        desk.save();
-    }
-    else if (millis() - lastMillis > 0b1U << 17U)
-    {
-        if (!WiFi.isConnected())
+        const std::string_view action{doc["action"].as<std::string_view>()};
+        if (action == "calibrate")
         {
-            WiFi.reconnect();
+            status.setWhite();
+            console.send("c");
         }
-        else if (!mqtt.connected())
+        else if (action == "restart")
         {
-            mqtt.connect();
+            mqtt.disconnect();
+            status.setNone();
+            digitalWrite(PIN_RST, LOW);
+            vTaskDelay(0b1U << 7U);
+            ESP.restart();
         }
-        else
-        {
-            JsonDocument doc{};
-            desk.metadata(doc);
-            transmit(doc);
-        }
-        lastMillis = millis();
+    }
+    if (doc["button"]["down"].is<bool>())
+    {
+        device.setDriveDown(doc["button"]["down"].as<bool>());
+    }
+    if (doc["button"]["up"].is<bool>())
+    {
+        device.setDriveUp(doc["button"]["up"].as<bool>());
+    }
+    if (doc["desk"].is<float>())
+    {
+        status.setWhite();
+        console.send("e" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
+    }
+    if (doc["oe"].is<bool>())
+    {
+        device.setOutputEnable(doc["oe"].as<bool>());
+    }
+    if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
+    {
+        status.setWhite();
+        console.send("h");
+    }
+    if (doc["preset"]["high"].is<float>())
+    {
+        status.setWhite();
+        console.send("h" + std::to_string(static_cast<int>(encode(doc["preset"]["high"].as<float>()))));
+    }
+    if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
+    {
+        status.setWhite();
+        console.send("l");
+    }
+    if (doc["preset"]["low"].is<float>())
+    {
+        status.setWhite();
+        console.send("l" + std::to_string(static_cast<int>(encode(doc["preset"]["low"].as<float>()))));
+    }
+    if (doc["reset"].is<bool>())
+    {
+        device.setReset(doc["reset"].as<bool>());
+    }
+    if (doc["tx"].is<std::string>())
+    {
+        status.setWhite();
+        console.send(doc["tx"].as<std::string>());
     }
 }
 
 void DeviceService::safeMode()
 {
-    mqtt.publish("bekant/" HOSTNAME "/availability",
-                 static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2),
-                 true,
-                 "");
-    mqtt.unsubscribe("bekant/" HOSTNAME "/set");
+    process = false;
     Serial1.end();
-}
-
-void DeviceService::unsetButtons()
-{
-#ifdef PIN_TPDN
-    digitalWrite(PIN_TPDN, HIGH);
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
-    digitalWrite(PIN_TPUP, HIGH);
-#endif // PIN_TPUP
+    mqtt.disconnect();
 }
 
 /**
- * @brief Publishes the Home Assistant device discovery configuration.
+ * @brief Persists unsaved encoder and preset values to non-volatile storage.
  */
-void DeviceService::mqttDiscovery()
+void DeviceService::save()
 {
-    JsonDocument doc{};
-    desk.onHomeAssistant(doc);
-    onHomeAssistant(doc);
-    doc[HomeAssistantAbbreviations::availability][HomeAssistantAbbreviations::payload_not_available].set("");
-    doc[HomeAssistantAbbreviations::availability][HomeAssistantAbbreviations::topic].set("bekant/" HOSTNAME
-                                                                                         "/availability");
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::connections][0U][0U].set("mac");
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::connections][0U][1U].set(
-        WiFi.macAddress());
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::hw_version].set(ARDUINO_BOARD);
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::identifiers][0U].set(
-        std::format("0x{:x}", ESP.getEfuseMac()));
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::manufacturer].set("IKEA");
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::model].set("BEKANT");
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::name].set(NAME);
-    doc[HomeAssistantAbbreviations::device][HomeAssistantDeviceAbbreviations::sw_version].set("Bekant 1.0.0");
-    doc[HomeAssistantAbbreviations::origin][HomeAssistantOriginAbbreviations::name].set("Bekant");
-    doc[HomeAssistantAbbreviations::origin][HomeAssistantOriginAbbreviations::support_url].set(
-        "https://github.com/VIPnytt/Bekant");
-    const size_t length{measureJson(doc)};
-    std::vector<uint8_t> payload(length + 1U);
-    serializeJson(doc, payload.data(), length + 1U);
-    mqtt.publish(std::format("homeassistant/device/0x{:x}/config", ESP.getEfuseMac()).c_str(),
-                 static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS0),
-                 true,
-                 payload.data(),
-                 length);
-}
-
-void DeviceService::statusBlue()
-{
-    color.B = 0xFFU;
-    color.G = 0U;
-    color.R = 0U;
-    pending = true;
-}
-
-void DeviceService::statusGreen()
-{
-    color.B = 0U;
-    color.G = 0xFFU;
-    color.R = 0U;
-    pending = true;
-}
-
-void DeviceService::statusNone()
-{
-    color.B = 0U;
-    color.G = 0U;
-    color.R = 0U;
-    pending = true;
-}
-
-void DeviceService::statusRed()
-{
-    color.B = 0U;
-    color.G = 0U;
-    color.R = 0xFFU;
-    pending = true;
-}
-
-void DeviceService::statusWhite()
-{
-    color.B = 0xFFU;
-    color.G = 0xFFU;
-    color.R = 0xFFU;
-    pending = true;
+    nvs_handle_t handle{};
+    if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        nvs_set_u16(handle, "a", encoderA);
+        nvs_set_u16(handle, "b", encoderB);
+        nvs_set_u16(handle, "h", presetHigh);
+        nvs_set_u16(handle, "l", presetLow);
+        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
+        saved = nvs_commit(handle) == ESP_OK;
+        nvs_close(handle);
+    }
 }
 
 /**
@@ -241,223 +250,79 @@ void DeviceService::statusWhite()
  */
 void DeviceService::transmit(JsonDocument &doc)
 {
+#ifdef PIN_TPDN
+    doc["button"]["down"].set(buttonDown || driveDown.first);
+#else
+    doc["button"]["down"].set(buttonDown);
+#endif // PIN_TPDN
+#ifdef PIN_TPUP
+    doc["button"]["up"].set(buttonUp || driveUp.first);
+#else
+    doc["button"]["up"].set(buttonUp);
+#endif // PIN_TPUP
+    if (encoderA != 0U && encoderB != 0U)
+    {
+        const float legA{decode(static_cast<float>(encoderA))};
+        const float legB{decode(static_cast<float>(encoderB))};
+        doc["desk"].set(decode(static_cast<float>(encoderA + encoderB) / 2.0F));
+        doc["encoders"][0U].set(encoderA);
+        doc["encoders"][1U].set(encoderB);
+        doc["legs"][0U].set(legA);
+        doc["legs"][1U].set(legB);
+        doc["offset"].set(legA - legB);
+    }
+    else if (encoderA != 0U)
+    {
+        doc["encoders"][0U].set(encoderA);
+        doc["legs"][0U].set(decode(static_cast<float>(encoderA)));
+    }
+    else if (encoderB != 0U)
+    {
+        doc["encoders"][1U].set(encoderB);
+        doc["legs"][1U].set(decode(static_cast<float>(encoderB)));
+    }
 #ifdef PIN_OE
-    doc["oe"].set(oe);
+    doc["oe"].set(enable);
 #endif // PIN_OE
+    if (presetHigh != 0U)
+    {
+        doc["preset"]["high"].set(decode(static_cast<float>(presetHigh)));
+    }
+    if (presetLow != 0U)
+    {
+        doc["preset"]["low"].set(decode(static_cast<float>(presetLow)));
+    }
     doc["reset"].set(reset);
     doc["rssi"].set(WiFi.RSSI());
+    if (payloadRx.size() != 0U)
+    {
+        doc["rx"].set(payloadRx);
+    }
     doc["temperature"].set(temperatureRead());
-    doc["unit"].set(ReferenceHeight::heightUnit);
+    if (payloadTx.size() != 0U)
+    {
+        doc["tx"].set(payloadTx);
+    }
 #ifdef PIN_ADC
     doc["voltage"].set(
         static_cast<float>(analogReadMilliVolts(PIN_ADC) * (Voltage::resistanceVcc + Voltage::resistanceGnd)) /
         static_cast<float>(Voltage::resistanceGnd) / 1'000.0F);
 #endif // PIN_ADC
-    const size_t length{measureJson(doc)};
-    std::vector<char> payload(length + 1U);
-    serializeJson(doc, payload.data(), length + 1U);
-    mqtt.publish("bekant/" HOSTNAME "/state",
-                 static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS0),
-                 false,
-                 reinterpret_cast<const uint8_t *>(payload.data()),
-                 length);
+    mqtt.transmit(doc);
 }
 
-/**
- * @brief Handles a successful MQTT connection.
- *
- * Subscribes to command messages, publishes retained online availability, and
- * sets the device status indicator to white.
- */
-void DeviceService::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
+void DeviceService::setButtonDown(bool state)
 {
-    ESP_LOGI("MQTT", "connected");
-    device.mqtt.subscribe("bekant/" HOSTNAME "/set",
-                          static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2));
-    device.mqtt.publish("bekant/" HOSTNAME "/availability",
-                        static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS1),
-                        true,
-                        "online");
-    device.statusWhite();
+    buttonDown = state;
+    status.setWhite();
+    pending = true;
 }
 
-/**
- * @brief Handles notification that the Wi-Fi connection has been established.
- *
- * Sets the device status indicator to white.
- */
-void DeviceService::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-parameters)
+void DeviceService::setButtonUp(bool state)
 {
-    ESP_LOGI("Wi-Fi", "connected");
-    ESP_LOGV("Wi-Fi", "RSSI %d dBm", WiFi.RSSI());
-    ESP_LOGI("Wi-Fi", "hostname " HOSTNAME ".local");
-    device.statusWhite();
-}
-
-/**
- * @brief Handles MQTT disconnection events by setting the device status to red.
- *
- * @param reason Reason for the MQTT disconnection.
- */
-void DeviceService::onDisconnect(espMqttClientTypes::DisconnectReason reason)
-{
-    ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
-    device.statusRed();
-}
-
-/**
- * @brief Handles Wi-Fi disconnection events by logging the disconnect reason and setting the status indicator to red.
- *
- * @param event Wi-Fi event identifier.
- * @param info Wi-Fi event information containing the disconnect reason.
- */
-void DeviceService::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused-parameters)
-                                   arduino_event_info_t info)
-{
-    ESP_LOGI("Wi-Fi", "disconnected");
-    ESP_LOGD("Wi-Fi",
-             "disconnect reason %s",
-             WiFi.disconnectReasonName(static_cast<wifi_err_reason_t>(info.wifi_sta_disconnected.reason)));
-    device.statusRed();
-}
-
-/**
- * @brief Processes complete MQTT payloads containing valid JSON commands.
- *
- * Fragmented messages and payloads that cannot be parsed as JSON are ignored.
- *
- * @param properties MQTT message properties.
- * @param topic MQTT topic that received the message.
- * @param payload MQTT message payload.
- * @param len Length of the current payload fragment.
- * @param index Offset of the current fragment within the message.
- * @param total Total message length.
- */
-void DeviceService::onMessage(const espMqttClientTypes::MessageProperties &properties, // NOLINT(misc-unused-parameters)
-                              const char *topic,                                       // NOLINT(misc-unused-parameters)
-                              const uint8_t *payload, size_t len, size_t index, size_t total)
-{
-    if (index == 0U && len == total)
-    {
-        JsonDocument doc{}; // NOLINT(misc-const-correctness)
-        if (deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
-        {
-            device.handleRequest(doc.as<JsonObjectConst>());
-        }
-    }
-}
-
-/**
- * @brief Enters safe mode when an OTA update starts and flips the output-enable state.
- */
-void DeviceService::onStart()
-{
-    device.safeMode();
-#ifdef PIN_OE
-    digitalWrite(PIN_OE, device.oe ? LOW : HIGH);
-#endif // PIN_OE
-}
-
-/**
- * @brief Processes commands from a JSON request.
- *
- * Handles desk actions, button controls, height and preset commands, output-enable and reset state changes, and raw
- * transmissions.
- *
- * @param doc JSON object containing the requested commands.
- */
-void DeviceService::handleRequest(JsonObjectConst doc)
-{
-    if (doc["action"].is<std::string_view>())
-    {
-        const std::string_view action{doc["action"].as<std::string_view>()};
-        if (action == "calibrate")
-        {
-            device.sendTx("c");
-        }
-        else if (action == "restart")
-        {
-            device.statusRed();
-            mqtt.publish("bekant/" HOSTNAME "/availability",
-                         static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS0),
-                         true,
-                         "");
-            digitalWrite(PIN_RST, LOW);
-            vTaskDelay(0b1U << 7U);
-            ESP.restart();
-        }
-    }
-    if (doc["button"]["down"].is<bool>())
-    {
-        device.setButtonDown(doc["button"]["down"].as<bool>());
-    }
-    if (doc["button"]["up"].is<bool>())
-    {
-        device.setButtonUp(doc["button"]["up"].as<bool>());
-    }
-    if (doc["desk"].is<float>())
-    {
-        device.sendTx('e', doc["desk"].as<float>());
-    }
-    if (doc["oe"].is<bool>())
-    {
-        device.setOutputEnable(doc["oe"].as<bool>());
-    }
-    if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
-    {
-        device.sendTx("h");
-    }
-    if (doc["preset"]["high"].is<float>())
-    {
-        device.sendTx('h', doc["preset"]["high"].as<float>());
-    }
-    if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
-    {
-        device.sendTx("l");
-    }
-    if (doc["preset"]["low"].is<float>())
-    {
-        device.sendTx('l', doc["preset"]["low"].as<float>());
-    }
-    if (doc["reset"].is<bool>())
-    {
-        device.setReset(doc["reset"].as<bool>());
-    }
-    if (doc["tx"].is<std::string_view>())
-    {
-        device.sendTx(doc["tx"].as<std::string_view>());
-    }
-}
-
-/**
- * @brief Sends a desk command for the specified user height.
- *
- * @param command Command prefix to send.
- * @param userHeight Target height in user units.
- */
-void DeviceService::sendTx(char command, float userHeight)
-{
-    sendTx(command +
-           std::to_string(lroundf(((userHeight - ReferenceHeight::heightLow) *
-                                   static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
-                                   (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
-                                  static_cast<float>(ReferenceHeight::encoderLow))));
-}
-
-/**
- * @brief Publishes desk metadata and sends a command payload to the desk controller.
- *
- * @param payload Command payload to transmit.
- */
-void DeviceService::sendTx(std::string_view payload)
-{
-    JsonDocument _doc{};
-    desk.metadata(_doc);
-    _doc["tx"].set(payload);
-    transmit(_doc);
-    statusRed();
-    Serial1.write(payload.data(), payload.size());
-    Serial1.write('\n');
+    buttonUp = state;
+    status.setWhite();
+    pending = true;
 }
 
 /**
@@ -467,13 +332,11 @@ void DeviceService::sendTx(std::string_view payload)
  *
  * @param state Whether the down button should be active.
  */
-void DeviceService::setButtonDown(bool state)
+void DeviceService::setDriveDown(bool state)
 {
 #ifdef PIN_TPDN
-    if (state)
-    {
-        statusRed();
-    }
+    driveDown.first = state;
+    status.setRed();
     digitalWrite(PIN_TPDN, state ? LOW : HIGH);
 #endif // PIN_TPDN
 }
@@ -483,15 +346,33 @@ void DeviceService::setButtonDown(bool state)
  *
  * @param state `true` to activate the up button and `false` to release it.
  */
-void DeviceService::setButtonUp(bool state)
+void DeviceService::setDriveUp(bool state)
 {
 #ifdef PIN_TPUP
-    if (state)
-    {
-        statusRed();
-    }
-    digitalWrite(PIN_TPUP, state ? LOW : HIGH);
+    driveUp.first = state;
+    status.setRed();
+    digitalWrite(PIN_TPUP, driveUp.first ? LOW : HIGH);
 #endif // PIN_TPUP
+}
+
+void DeviceService::setEncoderA(uint16_t state)
+{
+    ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
+     (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
+        ? status.setGreen()
+        : status.setBlue();
+    encoderA = state;
+    pending = true;
+}
+
+void DeviceService::setEncoderB(uint16_t state)
+{
+    ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
+     (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
+        ? status.setGreen()
+        : status.setBlue();
+    encoderB = state;
+    pending = true;
 }
 
 /**
@@ -505,22 +386,26 @@ void DeviceService::setButtonUp(bool state)
 void DeviceService::setOutputEnable(bool state)
 {
 #ifdef PIN_OE
-    if (state != oe)
+    if (state != enable)
     {
-        oe = state;
-        digitalWrite(PIN_OE, oe ? HIGH : LOW);
-        JsonDocument doc{};
-        desk.metadata(doc);
-        transmit(doc);
-        nvs_handle_t handle{};
-        if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
-        {
-            nvs_set_u8(handle, "oe", static_cast<uint8_t>(oe));
-            nvs_commit(handle);
-            nvs_close(handle);
-        }
+        enable = state;
+        status.setNone();
+        digitalWrite(PIN_OE, enable ? HIGH : LOW);
+        pending = true;
     }
 #endif // PIN_OE
+}
+
+void DeviceService::setPresetHigh(uint16_t preset)
+{
+    presetHigh = preset;
+    pending = true;
+}
+
+void DeviceService::setPresetLow(uint16_t preset)
+{
+    presetLow = preset;
+    pending = true;
 }
 
 /**
@@ -528,217 +413,50 @@ void DeviceService::setOutputEnable(bool state)
  *
  * @param state Whether reset should be asserted.
  */
-void DeviceService::setReset(bool state)
+void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
+
+void DeviceService::setRx(std::string payload)
 {
-    if (state != reset)
-    {
-        reset = state;
-        device.statusRed();
-        digitalWrite(PIN_RST, reset ? LOW : HIGH);
-        JsonDocument doc{};
-        desk.metadata(doc);
-        transmit(doc);
-    }
+    payloadRx = payload;
+    pending = true;
 }
 
-/**
- * @brief Adds Home Assistant MQTT entity discovery configuration to a JSON document.
- *
- * @param doc JSON document to populate with entity configurations.
- */
-void DeviceService::onHomeAssistant(JsonDocument &doc)
+void DeviceService::setTx(std::string payload)
 {
-#ifdef PIN_ADC
-    {
-        JsonObject adc{doc[HomeAssistantAbbreviations::components]["adc"].to<JsonObject>()};
-        adc[HomeAssistantAbbreviations::device_class].set("voltage");
-        adc[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        adc[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        adc[HomeAssistantAbbreviations::expire_after].set(0b1U << 8U);
-        adc[HomeAssistantAbbreviations::icon].set("mdi:alpha-v-circle-outline");
-        adc[HomeAssistantAbbreviations::name].set("Power supply");
-        adc[HomeAssistantAbbreviations::suggested_display_precision].set(1);
-        adc[HomeAssistantAbbreviations::platform].set("sensor");
-        adc[HomeAssistantAbbreviations::state_class].set("measurement");
-        adc[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        adc[HomeAssistantAbbreviations::unique_id].set("adc");
-        adc[HomeAssistantAbbreviations::unit_of_measurement].set("V");
-        adc[HomeAssistantAbbreviations::value_template].set("{{value_json.voltage}}");
-    }
-#endif // PIN_ADC
-    {
-        JsonObject calibrate{doc[HomeAssistantAbbreviations::components]["calibrate"].to<JsonObject>()};
-        calibrate[HomeAssistantAbbreviations::command_template].set(R"({"action":"{{value}}"})");
-        calibrate[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        calibrate[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        calibrate[HomeAssistantAbbreviations::icon].set("mdi:arrow-collapse-down");
-        calibrate[HomeAssistantAbbreviations::name].set("Calibrate");
-        calibrate[HomeAssistantAbbreviations::payload_press].set("calibrate");
-        calibrate[HomeAssistantAbbreviations::platform].set("button");
-        calibrate[HomeAssistantAbbreviations::unique_id].set("calibrate");
-    }
-    {
-        JsonObject highRecall{doc[HomeAssistantAbbreviations::components]["recall_high"].to<JsonObject>()};
-        highRecall[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
-        highRecall[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        highRecall[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
-        highRecall[HomeAssistantAbbreviations::json_attributes_template].set(
-            R"({"Preset":{{value_json.preset.high}}})");
-        highRecall[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
-        highRecall[HomeAssistantAbbreviations::name].set("Preset high");
-        highRecall[HomeAssistantAbbreviations::payload_press].set("high");
-        highRecall[HomeAssistantAbbreviations::platform].set("button");
-        highRecall[HomeAssistantAbbreviations::unique_id].set("recall_high");
-    }
-    {
-        JsonObject highSensor{doc[HomeAssistantAbbreviations::components]["high_sensor"].to<JsonObject>()};
-        highSensor[HomeAssistantAbbreviations::device_class].set("distance");
-        highSensor[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
-        highSensor[HomeAssistantAbbreviations::name].set("Preset high");
-        highSensor[HomeAssistantAbbreviations::platform].set("sensor");
-        highSensor[HomeAssistantAbbreviations::state_class].set("measurement");
-        highSensor[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        highSensor[HomeAssistantAbbreviations::suggested_display_precision].set(1U);
-        highSensor[HomeAssistantAbbreviations::unique_id].set("high_sensor");
-        highSensor[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        highSensor[HomeAssistantAbbreviations::value_template].set(R"({{value_json.preset.high|round(1)}})");
-    }
-    {
-        JsonObject lowRecall{doc[HomeAssistantAbbreviations::components]["recall_low"].to<JsonObject>()};
-        lowRecall[HomeAssistantAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
-        lowRecall[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        lowRecall[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
-        lowRecall[HomeAssistantAbbreviations::json_attributes_template].set(R"({"Preset":{{value_json.preset.low}}})");
-        lowRecall[HomeAssistantAbbreviations::json_attributes_topic].set("bekant/" HOSTNAME "/state");
-        lowRecall[HomeAssistantAbbreviations::name].set("Preset low");
-        lowRecall[HomeAssistantAbbreviations::payload_press].set("low");
-        lowRecall[HomeAssistantAbbreviations::platform].set("button");
-        lowRecall[HomeAssistantAbbreviations::unique_id].set("recall_low");
-    }
-    {
-        JsonObject lowSensor{doc[HomeAssistantAbbreviations::components]["low_sensor"].to<JsonObject>()};
-        lowSensor[HomeAssistantAbbreviations::device_class].set("distance");
-        lowSensor[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
-        lowSensor[HomeAssistantAbbreviations::name].set("Preset low");
-        lowSensor[HomeAssistantAbbreviations::platform].set("sensor");
-        lowSensor[HomeAssistantAbbreviations::state_class].set("measurement");
-        lowSensor[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        lowSensor[HomeAssistantAbbreviations::suggested_display_precision].set(1U);
-        lowSensor[HomeAssistantAbbreviations::unique_id].set("low_sensor");
-        lowSensor[HomeAssistantAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        lowSensor[HomeAssistantAbbreviations::value_template].set(R"({{value_json.preset.low|round(1)}})");
-    }
-#ifdef PIN_OE
-    {
-        JsonObject oe{doc[HomeAssistantAbbreviations::components]["oe"].to<JsonObject>()};
-        oe[HomeAssistantAbbreviations::command_template].set(R"({"oe":{{value}}})");
-        oe[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        oe[HomeAssistantAbbreviations::entity_category].set("config");
-        oe[HomeAssistantAbbreviations::icon].set("mdi:chip");
-        oe[HomeAssistantAbbreviations::name].set("Output enable");
-        oe[HomeAssistantAbbreviations::payload_off].set("false");
-        oe[HomeAssistantAbbreviations::payload_on].set("true");
-        oe[HomeAssistantAbbreviations::state_off].set("False");
-        oe[HomeAssistantAbbreviations::state_on].set("True");
-        oe[HomeAssistantAbbreviations::platform].set("switch");
-        oe[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        oe[HomeAssistantAbbreviations::unique_id].set("oe");
-        oe[HomeAssistantAbbreviations::value_template].set("{{value_json.oe}}");
-    }
-#endif // PIN_OE
-    {
-        JsonObject reset{doc[HomeAssistantAbbreviations::components]["reset"].to<JsonObject>()};
-        reset[HomeAssistantAbbreviations::command_template].set(R"({"reset":{{value}}})");
-        reset[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        reset[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        reset[HomeAssistantAbbreviations::entity_category].set("config");
-        reset[HomeAssistantAbbreviations::icon].set("mdi:lock-outline");
-        reset[HomeAssistantAbbreviations::name].set("Reset");
-        reset[HomeAssistantAbbreviations::payload_off].set("false");
-        reset[HomeAssistantAbbreviations::payload_on].set("true");
-        reset[HomeAssistantAbbreviations::state_off].set("False");
-        reset[HomeAssistantAbbreviations::state_on].set("True");
-        reset[HomeAssistantAbbreviations::platform].set("switch");
-        reset[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        reset[HomeAssistantAbbreviations::unique_id].set("reset");
-        reset[HomeAssistantAbbreviations::value_template].set("{{value_json.reset}}");
-    }
-    {
-        JsonObject restart{doc[HomeAssistantAbbreviations::components]["reboot"].to<JsonObject>()};
-        restart[HomeAssistantAbbreviations::command_template].set(R"({"action":"{{value}}"})");
-        restart[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        restart[HomeAssistantAbbreviations::device_class].set("restart");
-        restart[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        restart[HomeAssistantAbbreviations::entity_category].set("config");
-        restart[HomeAssistantAbbreviations::name].set("Reboot");
-        restart[HomeAssistantAbbreviations::payload_press].set("restart");
-        restart[HomeAssistantAbbreviations::platform].set("button");
-        restart[HomeAssistantAbbreviations::unique_id].set("reboot");
-    }
-    {
-        JsonObject rssi{doc[HomeAssistantAbbreviations::components]["rssi"].to<JsonObject>()};
-        rssi[HomeAssistantAbbreviations::device_class].set("signal_strength");
-        rssi[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        rssi[HomeAssistantAbbreviations::expire_after].set(0b1U << 8U);
-        rssi[HomeAssistantAbbreviations::name].set("Wi-Fi signal");
-        rssi[HomeAssistantAbbreviations::platform].set("sensor");
-        rssi[HomeAssistantAbbreviations::state_class].set("measurement");
-        rssi[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        rssi[HomeAssistantAbbreviations::unique_id].set("rssi");
-        rssi[HomeAssistantAbbreviations::unit_of_measurement].set("dBm");
-        rssi[HomeAssistantAbbreviations::value_template].set("{{value_json.rssi}}");
-    }
-    {
-        JsonObject temperature{doc[HomeAssistantAbbreviations::components]["temperature"].to<JsonObject>()};
-        temperature[HomeAssistantAbbreviations::device_class].set("temperature");
-        temperature[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        temperature[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        temperature[HomeAssistantAbbreviations::expire_after].set(0b1U << 8U);
-        temperature[HomeAssistantAbbreviations::name].set("Temperature");
-        temperature[HomeAssistantAbbreviations::platform].set("sensor");
-        temperature[HomeAssistantAbbreviations::state_class].set("measurement");
-        temperature[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        temperature[HomeAssistantAbbreviations::unique_id].set("temperature");
-        temperature[HomeAssistantAbbreviations::unit_of_measurement].set("°C");
-        temperature[HomeAssistantAbbreviations::value_template].set("{{value_json.temperature}}");
-    }
+    payloadTx = payload;
+    pending = true;
+}
+
+void DeviceService::statusRed() { status.setRed(); }
+
+void DeviceService::onInterruptDown()
+{
 #ifdef PIN_TPDN
+    device.driveDown.second = digitalRead(PIN_TPDN) == LOW;
+    if (device.driveDown.first)
     {
-        JsonObject tpdn{doc[HomeAssistantAbbreviations::components]["tpdn"].to<JsonObject>()};
-        tpdn[HomeAssistantAbbreviations::command_template].set(R"({"button":{"down":{{value}}}})");
-        tpdn[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        tpdn[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        tpdn[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        tpdn[HomeAssistantAbbreviations::icon].set("mdi:menu-down-outline");
-        tpdn[HomeAssistantAbbreviations::name].set("Button down");
-        tpdn[HomeAssistantAbbreviations::payload_off].set("false");
-        tpdn[HomeAssistantAbbreviations::payload_on].set("true");
-        tpdn[HomeAssistantAbbreviations::state_off].set("False");
-        tpdn[HomeAssistantAbbreviations::state_on].set("True");
-        tpdn[HomeAssistantAbbreviations::platform].set("switch");
-        tpdn[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        tpdn[HomeAssistantAbbreviations::unique_id].set("tpdn");
-        tpdn[HomeAssistantAbbreviations::value_template].set("{{value_json.button.down}}");
+        device.driveDown.second ? device.status.setWhite(true) : device.status.setRed();
     }
+    device.pending = true;
 #endif // PIN_TPDN
+}
+
+void DeviceService::onInterruptReset()
+{
+    device.reset = digitalRead(PIN_RST) == LOW;
+    device.reset ? device.status.setNone(true) : device.status.setWhite();
+    device.pending = true;
+}
+
+void DeviceService::onInterruptUp()
+{
 #ifdef PIN_TPUP
+    device.driveUp.second = digitalRead(PIN_TPUP) == LOW;
+    if (device.driveUp.first)
     {
-        JsonObject tpup{doc[HomeAssistantAbbreviations::components]["tpup"].to<JsonObject>()};
-        tpup[HomeAssistantAbbreviations::command_template].set(R"({"button":{"up":{{value}}}})");
-        tpup[HomeAssistantAbbreviations::command_topic].set("bekant/" HOSTNAME "/set");
-        tpup[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        tpup[HomeAssistantAbbreviations::entity_category].set("diagnostic");
-        tpup[HomeAssistantAbbreviations::icon].set("mdi:menu-up-outline");
-        tpup[HomeAssistantAbbreviations::name].set("Button up");
-        tpup[HomeAssistantAbbreviations::payload_off].set("false");
-        tpup[HomeAssistantAbbreviations::payload_on].set("true");
-        tpup[HomeAssistantAbbreviations::state_off].set("False");
-        tpup[HomeAssistantAbbreviations::state_on].set("True");
-        tpup[HomeAssistantAbbreviations::platform].set("switch");
-        tpup[HomeAssistantAbbreviations::state_topic].set("bekant/" HOSTNAME "/state");
-        tpup[HomeAssistantAbbreviations::unique_id].set("tpup");
-        tpup[HomeAssistantAbbreviations::value_template].set("{{value_json.button.up}}");
+        device.driveUp.second ? device.status.setWhite(true) : device.status.setRed();
     }
+    device.pending = true;
 #endif // PIN_TPUP
 }
 

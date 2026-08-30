@@ -2,69 +2,82 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/DeskHandler.h"
+#include "esp/ConsoleHandler.h"
 #include "esp/IspHandler.h"
+#include "esp/MqttHandler.h"
+#include "esp/OtaHandler.h"
+#include "esp/StatusHandler.h"
+#include "esp/WifiHandler.h"
 #include "esp/secrets.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
-#include <ArduinoOTA.h>
-#include <NeoPixelBus.h>
 #include <espMqttClient.h>
 
 class DeviceService
 {
 private:
-    static constexpr std::array<uint8_t, 1U> will{0U};
-
-    bool oe{true};
-    bool pending{false};
+    bool buttonDown{false};
+    bool buttonUp{false};
+    bool enable{true};
     bool reset{false};
+    bool pending{true};
+    bool process{true};
+    bool saved{true};
 
     unsigned long lastMillis{0U};
 
-    ArduinoOTAClass ota;
+    uint16_t encoderA{0U};
+    uint16_t encoderB{0U};
+    uint16_t presetLow{0U};
+    uint16_t presetHigh{0U};
 
-    DeskHandler desk{};
+    std::string payloadRx{};
+    std::string payloadTx{};
 
-    espMqttClient mqtt{};
+    std::pair<bool, bool> driveDown{false, false};
+    std::pair<bool, bool> driveUp{false, false};
+
+    ConsoleHandler console{};
 
     IspHandler isp{};
 
-#ifdef PIN_LED
-    NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};
-#endif // PIN_LED
+    MqttHandler mqtt{};
 
-    RgbColor color{0xFFU, 0xFFU, 0xFFU};
+    OtaHandler ota{};
 
-    void handleRequest(JsonObjectConst doc);
-    void onHomeAssistant(JsonDocument &doc);
-    void sendTx(std::string_view data);
-    void sendTx(char prefix, float userHeight);
-    void setButtonDown(bool state);
-    void setButtonUp(bool state);
+    StatusHandler status{};
+
+    WifiHandler wifi{};
+
+    void save();
+    void setDriveDown(bool state);
+    void setDriveUp(bool state);
     void setOutputEnable(bool state);
     void setReset(bool state);
 
-    static void onConnect(bool sessionPresent);
-    static void onConnected(arduino_event_id_t event);
-    static void onDisconnect(espMqttClientTypes::DisconnectReason reason);
-    static void onDisconnected(arduino_event_id_t event, arduino_event_info_t info);
-    static void onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
-                          const uint8_t *payload, size_t len, size_t index, size_t total);
-    static void onStart();
+    [[nodiscard]] float decode(float encoder);
+
+    [[nodiscard]] uint16_t encode(float height);
+
+    static void onInterruptDown();
+    static void onInterruptReset();
+    static void onInterruptUp();
 
 public:
     void begin();
     void handle();
 
-    void mqttDiscovery();
     void safeMode();
-    void statusBlue();
-    void statusGreen();
-    void statusNone();
+    void request(JsonObjectConst doc);
+    void setButtonDown(bool state);
+    void setButtonUp(bool state);
+    void setEncoderA(uint16_t encoder);
+    void setEncoderB(uint16_t encoder);
+    void setPresetHigh(uint16_t encoder);
+    void setPresetLow(uint16_t encoder);
+    void setRx(std::string payload);
+    void setTx(std::string payload);
     void statusRed();
-    void statusWhite();
-    void unsetButtons();
     void transmit(JsonDocument &doc);
 
     static DeviceService &getInstance();
