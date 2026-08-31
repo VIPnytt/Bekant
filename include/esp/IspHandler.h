@@ -25,13 +25,7 @@ private:
 
     NetworkClient client{};
 
-    /**
- * Writes the specified amount of data to EEPROM.
- *
- * @param length Number of bytes to write.
- * @returns `true` if the write succeeds, `false` otherwise.
- */
-NetworkServer server{328U};
+    NetworkServer server{328U};
 
     void byteReply(uint8_t byte);
     void emptyReply();

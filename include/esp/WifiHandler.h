@@ -4,15 +4,6 @@
 
 #include <NetworkEvents.h>
 
-/**
- * Initializes Wi-Fi event handling.
- */
-void begin();
-
-/**
- * Processes ongoing Wi-Fi-related tasks.
- */
-void handle();
 class WifiHandler
 {
 private:

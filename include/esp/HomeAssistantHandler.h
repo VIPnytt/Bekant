@@ -10,11 +10,7 @@ class HomeAssistantHandler
 {
 private:
     static constexpr std::string_view commandTopic{"bekant/" HOSTNAME "/set"};
-    /**
- * Creates a handler that populates the provided Home Assistant discovery document.
- * @param doc JSON document used to store discovery data.
- */
-static constexpr std::string_view stateTopic{"bekant/" HOSTNAME "/state"};
+    static constexpr std::string_view stateTopic{"bekant/" HOSTNAME "/state"};
 
     JsonDocument &discovery; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
 
@@ -75,18 +71,12 @@ static constexpr std::string_view identifiers{"ids"};
 static constexpr std::string_view manufacturer{"mf"};
 static constexpr std::string_view model{"mdl"};
 static constexpr std::string_view name{ComponentAbbreviations::name};
-/**
- * Abbreviated key for the device software version.
- */
 static constexpr std::string_view sw_version{"sw"};
 }; // namespace DeviceAbbreviations
 
 namespace OriginAbbreviations
 {
 static constexpr std::string_view name{DeviceAbbreviations::name};
-/**
- * Abbreviated discovery key for the origin support URL.
- */
 static constexpr std::string_view support_url{"url"};
 }; // namespace OriginAbbreviations
 
