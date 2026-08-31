@@ -37,8 +37,8 @@ jobs:
         id: platformio
         run: echo "environments=$(uv run pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
 
-  extensive:
-    name: Extensive
+  full:
+    name: Full
     needs: context
     runs-on: ubuntu-latest
 
