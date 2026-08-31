@@ -261,16 +261,8 @@ void DeviceService::save()
  */
 void DeviceService::transmit(JsonDocument &doc)
 {
-#ifdef PIN_TPDN
     doc["button"]["down"].set(buttonDown || driveDown.first);
-#else
-    doc["button"]["down"].set(buttonDown);
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
     doc["button"]["up"].set(buttonUp || driveUp.first);
-#else
-    doc["button"]["up"].set(buttonUp);
-#endif // PIN_TPUP
     if (encoderA != 0U && encoderB != 0U)
     {
         const float legA{decode(static_cast<float>(encoderA))};
