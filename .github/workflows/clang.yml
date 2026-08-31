@@ -101,16 +101,17 @@ jobs:
           #define MQTT_HOST "localhost"
           #define MQTT_KEY "redacted"
           #define MQTT_USER "redacted"
+          #define NAME "Bekant"
           #define OTA_KEY "redacted"
-          #define PIN_ADC 0
-          #define PIN_LED 1
-          #define PIN_MISO 2
-          #define PIN_MOSI 3
-          #define PIN_OE 4
-          #define PIN_RST 5
-          #define PIN_SCK 6
-          #define PIN_TPDN 7
-          #define PIN_TPUP 8
+          #define PIN_ADC 1
+          #define PIN_LED 2
+          #define PIN_MISO 3
+          #define PIN_MOSI 4
+          #define PIN_OE 5
+          #define PIN_RST 6
+          #define PIN_SCK 7
+          #define PIN_TPDN 8
+          #define PIN_TPUP 9
           #define WIFI_KEY "redacted"
           #define WIFI_SSID "redacted"
           #endif // ARDUINO_ARCH_ESP32

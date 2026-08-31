@@ -37,8 +37,65 @@ jobs:
         id: platformio
         run: echo "environments=$(uv run pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
 
-  build:
-    name: Build
+  full:
+    name: Full
+    needs: context
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: ${{ fromJSON(needs.context.outputs.pio-environments) }}
+        exclude:
+          - environment: attiny841
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Cache for PlatformIO
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini') }}
+          path: .platformio/.cache
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: 3.11
+          version: latest-known
+
+      - name: PlatformIO build
+        env:
+          PIO_ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          cat <<'EOL' > include/esp/secrets.h
+          #pragma once
+          #ifdef ARDUINO_ARCH_ESP32
+          #define HOSTNAME "bekant"
+          #define MQTT_HOST "localhost"
+          #define MQTT_KEY "redacted"
+          #define MQTT_USER "redacted"
+          #define NAME "Bekant"
+          #define OTA_KEY "redacted"
+          #define PIN_ADC 1
+          #define PIN_LED 2
+          #define PIN_MISO 3
+          #define PIN_MOSI 4
+          #define PIN_OE 5
+          #define PIN_RST 6
+          #define PIN_SCK 7
+          #define PIN_TPDN 8
+          #define PIN_TPUP 9
+          #define WIFI_KEY "redacted"
+          #define WIFI_SSID "redacted"
+          #endif // ARDUINO_ARCH_ESP32
+          EOL
+          uv run pio run -e "$PIO_ENVIRONMENT"
+
+  minimal:
+    name: Minimal
     needs: context
     runs-on: ubuntu-latest
 
@@ -67,4 +124,21 @@ jobs:
       - name: PlatformIO build
         env:
           PIO_ENVIRONMENT: ${{ matrix.environment }}
-        run: uv run pio run -e "$PIO_ENVIRONMENT"
+        run: |
+          cat <<'EOL' > include/esp/secrets.h
+          #pragma once
+          #ifdef ARDUINO_ARCH_ESP32
+          #define HOSTNAME "bekant"
+          #define MQTT_HOST "localhost"
+          #define MQTT_KEY "redacted"
+          #define MQTT_USER "redacted"
+          #define NAME "Bekant"
+          #define PIN_MISO 1
+          #define PIN_MOSI 2
+          #define PIN_RST 3
+          #define PIN_SCK 4
+          #define WIFI_KEY "redacted"
+          #define WIFI_SSID "redacted"
+          #endif // ARDUINO_ARCH_ESP32
+          EOL
+          uv run pio run -e "$PIO_ENVIRONMENT"
