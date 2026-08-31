@@ -236,7 +236,10 @@ void DeviceService::save()
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
-        nvs_commit(handle) == ESP_OK;
+        if (nvs_commit(handle) != ESP_OK && saved)
+        {
+            saved = false;
+        }
         nvs_close(handle);
     }
 }
