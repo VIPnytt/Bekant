@@ -7,6 +7,7 @@ Checks: >
   -cert-err58-cpp,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-init-variables,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-vararg,
@@ -32,6 +33,4 @@ CheckOptions:
     value: true
   - key: misc-include-cleaner.MissingIncludes
     value: false
-  - key: readability-identifier-length.IgnoredVariableNames
-    value: ^(oe|rx|tx)$
 FormatStyle: file

@@ -39,7 +39,7 @@ private:
     void writeEepromChunk(size_t start, size_t length);
     void writeFlash(size_t length);
 
-    bool writeEeprom(size_t length);
+    [[nodiscard]] bool writeEeprom(size_t length);
 
     uint8_t getChar();
 
