@@ -17,7 +17,40 @@ private:
     NeoPixelBus<NeoGrbFeature, NeoWs2812Method> led{1U, PIN_LED};
 #endif // PIN_LED
 
-    RgbColor color{0xFFU, 0xFFU, 0xFFU};
+    /**
+ * Updates the status indicator.
+ */
+void handle();
+
+/**
+ * Selects blue for the status indicator.
+ */
+void setBlue();
+
+/**
+ * Selects green for the status indicator.
+ */
+void setGreen();
+
+/**
+ * Clears the status indicator.
+ *
+ * @param force Whether to apply the update even when no status change is pending.
+ */
+void setNone(bool force = false);
+
+/**
+ * Selects red for the status indicator.
+ */
+void setRed();
+
+/**
+ * Selects white for the status indicator.
+ *
+ * @param force Whether to apply the update even when no status change is pending.
+ */
+void setWhite(bool force = false);
+RgbColor color{0xFFU, 0xFFU, 0xFFU};
 
     void fade();
 

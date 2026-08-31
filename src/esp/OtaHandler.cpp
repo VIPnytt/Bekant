@@ -5,6 +5,9 @@
 #include "esp/DeviceService.h"
 #include "esp/secrets.h" // NOLINT(misc-include-cleaner)
 
+/**
+ * @brief Configures and starts over-the-air update handling for the device.
+ */
 void OtaHandler::begin()
 {
     ota.setHostname(HOSTNAME);
@@ -15,10 +18,13 @@ void OtaHandler::begin()
     ota.begin();
 }
 
+/**
+ * @brief Processes pending OTA update requests.
+ */
 void OtaHandler::handle() { ota.handle(); }
 
 /**
- * @brief Enters safe mode when an OTA update starts and flips the output-enable state.
+ * @brief Places the device in safe mode when an OTA update begins.
  */
 void OtaHandler::onStart() { device.safeMode(); }
 

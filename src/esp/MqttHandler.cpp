@@ -9,6 +9,9 @@
 #include <WiFi.h>
 #include <format>
 
+/**
+ * @brief Initializes the MQTT client and publishes the Home Assistant discovery configuration.
+ */
 void MqttHandler::begin()
 {
     client.onConnect(&onConnect);
@@ -26,6 +29,9 @@ void MqttHandler::begin()
     discovery();
 }
 
+/**
+ * @brief Processes MQTT traffic and attempts reconnection when Wi-Fi is available.
+ */
 void MqttHandler::handle()
 {
     client.loop();
@@ -39,6 +45,9 @@ void MqttHandler::handle()
     }
 }
 
+/**
+ * @brief Publishes an unavailable availability status and disconnects from the MQTT broker.
+ */
 void MqttHandler::disconnect()
 {
     client.publish("bekant/" HOSTNAME "/availability",
@@ -52,12 +61,9 @@ void MqttHandler::disconnect()
 }
 
 /**
- * @brief Publishes the current device state.
+ * @brief Publishes a JSON document to the device state topic.
  *
- * Adds device status and telemetry fields to the JSON document, then publishes it
- * to the MQTT state topic.
- *
- * @param doc JSON document to augment and publish.
+ * @param doc JSON document to serialize and publish.
  */
 void MqttHandler::transmit(JsonDocument &doc)
 {
@@ -93,10 +99,7 @@ void MqttHandler::discovery()
 }
 
 /**
- * @brief Handles a successful MQTT connection.
- *
- * Subscribes to command messages, publishes retained online availability, and
- * sets the device status indicator to white.
+ * @brief Configures MQTT subscriptions and announces the device as online after connecting.
  */
 void MqttHandler::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
 {
