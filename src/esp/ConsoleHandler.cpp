@@ -22,15 +22,22 @@ void ConsoleHandler::handle()
     if (byte != -1)
     {
         ESP_LOGV("RX", "0x%X", byte);
-        if (byte == static_cast<int>('\n'))
+        const size_t length{buffer.size()};
+        if (byte == static_cast<int>('\n') && length != 0U)
         {
-            ESP_LOGD("RX", "%s", buffer.c_str());
-            parse(buffer);
+            if (length <= 0b1U << 3U)
+            {
+                ESP_LOGD("RX", "%s", buffer.c_str());
+                parse(buffer);
+            }
             buffer.clear();
         }
-        else
+        else if (byte != static_cast<int>('\n'))
         {
-            buffer += static_cast<char>(byte);
+            if (length <= 0b1U << 3U)
+            {
+                buffer += static_cast<char>(byte);
+            }
         }
     }
     else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)

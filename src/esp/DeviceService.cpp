@@ -230,12 +230,13 @@ void DeviceService::save()
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
     {
+        saved = true;
         nvs_set_u16(handle, "a", encoderA);
         nvs_set_u16(handle, "b", encoderB);
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
-        saved = nvs_commit(handle) == ESP_OK;
+        nvs_commit(handle) == ESP_OK;
         nvs_close(handle);
     }
 }
@@ -357,21 +358,29 @@ void DeviceService::setDriveUp(bool state)
 
 void DeviceService::setEncoderA(uint16_t state)
 {
-    ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
-     (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
-        ? status.setGreen()
-        : status.setBlue();
-    encoderA = state;
+    if (state != encoderA)
+    {
+        ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
+         (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
+            ? status.setGreen()
+            : status.setBlue();
+        encoderA = state;
+        saved = false;
+    }
     pending = true;
 }
 
 void DeviceService::setEncoderB(uint16_t state)
 {
-    ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
-     (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
-        ? status.setGreen()
-        : status.setBlue();
-    encoderB = state;
+    if (state != encoderB)
+    {
+        ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
+         (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
+            ? status.setGreen()
+            : status.setBlue();
+        encoderB = state;
+        saved = false;
+    }
     pending = true;
 }
 
@@ -391,20 +400,29 @@ void DeviceService::setOutputEnable(bool state)
         enable = state;
         status.setNone();
         digitalWrite(PIN_OE, enable ? HIGH : LOW);
-        pending = true;
+        saved = false;
     }
+    pending = true;
 #endif // PIN_OE
 }
 
 void DeviceService::setPresetHigh(uint16_t preset)
 {
-    presetHigh = preset;
+    if (preset != presetHigh)
+    {
+        presetHigh = preset;
+        saved = false;
+    }
     pending = true;
 }
 
 void DeviceService::setPresetLow(uint16_t preset)
 {
-    presetLow = preset;
+    if (preset != presetLow)
+    {
+        presetLow = preset;
+        saved = false;
+    }
     pending = true;
 }
 
