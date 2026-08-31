@@ -7,6 +7,9 @@
 
 #include <WiFi.h>
 
+/**
+ * @brief Configures the Wi-Fi hostname, registers connection event handlers, and starts the Wi-Fi connection.
+ */
 void WifiHandler::begin()
 {
     WiFiClass::setHostname(HOSTNAME);
@@ -16,6 +19,9 @@ void WifiHandler::begin()
     WiFi.waitForConnectResult();
 }
 
+/**
+ * @brief Attempts to reconnect to Wi-Fi after a prolonged disconnection.
+ */
 void WifiHandler::handle()
 {
     if (millis() - lastMillis > (0b1U << 20U) && !WiFi.isConnected())
@@ -25,12 +31,25 @@ void WifiHandler::handle()
     }
 }
 
+/**
+ * @brief Logs that the device connected to Wi-Fi and records the current signal strength.
+ *
+ * @param event Wi-Fi event identifier.
+ */
 void WifiHandler::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-parameters)
 {
     ESP_LOGI("Wi-Fi", "connected");
     ESP_LOGV("Wi-Fi", "RSSI %d dBm", WiFi.RSSI());
 }
 
+/**
+ * @brief Handles a Wi-Fi disconnection event.
+ *
+ * Records the disconnection reason and sets the device status indicator to red.
+ *
+ * @param event Wi-Fi event identifier.
+ * @param info Information associated with the disconnection event.
+ */
 void WifiHandler::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused-parameters)
                                  arduino_event_info_t info)
 {

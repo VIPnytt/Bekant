@@ -4,6 +4,9 @@
 
 #include <ArduinoOTA.h>
 
+/**
+ * Manages Arduino OTA updates on ESP32 devices.
+ */
 class OtaHandler
 {
 private:

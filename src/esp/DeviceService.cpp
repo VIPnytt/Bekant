@@ -9,7 +9,7 @@
 #include <nvs.h>
 
 /**
- * @brief Initializes the desk controller, hardware interfaces, network services, and MQTT discovery.
+ * @brief Initializes hardware, restores persisted state, attaches input interrupts, and starts device services.
  */
 void DeviceService::begin()
 {
@@ -72,11 +72,11 @@ void DeviceService::begin()
 }
 
 /**
- * @brief Processes service updates, status indicators, connectivity, and desk state publication.
+ * @brief Advances service processing and publishes updated device state.
  *
- * Advances OTA, desk, and ISP services, applies pending LED changes, manages status
- * indicators and button states, saves desk state when required, reconnects network
- * services, and publishes desk metadata when connected.
+ * Processes connectivity, OTA, ISP, and status services. When processing is enabled,
+ * handles console and MQTT activity, releases pending drive outputs, saves unsaved
+ * state, and publishes state periodically or when an update is pending.
  */
 void DeviceService::handle()
 {
@@ -119,9 +119,10 @@ void DeviceService::handle()
 }
 
 /**
- * @brief Decodes an encoder value into a physical desk height.
+ * @brief Converts an encoder value to the corresponding physical desk height.
  *
- * @param encoder Encoded 16-bit encoder value.
+ * @param encoder Encoder value to convert.
+ * @return Physical desk height corresponding to the encoder value.
  */
 float DeviceService::decode(float encoder)
 {
@@ -131,6 +132,12 @@ float DeviceService::decode(float encoder)
            ReferenceHeight::heightLow;
 }
 
+/**
+ * @brief Converts a physical desk height to its corresponding encoder value.
+ *
+ * @param height Physical desk height.
+ * @return uint16_t Encoder value mapped from the configured height range.
+ */
 uint16_t DeviceService::encode(float height)
 {
     return static_cast<uint16_t>(
@@ -141,12 +148,12 @@ uint16_t DeviceService::encode(float height)
 }
 
 /**
- * @brief Processes commands from a JSON request.
+ * @brief Processes device commands from a JSON request.
  *
- * Handles desk actions, button controls, height and preset commands, output-enable and reset state changes, and raw
- * transmissions.
+ * Handles calibration, restart, desk height, preset, drive-button, output-enable, reset, and raw transmission
+ * commands.
  *
- * @param doc JSON object containing the requested commands.
+ * @param doc JSON object containing the commands to process.
  */
 void DeviceService::request(JsonObjectConst doc)
 {
@@ -215,6 +222,9 @@ void DeviceService::request(JsonObjectConst doc)
     }
 }
 
+/**
+ * @brief Disables device processing and disconnects serial and MQTT services.
+ */
 void DeviceService::safeMode()
 {
     process = false;
@@ -223,7 +233,7 @@ void DeviceService::safeMode()
 }
 
 /**
- * @brief Persists unsaved encoder and preset values to non-volatile storage.
+ * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
  */
 void DeviceService::save()
 {
@@ -245,12 +255,9 @@ void DeviceService::save()
 }
 
 /**
- * @brief Publishes the current device state.
+ * @brief Publishes the current device state and telemetry.
  *
- * Adds device status and telemetry fields to the JSON document, then publishes it
- * to the MQTT state topic.
- *
- * @param doc JSON document to augment and publish.
+ * @param doc JSON document to augment with device state and telemetry before publishing.
  */
 void DeviceService::transmit(JsonDocument &doc)
 {
@@ -315,6 +322,11 @@ void DeviceService::transmit(JsonDocument &doc)
     mqtt.transmit(doc);
 }
 
+/**
+ * @brief Updates the down-button state and requests a state publication.
+ *
+ * @param state The new down-button state.
+ */
 void DeviceService::setButtonDown(bool state)
 {
     buttonDown = state;
@@ -322,6 +334,11 @@ void DeviceService::setButtonDown(bool state)
     pending = true;
 }
 
+/**
+ * @brief Updates the physical up-button state.
+ *
+ * @param state Whether the up button is pressed.
+ */
 void DeviceService::setButtonUp(bool state)
 {
     buttonUp = state;
@@ -330,11 +347,9 @@ void DeviceService::setButtonUp(bool state)
 }
 
 /**
- * @brief Sets the optional desk down-button control state.
+ * @brief Sets the optional desk down-drive output state.
  *
- * Pressing the button sets the status indicator to red.
- *
- * @param state Whether the down button should be active.
+ * @param state Whether the down-drive output should be active.
  */
 void DeviceService::setDriveDown(bool state)
 {
@@ -346,9 +361,9 @@ void DeviceService::setDriveDown(bool state)
 }
 
 /**
- * @brief Sets the optional up button control state.
+ * @brief Sets the requested state of the optional desk drive-up output.
  *
- * @param state `true` to activate the up button and `false` to release it.
+ * @param state `true` to activate the output; `false` to deactivate it.
  */
 void DeviceService::setDriveUp(bool state)
 {
@@ -359,6 +374,14 @@ void DeviceService::setDriveUp(bool state)
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Updates encoder A and marks the device state for publication.
+ *
+ * Changes to the encoder value mark the persistent state as unsaved and update
+ * the status indicator based on the active button or drive controls.
+ *
+ * @param state New encoder A value.
+ */
 void DeviceService::setEncoderA(uint16_t state)
 {
     if (state != encoderA)
@@ -373,6 +396,13 @@ void DeviceService::setEncoderA(uint16_t state)
     pending = true;
 }
 
+/**
+ * @brief Updates the secondary encoder value.
+ *
+ * Marks the device state for persistence and publication when the value changes.
+ *
+ * @param state New secondary encoder value.
+ */
 void DeviceService::setEncoderB(uint16_t state)
 {
     if (state != encoderB)
@@ -388,12 +418,12 @@ void DeviceService::setEncoderB(uint16_t state)
 }
 
 /**
- * @brief Sets the desk's output-enable state.
+ * @brief Updates the desk output-enable state.
  *
- * Updates the output-enable hardware, publishes refreshed desk metadata, and
- * persists the changed state when output-enable support is available.
+ * Controls the optional output-enable hardware and marks the state for
+ * persistence and publication when output-enable support is configured.
  *
- * @param state Whether output should be enabled.
+ * @param state Whether the desk output should be enabled.
  */
 void DeviceService::setOutputEnable(bool state)
 {
@@ -409,6 +439,11 @@ void DeviceService::setOutputEnable(bool state)
 #endif // PIN_OE
 }
 
+/**
+ * @brief Sets the high preset value and marks the device state for persistence and publication.
+ *
+ * @param preset High preset value.
+ */
 void DeviceService::setPresetHigh(uint16_t preset)
 {
     if (preset != presetHigh)
@@ -419,6 +454,11 @@ void DeviceService::setPresetHigh(uint16_t preset)
     pending = true;
 }
 
+/**
+ * @brief Sets the lower desk-height preset.
+ *
+ * @param preset Lower preset value.
+ */
 void DeviceService::setPresetLow(uint16_t preset)
 {
     if (preset != presetLow)
@@ -430,26 +470,45 @@ void DeviceService::setPresetLow(uint16_t preset)
 }
 
 /**
- * @brief Sets the desk reset state and publishes updated metadata when it changes.
+ * @brief Sets the desk reset output state.
  *
- * @param state Whether reset should be asserted.
+ * @param state Whether to assert the reset signal.
  */
 void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
 
+/**
+ * @brief Stores the most recently received serial payload.
+ *
+ * @param payload Received payload to store.
+ */
 void DeviceService::setRx(std::string payload)
 {
     payloadRx = payload;
     pending = true;
 }
 
+/**
+ * @brief Stores the most recently transmitted serial payload.
+ *
+ * @param payload Transmitted serial payload.
+ */
 void DeviceService::setTx(std::string payload)
 {
     payloadTx = payload;
     pending = true;
 }
 
+/**
+ * @brief Sets the status indicator to red.
+ */
 void DeviceService::statusRed() { status.setRed(); }
 
+/**
+ * @brief Updates the down-drive state from its input pin.
+ *
+ * Records the physical down-drive state, updates the status indicator for an
+ * active down-drive request, and marks the device state for publication.
+ */
 void DeviceService::onInterruptDown()
 {
 #ifdef PIN_TPDN
@@ -462,6 +521,9 @@ void DeviceService::onInterruptDown()
 #endif // PIN_TPDN
 }
 
+/**
+ * @brief Updates the reset state and status indicator from the reset input.
+ */
 void DeviceService::onInterruptReset()
 {
     device.reset = digitalRead(PIN_RST) == LOW;
@@ -469,6 +531,12 @@ void DeviceService::onInterruptReset()
     device.pending = true;
 }
 
+/**
+ * @brief Updates the upward drive state after a hardware interrupt.
+ *
+ * Records the active state of the upward drive input, updates the status indicator
+ * when upward driving is requested, and marks the device state for publication.
+ */
 void DeviceService::onInterruptUp()
 {
 #ifdef PIN_TPUP

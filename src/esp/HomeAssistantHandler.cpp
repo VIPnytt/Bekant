@@ -7,6 +7,9 @@
 #include <WiFi.h>
 #include <format>
 
+/**
+ * @brief Configures the Home Assistant availability topic and unavailable payload.
+ */
 void HomeAssistantHandler::availability()
 {
     JsonObject _availability{discovery[ComponentAbbreviations::availability].to<JsonObject>()};
@@ -14,6 +17,9 @@ void HomeAssistantHandler::availability()
     _availability[ComponentAbbreviations::topic].set("bekant/" HOSTNAME "/availability");
 }
 
+/**
+ * @brief Populates the Home Assistant discovery document with all entity groups.
+ */
 void HomeAssistantHandler::components()
 {
     controls();
@@ -22,6 +28,9 @@ void HomeAssistantHandler::components()
     diagnostic();
 }
 
+/**
+ * @brief Adds IKEA BEKANT desk device metadata to the Home Assistant discovery document.
+ */
 void HomeAssistantHandler::device()
 {
     JsonObject _device{discovery[ComponentAbbreviations::device].to<JsonObject>()};
@@ -35,6 +44,9 @@ void HomeAssistantHandler::device()
     _device[DeviceAbbreviations::sw_version].set("Bekant 1.0.0");
 }
 
+/**
+ * @brief Configures the Home Assistant discovery origin metadata.
+ */
 void HomeAssistantHandler::origin()
 {
     JsonObject _origin{discovery[ComponentAbbreviations::origin].to<JsonObject>()};
@@ -42,6 +54,9 @@ void HomeAssistantHandler::origin()
     _origin[OriginAbbreviations::support_url].set("https://github.com/VIPnytt/Bekant");
 }
 
+/**
+ * @brief Configures Home Assistant controls for desk height and preset recall.
+ */
 void HomeAssistantHandler::controls()
 {
     {
@@ -90,6 +105,9 @@ void HomeAssistantHandler::controls()
     }
 }
 
+/**
+ * @brief Configures Home Assistant sensors for desk height and stored presets.
+ */
 void HomeAssistantHandler::sensors()
 {
     {
@@ -136,6 +154,9 @@ void HomeAssistantHandler::sensors()
     }
 }
 
+/**
+ * @brief Configures Home Assistant entities for desk settings and maintenance actions.
+ */
 void HomeAssistantHandler::configuration()
 {
     constexpr std::string_view entityCategory{"config"};
@@ -224,6 +245,14 @@ void HomeAssistantHandler::configuration()
     }
 }
 
+/**
+ * @brief Configures diagnostic entities for Home Assistant discovery.
+ *
+ * Adds diagnostic controls and sensors for button inputs, calibration, encoder
+ * values, positional offset, power supply voltage, serial activity,
+ * temperature, and Wi-Fi signal strength. Hardware-specific entities are
+ * included when their corresponding pins are available.
+ */
 void HomeAssistantHandler::diagnostic()
 {
     constexpr std::string_view entityCategory{"diagnostic"};

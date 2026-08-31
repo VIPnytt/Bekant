@@ -5,6 +5,9 @@
 #include "esp/DeviceService.h"
 #include "esp/secrets.h"
 
+/**
+ * @brief Initializes the serial console and configures its communication pins.
+ */
 void ConsoleHandler::begin()
 {
     pinMode(PIN_MISO, INPUT);
@@ -52,6 +55,11 @@ void ConsoleHandler::handle()
     }
 }
 
+/**
+ * @brief Parses a console command and updates the corresponding device state.
+ *
+ * @param message Command containing an encoder value, preset value, or button state.
+ */
 void ConsoleHandler::parse(std::string message)
 {
     device.setRx(message);
@@ -86,6 +94,11 @@ void ConsoleHandler::parse(std::string message)
     }
 }
 
+/**
+ * @brief Transmits a payload over the serial console.
+ *
+ * @param payload Message to transmit without the terminating newline.
+ */
 void ConsoleHandler::send(std::string payload)
 {
     Serial1.write(payload.data(), payload.size());
