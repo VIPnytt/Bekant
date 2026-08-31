@@ -77,6 +77,7 @@ jobs:
           #define MQTT_HOST "localhost"
           #define MQTT_KEY "redacted"
           #define MQTT_USER "redacted"
+          #define NAME "Bekant"
           #define OTA_KEY "redacted"
           #define PIN_ADC 1
           #define PIN_LED 2
@@ -131,6 +132,7 @@ jobs:
           #define MQTT_HOST "localhost"
           #define MQTT_KEY "redacted"
           #define MQTT_USER "redacted"
+          #define NAME "Bekant"
           #define PIN_MISO 1
           #define PIN_MOSI 2
           #define PIN_RST 3
