@@ -2,8 +2,8 @@
 
 #include "esp/HomeAssistantHandler.h"
 
+#include "esp/DeviceService.h"
 #include "esp/constants.h"
-#include "esp/deviceService.h"
 
 #include <WiFi.h>
 #include <format>
