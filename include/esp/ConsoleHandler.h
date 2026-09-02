@@ -11,7 +11,33 @@ private:
     std::string rxBuffer{};
     std::string txBuffer{};
 
-    static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
+    /**
+ * Parses a received console payload.
+ * @param payload Payload received from the console.
+ */
+
+/**
+ * Records a hardware serial receive error.
+ * @param error Hardware serial error to record.
+ */
+
+/**
+ * Initializes console handling.
+ */
+
+/**
+ * Processes available console input.
+ */
+
+/**
+ * Forwards buffered console data.
+ */
+
+/**
+ * Transmits a console payload.
+ * @param payload Payload to transmit.
+ */
+static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
     void parse(std::string payload);
 

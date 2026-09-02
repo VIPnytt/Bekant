@@ -17,7 +17,9 @@ void ConsoleHandler::begin()
 }
 
 /**
- * @brief Processes one byte from the serial input and handles completed messages or serial errors.
+ * @brief Processes serial input, completed messages, and UART receive errors.
+ *
+ * Forwards primary-serial input when no secondary-serial data or receive error is available.
  */
 void ConsoleHandler::handle()
 {
@@ -55,6 +57,11 @@ void ConsoleHandler::handle()
     }
 }
 
+/**
+ * @brief Forwards a newline-terminated message from the primary serial interface.
+ *
+ * Carriage returns are ignored, and messages longer than eight characters are discarded.
+ */
 void ConsoleHandler::forward()
 {
     const int byte{Serial.read()};
@@ -78,9 +85,10 @@ void ConsoleHandler::forward()
 }
 
 /**
- * @brief Parses a console command and updates the corresponding device state.
+ * @brief Interprets a console payload and updates the corresponding device state.
  *
- * @param message Command containing an encoder value, preset value, or button state.
+ * @param payload Command containing an encoder value, preset value, or button state.
+ * Invalid commands set the device status to red.
  */
 void ConsoleHandler::parse(std::string payload)
 {
@@ -118,7 +126,7 @@ void ConsoleHandler::parse(std::string payload)
 }
 
 /**
- * @brief Transmits a payload over the serial console.
+ * @brief Transmits a newline-terminated payload over the secondary serial interface.
  *
  * @param payload Message to transmit without the terminating newline.
  */
