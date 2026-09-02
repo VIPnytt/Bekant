@@ -25,22 +25,19 @@ void ConsoleHandler::handle()
     if (byte != -1)
     {
         ESP_LOGV("RX", "0x%X", byte);
-        const size_t length{buffer.size()};
+        const size_t length{rxBuffer.size()};
         if (byte == static_cast<int>('\n') && length != 0U)
         {
             if (length <= 0b1U << 3U)
             {
-                ESP_LOGD("RX", "%s", buffer.c_str());
-                parse(buffer);
+                ESP_LOGD("RX", "%s", rxBuffer.c_str());
+                parse(rxBuffer);
             }
-            buffer.clear();
+            rxBuffer.clear();
         }
-        else if (byte != static_cast<int>('\n'))
+        else if (byte != static_cast<int>('\n') && length <= 0b1U << 3U)
         {
-            if (length <= 0b1U << 3U)
-            {
-                buffer += static_cast<char>(byte);
-            }
+            rxBuffer += static_cast<char>(byte);
         }
     }
     else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)
@@ -52,6 +49,32 @@ void ConsoleHandler::handle()
         JsonDocument doc{};
         doc["hardwareSerial_error_t"].set(_error);
         device.transmit(doc);
+    }
+    else
+    {
+        forward();
+    }
+}
+
+void ConsoleHandler::forward()
+{
+    const int byte{Serial.read()};
+    if (byte != -1)
+    {
+        ESP_LOGV("TX", "0x%X", byte);
+        const size_t length{txBuffer.size()};
+        if (byte == static_cast<int>('\n') && length != 0U)
+        {
+            if (length <= 0b1U << 3U)
+            {
+                send(txBuffer);
+            }
+            rxBuffer.clear();
+        }
+        else if (byte != static_cast<int>('\n') && byte != static_cast<int>('\r') && length <= 0b1U << 3U)
+        {
+            txBuffer += static_cast<char>(byte);
+        }
     }
 }
 
@@ -101,6 +124,7 @@ void ConsoleHandler::parse(std::string message)
  */
 void ConsoleHandler::send(std::string payload)
 {
+    ESP_LOGD("TX", "%s", payload.c_str());
     Serial1.write(payload.data(), payload.size());
     Serial1.write('\n');
     device.setTx(payload);
