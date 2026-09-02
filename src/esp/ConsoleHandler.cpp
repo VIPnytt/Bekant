@@ -30,7 +30,6 @@ void ConsoleHandler::handle()
         {
             if (length <= 0b1U << 3U)
             {
-                ESP_LOGD("RX", "%s", rxBuffer.c_str());
                 parse(rxBuffer);
             }
             rxBuffer.clear();
@@ -83,33 +82,34 @@ void ConsoleHandler::forward()
  *
  * @param message Command containing an encoder value, preset value, or button state.
  */
-void ConsoleHandler::parse(std::string message)
+void ConsoleHandler::parse(std::string payload)
 {
-    device.setRx(message);
-    const char first{message.at(0U)};
-    if (first == 'a' && (message.size() == 4U || message.size() == 5U))
+    ESP_LOGD("RX", "%s", rxBuffer.c_str());
+    device.setRx(payload);
+    const char first{payload.at(0U)};
+    if (first == 'a' && (payload.size() == 4U || payload.size() == 5U))
     {
-        device.setEncoderA(static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
+        device.setEncoderA(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
     }
-    else if (first == 'b' && (message.size() == 4U || message.size() == 5U))
+    else if (first == 'b' && (payload.size() == 4U || payload.size() == 5U))
     {
-        device.setEncoderB(static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
+        device.setEncoderB(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
     }
-    else if (first == 'd' && message.size() == 2U)
+    else if (first == 'd' && payload.size() == 2U)
     {
-        device.setButtonDown(message.at(1U) == '1');
+        device.setButtonDown(payload.at(1U) == '1');
     }
-    else if (first == 'h' && (message.size() == 4U || message.size() == 5U))
+    else if (first == 'h' && (payload.size() == 4U || payload.size() == 5U))
     {
-        device.setPresetHigh(static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
+        device.setPresetHigh(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
     }
-    else if (first == 'l' && (message.size() == 4U || message.size() == 5U))
+    else if (first == 'l' && (payload.size() == 4U || payload.size() == 5U))
     {
-        device.setPresetLow(static_cast<uint16_t>(atoi(message.substr(1U).c_str())));
+        device.setPresetLow(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
     }
-    else if (first == 'u' && message.size() == 2U)
+    else if (first == 'u' && payload.size() == 2U)
     {
-        device.setButtonUp(message.at(1U) == '1');
+        device.setButtonUp(payload.at(1U) == '1');
     }
     else
     {

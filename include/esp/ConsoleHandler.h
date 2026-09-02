@@ -13,7 +13,7 @@ private:
 
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
-    void parse(std::string message);
+    void parse(std::string payload);
 
     static void onReceiveError(hardwareSerial_error_t error);
 
