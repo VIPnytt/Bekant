@@ -23,6 +23,7 @@ void DeskService::begin()
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     Serial1.flush();
+    Serial1.print("v1.0.0\n");
     if (presetHigh != 0xFFFFU)
     {
         Serial1.printf("h%u\n", presetHigh);

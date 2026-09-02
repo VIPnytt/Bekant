@@ -3,6 +3,7 @@
 #include "esp/HomeAssistantHandler.h"
 
 #include "esp/constants.h"
+#include "esp/deviceService.h"
 
 #include <WiFi.h>
 #include <format>
@@ -41,7 +42,7 @@ void HomeAssistantHandler::device()
     _device[DeviceAbbreviations::manufacturer].set("IKEA");
     _device[DeviceAbbreviations::model].set("BEKANT");
     _device[DeviceAbbreviations::name].set(NAME);
-    _device[DeviceAbbreviations::sw_version].set("Bekant 1.0.0");
+    _device[DeviceAbbreviations::sw_version].set(std::string("Bekant ").append(DeviceService::version));
 }
 
 /**
@@ -319,6 +320,36 @@ void HomeAssistantHandler::diagnostic()
         encoders[ComponentAbbreviations::unique_id].set("encoders");
         encoders[ComponentAbbreviations::value_template].set(
             R"({{value_json.encoders|sum/value_json.encoders|length}})");
+    }
+    {
+        JsonObject firmwareAvr{discovery[ComponentAbbreviations::components]["firmware_avr"].to<JsonObject>()};
+        firmwareAvr[ComponentAbbreviations::entity_category].set(entityCategory);
+        firmwareAvr[ComponentAbbreviations::icon].set("mdi:update");
+        firmwareAvr[ComponentAbbreviations::name].set("Firmware AVR");
+        firmwareAvr[ComponentAbbreviations::platform].set("update");
+        firmwareAvr[ComponentAbbreviations::release_url].set(
+            std::string("https://github.com/VIPnytt/Bekant/releases/v").append(DeviceService::version));
+        firmwareAvr[ComponentAbbreviations::state_topic].set(stateTopic);
+        firmwareAvr[ComponentAbbreviations::title].set("Bekant AVR firmware");
+        firmwareAvr[ComponentAbbreviations::unique_id].set("firmware_avr");
+        firmwareAvr[ComponentAbbreviations::value_template].set(
+            std::string("{{{'installed_version':value_json.firmware.avr,'latest_version':'")
+                .append(DeviceService::version)
+                .append("'}|to_json}}"));
+    }
+    {
+        JsonObject firmwareEsp32{discovery[ComponentAbbreviations::components]["firmware_esp32"].to<JsonObject>()};
+        firmwareEsp32[ComponentAbbreviations::enabled_by_default].set(false);
+        firmwareEsp32[ComponentAbbreviations::entity_category].set(entityCategory);
+        firmwareEsp32[ComponentAbbreviations::icon].set("mdi:update");
+        firmwareEsp32[ComponentAbbreviations::name].set("Firmware ESP32");
+        firmwareEsp32[ComponentAbbreviations::platform].set("update");
+        firmwareEsp32[ComponentAbbreviations::release_url].set("https://github.com/VIPnytt/Bekant/releases/latest");
+        firmwareEsp32[ComponentAbbreviations::state_topic].set(stateTopic);
+        firmwareEsp32[ComponentAbbreviations::title].set("Bekant ESP32 firmware");
+        firmwareEsp32[ComponentAbbreviations::unique_id].set("firmware_esp32");
+        firmwareEsp32[ComponentAbbreviations::value_template].set(
+            "{{{'installed_version':value_json.firmware.esp32,'latest_version':value_json.firmware.latest}|to_json}}");
     }
     {
         JsonObject offset{discovery[ComponentAbbreviations::components]["offset"].to<JsonObject>()};

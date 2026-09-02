@@ -119,6 +119,10 @@ void ConsoleHandler::parse(std::string payload)
     {
         device.setButtonUp(payload.at(1U) == '1');
     }
+    else if (first == 'v')
+    {
+        device.setVersion(payload.substr(1U));
+    }
     else
     {
         device.statusRed();

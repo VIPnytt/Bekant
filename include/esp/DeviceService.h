@@ -31,6 +31,8 @@ private:
 
     std::string payloadRx{};
     std::string payloadTx{};
+    std::string versionAvr{};
+    std::string versionLatest{};
 
     std::pair<bool, bool> driveDown{false, false};
     std::pair<bool, bool> driveUp{false, false};
@@ -62,9 +64,12 @@ private:
     static void onInterruptUp();
 
 public:
+    static constexpr std::string_view version{"1.0.0"};
+
     void begin();
     void handle();
 
+    void fetchLatest();
     void safeMode();
     void request(JsonObjectConst doc);
     void setButtonDown(bool state);
@@ -75,6 +80,7 @@ public:
     void setPresetLow(uint16_t encoder);
     void setRx(std::string payload);
     void setTx(std::string payload);
+    void setVersion(std::string_view version);
     void statusRed();
     void transmit(JsonDocument &doc);
 
