@@ -569,9 +569,9 @@ void DeviceService::fetchLatest()
         body.insert(body.end(), buffer.data(), buffer.data() + read);
     }
     esp_http_client_cleanup(client);
-    JsonDocument filter{};
+    JsonDocument filter{}; // NOLINT(misc-const-correctness)
     filter["tag_name"].set(true);
-    JsonDocument doc{};
+    JsonDocument doc{}; // NOLINT(misc-const-correctness)
     if (deserializeJson(doc, body.data(), body.size(), DeserializationOption::Filter(filter)) ==
             DeserializationError::Ok &&
         doc["tag_name"].is<std::string_view>())

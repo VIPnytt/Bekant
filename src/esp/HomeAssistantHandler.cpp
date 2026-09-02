@@ -2,7 +2,7 @@
 
 #include "esp/HomeAssistantHandler.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeviceService.h" // NOLINT(misc-include-cleaner)
 #include "esp/constants.h"
 
 #include <WiFi.h>
