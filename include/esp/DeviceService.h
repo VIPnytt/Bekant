@@ -69,7 +69,7 @@ public:
     void begin();
     void handle();
 
-    void fetchLatest();
+    void fetchRelease();
     void safeMode();
     void request(JsonObjectConst doc);
     void setButtonDown(bool state);

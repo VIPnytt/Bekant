@@ -526,7 +526,7 @@ void DeviceService::setVersion(std::string_view avr)
  */
 void DeviceService::statusRed() { status.setRed(); }
 
-void DeviceService::fetchLatest()
+void DeviceService::fetchRelease()
 {
     const std::string userAgent{
         std::string("Bekant/").append(version).append(" (ESP32; +https://github.com/VIPnytt/Bekant)")};
@@ -578,12 +578,15 @@ void DeviceService::fetchLatest()
     {
         const std::string_view tag{doc["tag_name"].as<std::string_view>()};
         versionLatest = tag.starts_with('v') ? tag.substr(1U) : tag;
-        ESP_LOGI("ESP32",
-                 "Firmware update available: %.*s -> %s",
-                 static_cast<int>(version.size()),
-                 version.data(),
-                 versionLatest.c_str());
-        ESP_LOGI("ESP32", "Release notes: https://github.com/VIPnytt/Bekant/releases/v%s", versionLatest.c_str());
+        if (versionLatest != version)
+        {
+            ESP_LOGI("ESP32",
+                     "Firmware update available: %.*s -> %s",
+                     static_cast<int>(version.size()),
+                     version.data(),
+                     versionLatest.c_str());
+            ESP_LOGI("ESP32", "Release notes: https://github.com/VIPnytt/Bekant/releases/v%s", versionLatest.c_str());
+        }
         pending = true;
     }
 }

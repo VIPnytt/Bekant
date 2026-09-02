@@ -119,7 +119,7 @@ void ConsoleHandler::parse(std::string payload)
     {
         device.setButtonUp(payload.at(1U) == '1');
     }
-    else if (first == 'v')
+    else if (first == 'v' && payload.size() >= 2U)
     {
         device.setVersion(payload.substr(1U));
     }
