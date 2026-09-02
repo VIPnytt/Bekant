@@ -69,7 +69,7 @@ void ConsoleHandler::forward()
             {
                 send(txBuffer);
             }
-            rxBuffer.clear();
+            txBuffer.clear();
         }
         else if (byte != static_cast<int>('\n') && byte != static_cast<int>('\r') && length <= 0b1U << 3U)
         {
