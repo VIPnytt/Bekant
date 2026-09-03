@@ -10,8 +10,8 @@
 /**
  * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
  *
- * Transmits valid stored presets and the required LIN initialization packets. Reports
- * initialization errors with a tone and a serial status message.
+ * Transmits the firmware version, valid stored presets, and required LIN initialization
+ * packets. Reports initialization errors with a tone and a serial status message.
  */
 void DeskService::begin()
 {
@@ -23,6 +23,7 @@ void DeskService::begin()
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     Serial1.flush();
+    Serial1.print("v1.0.0\n");
     if (presetHigh != 0xFFFFU)
     {
         Serial1.printf("h%u\n", presetHigh);

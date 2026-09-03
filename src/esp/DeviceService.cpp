@@ -5,16 +5,21 @@
 #include "esp/constants.h" // NOLINT(misc-include-cleaner)
 
 #include <WiFi.h> // NOLINT(misc-include-cleaner)
+#include <esp_crt_bundle.h>
+#include <esp_http_client.h>
 #include <format>
 #include <nvs.h>
 
 /**
  * @brief Initializes hardware, restores persisted state, attaches input interrupts, and starts device services.
+ *
+ * Also checks the latest available firmware release.
  */
 void DeviceService::begin()
 {
     Serial.begin(115'200UL);
     vTaskDelay(0b1U << 7U);
+    ESP_LOGI("ESP32", "Bekant %.*s", static_cast<int>(version.size()), version.data());
 #ifdef PIN_ADC
     pinMode(PIN_ADC, ANALOG);
 #endif // PIN_ADC
@@ -69,6 +74,7 @@ void DeviceService::begin()
     isp.begin();
     console.begin();
     mqtt.begin();
+    fetchRelease();
 }
 
 /**
@@ -284,6 +290,15 @@ void DeviceService::transmit(JsonDocument &doc)
         doc["encoders"][1U].set(encoderB);
         doc["legs"][1U].set(decode(static_cast<float>(encoderB)));
     }
+    if (!versionAvr.empty())
+    {
+        doc["firmware"]["avr"].set(versionAvr);
+    }
+    doc["firmware"]["esp32"].set(version);
+    if (!versionLatest.empty())
+    {
+        doc["firmware"]["latest"].set(versionLatest);
+    }
 #ifdef PIN_OE
     doc["oe"].set(enable);
 #endif // PIN_OE
@@ -491,9 +506,104 @@ void DeviceService::setTx(std::string payload)
 }
 
 /**
+ * @brief Stores the AVR firmware version and marks device state for publication.
+ *
+ * @param avr AVR firmware version.
+ */
+void DeviceService::setVersion(std::string_view avr)
+{
+    versionAvr = avr;
+    if (versionAvr != version)
+    {
+        ESP_LOGW("AVR",
+                 "Firmware update required: %.*s -> %s",
+                 static_cast<int>(version.size()),
+                 version.data(),
+                 versionAvr.c_str());
+        ESP_LOGI("AVR",
+                 "Release notes: https://github.com/VIPnytt/Bekant/releases/v%.*s",
+                 static_cast<int>(version.size()),
+                 version.data());
+    }
+    pending = true;
+}
+
+/**
  * @brief Sets the status indicator to red.
  */
 void DeviceService::statusRed() { status.setRed(); }
+
+/**
+ * @brief Checks GitHub for the latest firmware release.
+ *
+ * Stores the latest release version without its leading `v` and marks the
+ * device state for publication when the response is valid. Client, HTTP, and
+ * JSON parsing failures leave the release state unchanged.
+ */
+void DeviceService::fetchRelease()
+{
+    const std::string userAgent{
+        std::string("Bekant/").append(version).append(" (ESP32; +https://github.com/VIPnytt/Bekant)")};
+    esp_http_client_config_t config{
+        .host{"api.github.com"},
+        .port{443},
+        .path{"/repos/VIPnytt/Bekant/releases/latest"},
+        .user_agent{userAgent.c_str()},
+        .method{esp_http_client_method_t::HTTP_METHOD_GET},
+        .transport_type{esp_http_client_transport_t::HTTP_TRANSPORT_OVER_SSL},
+        .crt_bundle_attach{esp_crt_bundle_attach},
+    };
+    esp_http_client_handle_t client{esp_http_client_init(&config)};
+    if (client == nullptr)
+    {
+        return;
+    }
+    esp_http_client_set_header(client, "Accept", "application/vnd.github+json");
+    esp_http_client_set_header(client, "X-GitHub-Api-Version", "2026-03-10");
+    if (esp_http_client_open(client, 0) != ESP_OK || esp_http_client_fetch_headers(client) < 0 ||
+        esp_http_client_get_status_code(client) != 200)
+    {
+        esp_http_client_cleanup(client);
+        return;
+    }
+    std::vector<char> body{};
+    const int64_t length{esp_http_client_get_content_length(client)};
+    if (length > 0)
+    {
+        body.reserve(static_cast<size_t>(length));
+    }
+    std::array<char, 0b1U << 8U> buffer{};
+    while (true)
+    {
+        const int read{esp_http_client_read(client, buffer.data(), static_cast<int>(buffer.size()))};
+        if (read <= 0)
+        {
+            break;
+        }
+        body.insert(body.end(), buffer.data(), buffer.data() + read);
+    }
+    esp_http_client_cleanup(client);
+    JsonDocument filter{}; // NOLINT(misc-const-correctness)
+    filter["tag_name"].set(true);
+    JsonDocument doc{}; // NOLINT(misc-const-correctness)
+    if (deserializeJson(doc, body.data(), body.size(), DeserializationOption::Filter(filter)) ==
+            DeserializationError::Ok &&
+        doc["tag_name"].is<std::string_view>())
+    {
+        const std::string_view tag{doc["tag_name"].as<std::string_view>()};
+        versionLatest = tag.starts_with('v') ? tag.substr(1U) : tag;
+        if (versionLatest != version)
+        {
+            ESP_LOGI("ESP32",
+                     "Firmware update available: %.*s -> %s",
+                     static_cast<int>(version.size()),
+                     version.data(),
+                     versionLatest.c_str());
+            ESP_LOGI("ESP32", "Release notes: https://github.com/VIPnytt/Bekant/releases/v%s", versionLatest.c_str());
+        }
+        pending = true;
+    }
+}
 
 /**
  * @brief Updates the down-drive state from its input pin.
