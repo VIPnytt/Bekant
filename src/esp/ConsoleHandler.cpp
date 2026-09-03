@@ -97,55 +97,38 @@ void ConsoleHandler::parse(std::string_view payload)
     ESP_LOGD("RX", "%.*s", static_cast<int>(payload.size()), payload.data());
     device.setRx(payload);
     const char first{payload.at(0U)};
-    if (payload.size() >= 2U && payload.size() <= 6U && (first == 'a' || first == 'b' || first == 'h' || first == 'l'))
-    {
-        uint16_t value{};
-        const std::from_chars_result result{
-            std::from_chars(payload.data() + 1U, payload.data() + payload.size(), value)};
-        if (result.ec == std::errc{} && result.ptr == payload.data() + payload.size())
-        {
-            switch (first)
-            {
-            case 'a':
-                device.setEncoderA(value);
-                break;
-            case 'b':
-                device.setEncoderB(value);
-                break;
-            case 'h':
-                device.setPresetHigh(value);
-                break;
-            case 'l':
-                device.setPresetLow(value);
-                break;
-            }
-        }
-        else
-        {
-            device.statusRed();
-        }
-    }
-    else if (payload.size() == 2U && (first == 'd' || first == 'u'))
-    {
-        const bool state{payload.at(1U) == '1'};
-        switch (first)
-        {
-        case 'd':
-            device.setButtonDown(state);
-            break;
-        case 'u':
-            device.setButtonUp(state);
-            break;
-        }
-    }
-    else if (first == 'v' && payload.size() >= 2U)
+    if (first == 'v')
     {
         device.setVersion(payload.substr(1U));
+        return;
     }
-    else
+    uint16_t value{};
+    const std::from_chars_result result{std::from_chars(payload.data() + 1U, payload.data() + payload.size(), value)};
+    if (result.ec == std::errc{} && result.ptr == payload.data() + payload.size())
     {
-        device.statusRed();
+        switch (first)
+        {
+        case 'a':
+            device.setEncoderA(value);
+            return;
+        case 'b':
+            device.setEncoderB(value);
+            return;
+        case 'd':
+            device.setButtonDown(value == 1U);
+            return;
+        case 'h':
+            device.setPresetHigh(value);
+            return;
+        case 'l':
+            device.setPresetLow(value);
+            return;
+        case 'u':
+            device.setButtonUp(value == 1U);
+            return;
+        }
     }
+    device.statusRed();
 }
 
 /**

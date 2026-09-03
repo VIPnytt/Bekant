@@ -375,17 +375,14 @@ void DeskService::sendCommand(Command command, unsigned int position)
  */
 void DeskService::tone(unsigned int frequency)
 {
-    if (frequency != 0U)
+    const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
+    const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
+    for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfperiod; ++idx)
     {
-        const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
-        const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
-        for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfperiod; ++idx)
-        {
-            digitalWrite(Pin::tone, HIGH);
-            delayMicroseconds(delay);
-            digitalWrite(Pin::tone, LOW);
-            delayMicroseconds(delay);
-        }
+        digitalWrite(Pin::tone, HIGH);
+        delayMicroseconds(delay);
+        digitalWrite(Pin::tone, LOW);
+        delayMicroseconds(delay);
     }
 }
 
