@@ -17,7 +17,7 @@ private:
      * Parses a received console payload.
      * @param payload Payload received from the console.
      */
-    void parse(std::string payload);
+    void parse(std::string_view payload);
 
     /**
      * Records a hardware serial receive error.
@@ -45,7 +45,7 @@ public:
      * Transmits a console payload.
      * @param payload Payload to transmit.
      */
-    void send(std::string payload);
+    void send(std::string_view payload);
 };
 
 #endif // ARDUINO_ARCH_ESP32
