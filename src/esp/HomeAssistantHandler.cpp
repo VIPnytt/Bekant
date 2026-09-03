@@ -308,21 +308,6 @@ void HomeAssistantHandler::diagnostic()
         calibrate[ComponentAbbreviations::unique_id].set("calibrate");
     }
     {
-        JsonObject encoders{discovery[ComponentAbbreviations::components]["encoders"].to<JsonObject>()};
-        encoders[ComponentAbbreviations::entity_category].set(entityCategory);
-        encoders[ComponentAbbreviations::icon].set("mdi:counter");
-        encoders[ComponentAbbreviations::json_attributes_template].set(R"({"raw":{{value_json.encoders}}})");
-        encoders[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
-        encoders[ComponentAbbreviations::name].set("Encoders");
-        encoders[ComponentAbbreviations::platform].set("sensor");
-        encoders[ComponentAbbreviations::state_class].set("measurement");
-        encoders[ComponentAbbreviations::state_topic].set(stateTopic);
-        encoders[ComponentAbbreviations::suggested_display_precision].set(0U);
-        encoders[ComponentAbbreviations::unique_id].set("encoders");
-        encoders[ComponentAbbreviations::value_template].set(
-            R"({{value_json.encoders|sum/value_json.encoders|length}})");
-    }
-    {
         JsonObject firmwareAvr{discovery[ComponentAbbreviations::components]["firmware_avr"].to<JsonObject>()};
         firmwareAvr[ComponentAbbreviations::entity_category].set(entityCategory);
         firmwareAvr[ComponentAbbreviations::icon].set("mdi:update");
@@ -369,6 +354,21 @@ void HomeAssistantHandler::diagnostic()
         offset[ComponentAbbreviations::unique_id].set("offset");
         offset[ComponentAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
         offset[ComponentAbbreviations::value_template].set("{{value_json.offset}}");
+    }
+    {
+        JsonObject position{discovery[ComponentAbbreviations::components]["encoders"].to<JsonObject>()};
+        position[ComponentAbbreviations::entity_category].set(entityCategory);
+        position[ComponentAbbreviations::icon].set("mdi:counter");
+        position[ComponentAbbreviations::json_attributes_template].set(R"({"raw":{{value_json.encoders}}})");
+        position[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
+        position[ComponentAbbreviations::name].set("Position");
+        position[ComponentAbbreviations::platform].set("sensor");
+        position[ComponentAbbreviations::state_class].set("measurement");
+        position[ComponentAbbreviations::state_topic].set(stateTopic);
+        position[ComponentAbbreviations::suggested_display_precision].set(0U);
+        position[ComponentAbbreviations::unique_id].set("encoders");
+        position[ComponentAbbreviations::value_template].set(
+            R"({{value_json.encoders|sum/value_json.encoders|length}})");
     }
 #ifdef PIN_ADC
     {

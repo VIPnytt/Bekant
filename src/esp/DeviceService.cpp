@@ -191,7 +191,7 @@ void DeviceService::request(JsonObjectConst doc)
     if (doc["desk"].is<float>())
     {
         status.setWhite();
-        console.send("e" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
+        console.send("p" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
     }
     if (doc["oe"].is<bool>())
     {

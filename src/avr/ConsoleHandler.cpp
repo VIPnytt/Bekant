@@ -47,10 +47,6 @@ void ConsoleHandler::process()
     {
         desk.recalibrate();
     }
-    else if (buffer[0U] == 'e')
-    {
-        desk.setTarget(parseDigits());
-    }
     else if (buffer[0U] == 'h')
     {
         length == 1U ? desk.setTarget(desk.getPresetHigh()) : desk.setPresetHigh(parseDigits());
@@ -58,6 +54,10 @@ void ConsoleHandler::process()
     else if (buffer[0U] == 'l')
     {
         length == 1U ? desk.setTarget(desk.getPresetLow()) : desk.setPresetLow(parseDigits());
+    }
+    else if (buffer[0U] == 'p')
+    {
+        desk.setTarget(parseDigits());
     }
     else if (buffer[0U] == 't')
     {
