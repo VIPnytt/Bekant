@@ -375,14 +375,21 @@ void DeskService::sendCommand(Command command, unsigned int position)
  */
 void DeskService::tone(unsigned int frequency)
 {
-    const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
-    const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
-    for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfperiod; ++idx)
+    if (frequency == 0U)
     {
-        digitalWrite(Pin::tone, HIGH);
-        delayMicroseconds(delay);
-        digitalWrite(Pin::tone, LOW);
-        delayMicroseconds(delay);
+        Serial1.printf("T%u\n", frequency);
+    }
+    else
+    {
+        const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
+        const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
+        for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfperiod; ++idx)
+        {
+            digitalWrite(Pin::tone, HIGH);
+            delayMicroseconds(delay);
+            digitalWrite(Pin::tone, LOW);
+            delayMicroseconds(delay);
+        }
     }
 }
 
@@ -438,7 +445,11 @@ void DeskService::setPresetLow(unsigned int preset)
  */
 void DeskService::setTarget(unsigned int position)
 {
-    if (position != target)
+    if (position > Encoder::maxLimit || position < Encoder::minLimit)
+    {
+        Serial1.printf("P%u\n", position);
+    }
+    else if (position != target)
     {
         target = position;
         pending = true;

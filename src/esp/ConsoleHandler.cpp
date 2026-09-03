@@ -32,10 +32,7 @@ void ConsoleHandler::handle()
         const size_t length{rxBuffer.size()};
         if (byte == static_cast<int>('\n') && length != 0U)
         {
-            if (length <= 0b1U << 3U)
-            {
-                parse(rxBuffer);
-            }
+            length >= 2U && length <= 0b1U << 3U ? parse(rxBuffer) : device.statusRed();
             rxBuffer.clear();
         }
         else if (byte != static_cast<int>('\n') && length <= 0b1U << 3U)

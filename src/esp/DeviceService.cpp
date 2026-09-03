@@ -260,7 +260,7 @@ void DeviceService::save()
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
-        if (nvs_commit(handle) != ESP_OK && saved)
+        if (nvs_commit(handle) != ESP_OK)
         {
             saved = false;
         }
@@ -344,9 +344,12 @@ void DeviceService::transmit(JsonDocument &doc)
  */
 void DeviceService::setButtonDown(bool state)
 {
-    buttonDown = state;
-    status.setWhite();
-    pending = true;
+    if (state != buttonDown)
+    {
+        buttonDown = state;
+        status.setWhite();
+        pending = true;
+    }
 }
 
 /**
@@ -356,9 +359,12 @@ void DeviceService::setButtonDown(bool state)
  */
 void DeviceService::setButtonUp(bool state)
 {
-    buttonUp = state;
-    status.setWhite();
-    pending = true;
+    if (state != buttonUp)
+    {
+        buttonUp = state;
+        status.setWhite();
+        pending = true;
+    }
 }
 
 /**
@@ -407,8 +413,8 @@ void DeviceService::setEncoderA(uint16_t state)
             : status.setBlue();
         encoderA = state;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -428,8 +434,8 @@ void DeviceService::setEncoderB(uint16_t state)
             : status.setBlue();
         encoderB = state;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -449,8 +455,8 @@ void DeviceService::setOutputEnable(bool state)
         status.setNone();
         digitalWrite(PIN_OE, enable ? HIGH : LOW);
         saved = false;
+        pending = true;
     }
-    pending = true;
 #endif // PIN_OE
 }
 
@@ -465,8 +471,8 @@ void DeviceService::setPresetHigh(uint16_t preset)
     {
         presetHigh = preset;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -480,8 +486,8 @@ void DeviceService::setPresetLow(uint16_t preset)
     {
         presetLow = preset;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -498,8 +504,11 @@ void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : H
  */
 void DeviceService::setRx(std::string_view payload)
 {
-    payloadRx = payload;
-    pending = true;
+    if (payload != payloadRx)
+    {
+        payloadRx = payload;
+        pending = true;
+    }
 }
 
 /**
@@ -509,8 +518,11 @@ void DeviceService::setRx(std::string_view payload)
  */
 void DeviceService::setTx(std::string_view payload)
 {
-    payloadTx = payload;
-    pending = true;
+    if (payload != payloadTx)
+    {
+        payloadTx = payload;
+        pending = true;
+    }
 }
 
 /**
@@ -520,7 +532,11 @@ void DeviceService::setTx(std::string_view payload)
  */
 void DeviceService::setVersion(std::string_view avr)
 {
-    versionAvr = avr;
+    if (avr != versionAvr)
+    {
+        versionAvr = avr;
+        pending = true;
+    }
     if (versionAvr != version)
     {
         ESP_LOGW("AVR",
@@ -533,7 +549,6 @@ void DeviceService::setVersion(std::string_view avr)
                  static_cast<int>(version.size()),
                  version.data());
     }
-    pending = true;
 }
 
 /**
