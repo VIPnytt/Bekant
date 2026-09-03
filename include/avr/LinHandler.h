@@ -14,7 +14,7 @@ private:
 
     unsigned char addressParity(unsigned int identifier);
 
-    int readWithTimeout(int16_t &countDown);
+    int readWithTimeout(int16_t &remainingTime);
 
     template <unsigned int N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
@@ -48,44 +48,44 @@ public:
 
     template <unsigned int N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
     {
-        delay(static_cast<unsigned long>(N) + 1U);
-        unsigned char bytesReceived{0U};
+        delay(static_cast<unsigned long>(N) + 1UL);
+        unsigned char count{0U};
         int _byte{0U};
         const unsigned char idByte{
             static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
-        int16_t countdown{static_cast<int16_t>(124'000'000UL / baud)};
+        int16_t remainingTime{static_cast<int16_t>(124'000'000UL / baud)};
         serialBreak();
         Serial.write(0x55U);
         Serial.write(idByte);
         Serial.flush();
         do
         {
-            _byte = readWithTimeout(countdown);
+            _byte = readWithTimeout(remainingTime);
         } while (_byte != -1 && _byte != 0x55);
         do
         {
-            _byte = readWithTimeout(countdown);
+            _byte = readWithTimeout(remainingTime);
         } while (_byte != -1 && _byte != idByte);
-        bytesReceived = 0U;
+        count = 0U;
         for (unsigned char &byte : data)
         {
-            _byte = readWithTimeout(countdown);
+            _byte = readWithTimeout(remainingTime);
             if (_byte == -1)
             {
                 Serial.flush();
-                return bytesReceived;
+                return count;
             }
             byte = static_cast<unsigned char>(_byte);
-            ++bytesReceived;
+            ++count;
         }
-        _byte = readWithTimeout(countdown);
-        ++bytesReceived;
+        _byte = readWithTimeout(remainingTime);
+        ++count;
         if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != _byte)
         {
-            bytesReceived = 0xFFU;
+            count = 0xFFU;
         }
         Serial.flush();
-        return bytesReceived;
+        return count;
     }
 };
 
