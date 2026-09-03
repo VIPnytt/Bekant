@@ -2,6 +2,9 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
+/**
+ * Handles buffered console input.
+ */
 class ConsoleHandler
 {
 private:

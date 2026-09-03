@@ -48,10 +48,10 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
 }
 
 /**
- * @brief Reads the next available byte within the specified countdown.
+ * @brief Reads the next available byte within the specified timeout.
  *
- * @param remainingTime Remaining timeout in microseconds; decremented while waiting.
- * @return int The received byte, or -1 if the countdown expires.
+ * @param remainingTime Remaining timeout in microseconds; decreased while waiting.
+ * @return int The received byte, or -1 if the timeout expires.
  */
 int LinHandler::readWithTimeout(int16_t &remainingTime)
 {

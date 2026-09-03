@@ -71,7 +71,67 @@ private:
 
     LinHandler lin{};
 
-    State state{State::IDLE};
+    /**
+ * Reads incoming desk communication data.
+ */
+
+/**
+ * Processes the current desk service state.
+ */
+
+/**
+ * Handles the idle state.
+ */
+
+/**
+ * Handles preparation before desk movement.
+ */
+
+/**
+ * Handles downward desk movement.
+ */
+
+/**
+ * Handles upward desk movement.
+ */
+
+/**
+ * Handles completion of a desk operation.
+ */
+
+/**
+ * Handles an ongoing recalibration.
+ */
+
+/**
+ * Sends a desk command.
+ *
+ * @param command Command to send.
+ */
+
+/**
+ * Sends a desk command with a target encoder position.
+ *
+ * @param command Command to send.
+ * @param position Encoder position associated with the command.
+ */
+
+/**
+ * Determines whether the desk service is idle.
+ *
+ * @return `true` if the service is idle, `false` otherwise.
+ */
+
+/**
+ * Sends a four-byte packet.
+ *
+ * @param byte1 First packet byte.
+ * @param byte2 Second packet byte.
+ * @param byte3 Third packet byte.
+ * @param byte4 Fourth packet byte.
+ * @return Byte result received for the packet.
+ */
+State state{State::IDLE};
 
     void read();
     void process();
