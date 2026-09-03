@@ -249,10 +249,11 @@ void HomeAssistantHandler::configuration()
 /**
  * @brief Configures diagnostic entities for Home Assistant discovery.
  *
- * Adds diagnostic controls and sensors for button inputs, calibration, encoder
- * values, positional offset, power supply voltage, serial activity,
- * temperature, and Wi-Fi signal strength. Hardware-specific entities are
- * included when their corresponding pins are available.
+ * Adds diagnostic controls and sensors for calibration, encoder data, firmware
+ * versions, positional offset, serial activity, temperature, Wi-Fi signal
+ * strength, and optionally button inputs and power-supply voltage. Diagnostic
+ * entities are categorized and selected hardware-specific entities are disabled
+ * by default.
  */
 void HomeAssistantHandler::diagnostic()
 {
