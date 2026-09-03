@@ -33,6 +33,19 @@ public:
     void begin();
     void send(unsigned char identifier);
 
+    template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
+    {
+        const unsigned char addressByte{
+            static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
+        serialBreak();
+        Serial.write(0x55U);
+        Serial.write(addressByte);
+        Serial.write(data, N);
+        Serial.write(calcChecksum(data, identifier == 0x3CU ? 0U : addressByte));
+        Serial.flush();
+        delay(static_cast<unsigned long>(N) + 3UL);
+    }
+
     template <unsigned int N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
     {
         delay(static_cast<unsigned long>(N) + 1U);
@@ -73,19 +86,6 @@ public:
         }
         Serial.flush();
         return bytesReceived;
-    }
-
-    template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
-    {
-        const unsigned char addressByte{
-            static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
-        serialBreak();
-        Serial.write(0x55U);
-        Serial.write(addressByte);
-        Serial.write(data, N);
-        Serial.write(calcChecksum(data, identifier == 0x3CU ? 0U : addressByte));
-        Serial.flush();
-        delay(static_cast<unsigned long>(N) + 3U);
     }
 };
 
