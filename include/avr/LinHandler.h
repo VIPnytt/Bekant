@@ -10,13 +10,13 @@ class LinHandler
 private:
     static constexpr unsigned long baud{19'200UL};
 
+    void serialBreak();
+
     unsigned char addressParity(unsigned int identifier);
 
     int readWithTimeout(int16_t &countDown);
 
-    void serialBreak();
-
-    template <size_t N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
+    template <unsigned int N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
         for (const unsigned char byte : data)
         {
@@ -33,7 +33,7 @@ public:
     void begin();
     void send(unsigned char identifier);
 
-    template <size_t N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
+    template <unsigned int N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
     {
         delay(static_cast<unsigned long>(N) + 1U);
         unsigned char bytesReceived{0U};
@@ -75,7 +75,7 @@ public:
         return bytesReceived;
     }
 
-    template <size_t N> void send(unsigned char identifier, const unsigned char (&data)[N])
+    template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
     {
         const unsigned char addressByte{
             static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};

@@ -73,7 +73,7 @@ void ConsoleHandler::process()
 unsigned int ConsoleHandler::parseDigits()
 {
     unsigned int value{0U};
-    for (size_t idx{1U}; idx < length; ++idx)
+    for (unsigned char idx{1U}; idx < length; ++idx)
     {
         if (buffer[idx] < '0' || buffer[idx] > '9')
         {
