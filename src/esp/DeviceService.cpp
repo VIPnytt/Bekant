@@ -188,7 +188,8 @@ void DeviceService::request(JsonObjectConst doc)
     {
         device.setDriveUp(doc["button"]["up"].as<bool>());
     }
-    if (doc["desk"].is<float>())
+    if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
+        doc["desk"].as<float>() >= ReferenceHeight::heightLow)
     {
         status.setWhite();
         console.send("p" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
@@ -202,7 +203,8 @@ void DeviceService::request(JsonObjectConst doc)
         status.setWhite();
         console.send("h");
     }
-    if (doc["preset"]["high"].is<float>())
+    if (doc["preset"]["high"].is<float>() && doc["preset"]["high"].as<float>() <= ReferenceHeight::heightHigh &&
+        doc["preset"]["high"].as<float>() >= ReferenceHeight::heightLow)
     {
         status.setWhite();
         console.send("h" + std::to_string(static_cast<int>(encode(doc["preset"]["high"].as<float>()))));
@@ -212,7 +214,8 @@ void DeviceService::request(JsonObjectConst doc)
         status.setWhite();
         console.send("l");
     }
-    if (doc["preset"]["low"].is<float>())
+    if (doc["preset"]["low"].is<float>() && doc["preset"]["low"].as<float>() <= ReferenceHeight::heightHigh &&
+        doc["preset"]["low"].as<float>() >= ReferenceHeight::heightLow)
     {
         status.setWhite();
         console.send("l" + std::to_string(static_cast<int>(encode(doc["preset"]["low"].as<float>()))));
@@ -221,10 +224,10 @@ void DeviceService::request(JsonObjectConst doc)
     {
         device.setReset(doc["reset"].as<bool>());
     }
-    if (doc["tx"].is<std::string>())
+    if (doc["tx"].is<std::string_view>())
     {
         status.setWhite();
-        console.send(doc["tx"].as<std::string>());
+        console.send(doc["tx"].as<std::string_view>());
     }
 }
 
@@ -252,7 +255,7 @@ void DeviceService::save()
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
-        if (nvs_commit(handle) != ESP_OK && saved)
+        if (nvs_commit(handle) != ESP_OK)
         {
             saved = false;
         }
@@ -302,11 +305,11 @@ void DeviceService::transmit(JsonDocument &doc)
 #ifdef PIN_OE
     doc["oe"].set(enable);
 #endif // PIN_OE
-    if (presetHigh != 0U)
+    if (presetHigh <= ReferenceHeight::encoderHigh && presetHigh >= ReferenceHeight::encoderLow)
     {
         doc["preset"]["high"].set(decode(static_cast<float>(presetHigh)));
     }
-    if (presetLow != 0U)
+    if (presetLow <= ReferenceHeight::encoderHigh && presetLow >= ReferenceHeight::encoderLow)
     {
         doc["preset"]["low"].set(decode(static_cast<float>(presetLow)));
     }
@@ -336,9 +339,12 @@ void DeviceService::transmit(JsonDocument &doc)
  */
 void DeviceService::setButtonDown(bool state)
 {
-    buttonDown = state;
-    status.setWhite();
-    pending = true;
+    if (state != buttonDown)
+    {
+        buttonDown = state;
+        status.setWhite();
+        pending = true;
+    }
 }
 
 /**
@@ -348,9 +354,12 @@ void DeviceService::setButtonDown(bool state)
  */
 void DeviceService::setButtonUp(bool state)
 {
-    buttonUp = state;
-    status.setWhite();
-    pending = true;
+    if (state != buttonUp)
+    {
+        buttonUp = state;
+        status.setWhite();
+        pending = true;
+    }
 }
 
 /**
@@ -399,8 +408,8 @@ void DeviceService::setEncoderA(uint16_t state)
             : status.setBlue();
         encoderA = state;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -420,8 +429,8 @@ void DeviceService::setEncoderB(uint16_t state)
             : status.setBlue();
         encoderB = state;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -441,8 +450,8 @@ void DeviceService::setOutputEnable(bool state)
         status.setNone();
         digitalWrite(PIN_OE, enable ? HIGH : LOW);
         saved = false;
+        pending = true;
     }
-    pending = true;
 #endif // PIN_OE
 }
 
@@ -457,8 +466,8 @@ void DeviceService::setPresetHigh(uint16_t preset)
     {
         presetHigh = preset;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -472,8 +481,8 @@ void DeviceService::setPresetLow(uint16_t preset)
     {
         presetLow = preset;
         saved = false;
+        pending = true;
     }
-    pending = true;
 }
 
 /**
@@ -488,10 +497,13 @@ void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : H
  *
  * @param payload Received payload to store.
  */
-void DeviceService::setRx(std::string payload)
+void DeviceService::setRx(std::string_view payload)
 {
-    payloadRx = payload;
-    pending = true;
+    if (payload != payloadRx)
+    {
+        payloadRx = payload;
+        pending = true;
+    }
 }
 
 /**
@@ -499,10 +511,13 @@ void DeviceService::setRx(std::string payload)
  *
  * @param payload Transmitted serial payload.
  */
-void DeviceService::setTx(std::string payload)
+void DeviceService::setTx(std::string_view payload)
 {
-    payloadTx = payload;
-    pending = true;
+    if (payload != payloadTx)
+    {
+        payloadTx = payload;
+        pending = true;
+    }
 }
 
 /**
@@ -512,7 +527,11 @@ void DeviceService::setTx(std::string payload)
  */
 void DeviceService::setVersion(std::string_view avr)
 {
-    versionAvr = avr;
+    if (avr != versionAvr)
+    {
+        versionAvr = avr;
+        pending = true;
+    }
     if (versionAvr != version)
     {
         ESP_LOGW("AVR",
@@ -525,7 +544,6 @@ void DeviceService::setVersion(std::string_view avr)
                  static_cast<int>(version.size()),
                  version.data());
     }
-    pending = true;
 }
 
 /**

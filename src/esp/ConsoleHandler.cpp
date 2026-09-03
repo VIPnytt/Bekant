@@ -5,6 +5,8 @@
 #include "esp/DeviceService.h"
 #include "esp/secrets.h"
 
+#include <charconv>
+
 /**
  * @brief Initializes the serial console and configures its communication pins.
  */
@@ -30,10 +32,7 @@ void ConsoleHandler::handle()
         const size_t length{rxBuffer.size()};
         if (byte == static_cast<int>('\n') && length != 0U)
         {
-            if (length <= 0b1U << 3U)
-            {
-                parse(rxBuffer);
-            }
+            length >= 2U && length <= 0b1U << 3U ? parse(rxBuffer) : device.statusRed();
             rxBuffer.clear();
         }
         else if (byte != static_cast<int>('\n') && length <= 0b1U << 3U)
@@ -90,43 +89,43 @@ void ConsoleHandler::forward()
  * @param payload Command containing an encoder value, preset value, button state, or version string.
  * Invalid commands set the device status to red.
  */
-void ConsoleHandler::parse(std::string payload)
+void ConsoleHandler::parse(std::string_view payload)
 {
-    ESP_LOGD("RX", "%s", rxBuffer.c_str());
+    ESP_LOGD("RX", "%.*s", static_cast<int>(payload.size()), payload.data());
     device.setRx(payload);
     const char first{payload.at(0U)};
-    if (first == 'a' && (payload.size() == 4U || payload.size() == 5U))
-    {
-        device.setEncoderA(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'b' && (payload.size() == 4U || payload.size() == 5U))
-    {
-        device.setEncoderB(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'd' && payload.size() == 2U)
-    {
-        device.setButtonDown(payload.at(1U) == '1');
-    }
-    else if (first == 'h' && (payload.size() == 4U || payload.size() == 5U))
-    {
-        device.setPresetHigh(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'l' && (payload.size() == 4U || payload.size() == 5U))
-    {
-        device.setPresetLow(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'u' && payload.size() == 2U)
-    {
-        device.setButtonUp(payload.at(1U) == '1');
-    }
-    else if (first == 'v' && payload.size() >= 2U)
+    if (first == 'v')
     {
         device.setVersion(payload.substr(1U));
+        return;
     }
-    else
+    uint16_t value{}; // NOLINT(misc-const-correctness)
+    const std::from_chars_result result{std::from_chars(payload.data() + 1U, payload.data() + payload.size(), value)};
+    if (result.ec == std::errc{} && result.ptr == payload.data() + payload.size())
     {
-        device.statusRed();
+        switch (first) // NOLINT(hicpp-multiway-paths-covered)
+        {
+        case 'a':
+            device.setEncoderA(value);
+            return;
+        case 'b':
+            device.setEncoderB(value);
+            return;
+        case 'd':
+            device.setButtonDown(value == 1U);
+            return;
+        case 'h':
+            device.setPresetHigh(value);
+            return;
+        case 'l':
+            device.setPresetLow(value);
+            return;
+        case 'u':
+            device.setButtonUp(value == 1U);
+            return;
+        }
     }
+    device.statusRed();
 }
 
 /**
@@ -134,9 +133,9 @@ void ConsoleHandler::parse(std::string payload)
  *
  * @param payload Message to transmit without the terminating newline.
  */
-void ConsoleHandler::send(std::string payload)
+void ConsoleHandler::send(std::string_view payload)
 {
-    ESP_LOGD("TX", "%s", payload.c_str());
+    ESP_LOGD("TX", "%.*s", static_cast<int>(payload.size()), payload.data());
     Serial1.write(payload.data(), payload.size());
     Serial1.write('\n');
     device.setTx(payload);
