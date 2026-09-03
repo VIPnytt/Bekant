@@ -102,11 +102,11 @@ void ConsoleHandler::parse(std::string_view payload)
         device.setVersion(payload.substr(1U));
         return;
     }
-    uint16_t value{};
+    uint16_t value{}; // NOLINT(misc-const-correctness)
     const std::from_chars_result result{std::from_chars(payload.data() + 1U, payload.data() + payload.size(), value)};
     if (result.ec == std::errc{} && result.ptr == payload.data() + payload.size())
     {
-        switch (first)
+        switch (first) // NOLINT(hicpp-multiway-paths-covered)
         {
         case 'a':
             device.setEncoderA(value);

@@ -224,6 +224,11 @@ void DeviceService::request(JsonObjectConst doc)
     {
         device.setReset(doc["reset"].as<bool>());
     }
+    if (doc["tone"].is<uint16_t>() && doc["tone"].as<uint16_t>() != 0U)
+    {
+        status.setWhite();
+        console.send("t" + std::to_string(doc["tone"].as<uint16_t>()));
+    }
     if (doc["tx"].is<std::string_view>())
     {
         status.setWhite();
