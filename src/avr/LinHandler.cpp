@@ -53,16 +53,17 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
  * @param countdown Remaining timeout in microseconds; decremented while waiting.
  * @return int The received byte, or -1 if the countdown expires.
  */
-int LinHandler::readWithTimeout(int16_t &countdown)
+int LinHandler::readWithTimeout(unsigned int &countdown)
 {
     while (Serial.available() == 0)
     {
         delayMicroseconds(100U);
-        countdown -= 100;
-        if (countdown <= 0)
+        if (countdown <= 100U)
         {
+            countdown = 0U;
             return -1;
         }
+        countdown -= 100U;
     }
     return Serial.read();
 }

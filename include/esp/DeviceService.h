@@ -17,9 +17,9 @@ private:
     bool buttonDown{false};
     bool buttonUp{false};
     bool enable{true};
-    bool reset{false};
     bool pending{true};
     bool process{true};
+    bool reset{false};
     bool saved{true};
 
     unsigned long lastMillis{0U};
@@ -70,16 +70,16 @@ public:
     void handle();
 
     void fetchRelease();
-    void safeMode();
     void request(JsonObjectConst doc);
+    void safeMode();
     void setButtonDown(bool state);
     void setButtonUp(bool state);
     void setEncoderA(uint16_t encoder);
     void setEncoderB(uint16_t encoder);
     void setPresetHigh(uint16_t encoder);
     void setPresetLow(uint16_t encoder);
-    void setRx(std::string payload);
-    void setTx(std::string payload);
+    void setRx(std::string_view payload);
+    void setTx(std::string_view payload);
     void setVersion(std::string_view version);
     void statusRed();
     void transmit(JsonDocument &doc);

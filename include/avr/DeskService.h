@@ -27,7 +27,7 @@ public:
     void recalibrate();
     void setPresetHigh(unsigned int preset);
     void setPresetLow(unsigned int preset);
-    void setTarget(unsigned int target);
+    void setTarget(unsigned int position);
     void tone(unsigned int frequency);
 
     [[nodiscard]] unsigned int getEncoderMax() const;
@@ -59,9 +59,9 @@ private:
 
     unsigned int encoderA{0U};
     unsigned int encoderB{0U};
-    unsigned int encoderTarget{0U};
     unsigned int presetHigh{0xFFFFU};
     unsigned int presetLow{0xFFFFU};
+    unsigned int target{0U};
 
     unsigned long lastMillis{0U};
 
@@ -84,7 +84,7 @@ private:
     void handleStateRecalOngoing();
 
     void sendCommand(Command command);
-    void sendCommand(Command command, unsigned int target);
+    void sendCommand(Command command, unsigned int position);
 
     [[nodiscard]] bool isIdle();
 

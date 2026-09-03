@@ -155,12 +155,12 @@ Make sure to upload the ESP32 firmware before flashing the Megadesk controller, 
 
 ESP32 boards with a WS2812 RGB LED can use the integrated status indication.
 
-| Colour | Meaning                                                                         |
-| ------ | ------------------------------------------------------------------------------- |
-| White  | The desk is idle.                                                               |
-| Green  | The desk is moving in response to a physical button press.                      |
-| Blue   | The desk is moving autonomously to a preset height or in response to a command. |
-| Red    | An error has occurred.                                                          |
+| Color | Meaning                                                                        |
+| ----- | ------------------------------------------------------------------------------ |
+| White | The desk is idle                                                               |
+| Green | The desk is moving in response to a physical button press                      |
+| Blue  | The desk is moving autonomously to a preset height or in response to a command |
+| Red   | An error has occurred                                                          |
 
 The light fades off after a short period of inactivity.
 
@@ -201,10 +201,10 @@ Home Assistant with MQTT is recommended for the best experience, but the desk al
 | Button down    | Simulate a physical down-button press    | `PIN_TPDN`  |
 | Button up      | Simulate a physical up-button press      | `PIN_TPUP`  |
 | Calibrate      | Recalibrate the leg encoder sensors      |             |
-| Encoders       | Raw average leg-encoder height           |             |
 | Firmware AVR   | AVR firmware version                     |             |
 | Firmware ESP32 | ESP32 firmware version                   |             |
 | Offset         | Current leg offset                       |             |
+| Position       | Average encoder position                 |             |
 | Power supply   | Input voltage of the desk’s power supply | `PIN_ADC`   |
 | Serial RX      | Last UART message received               |             |
 | Serial TX      | Last UART message sent                   |             |

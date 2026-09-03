@@ -5,6 +5,8 @@
 #include "esp/DeviceService.h"
 #include "esp/secrets.h"
 
+#include <charconv>
+
 /**
  * @brief Initializes the serial console and configures its communication pins.
  */
@@ -90,34 +92,51 @@ void ConsoleHandler::forward()
  * @param payload Command containing an encoder value, preset value, button state, or version string.
  * Invalid commands set the device status to red.
  */
-void ConsoleHandler::parse(std::string payload)
+void ConsoleHandler::parse(std::string_view payload)
 {
-    ESP_LOGD("RX", "%s", rxBuffer.c_str());
+    ESP_LOGD("RX", "%.*s", static_cast<int>(payload.size()), payload.data());
     device.setRx(payload);
     const char first{payload.at(0U)};
-    if (first == 'a' && (payload.size() == 4U || payload.size() == 5U))
+    if (payload.size() >= 2U && payload.size() <= 6U && (first == 'a' || first == 'b' || first == 'h' || first == 'l'))
     {
-        device.setEncoderA(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
+        uint16_t value{};
+        const std::from_chars_result result{
+            std::from_chars(payload.data() + 1U, payload.data() + payload.size(), value)};
+        if (result.ec == std::errc{} && result.ptr == payload.data() + payload.size())
+        {
+            switch (first)
+            {
+            case 'a':
+                device.setEncoderA(value);
+                break;
+            case 'b':
+                device.setEncoderB(value);
+                break;
+            case 'h':
+                device.setPresetHigh(value);
+                break;
+            case 'l':
+                device.setPresetLow(value);
+                break;
+            }
+        }
+        else
+        {
+            device.statusRed();
+        }
     }
-    else if (first == 'b' && (payload.size() == 4U || payload.size() == 5U))
+    else if (payload.size() == 2U && (first == 'd' || first == 'u'))
     {
-        device.setEncoderB(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'd' && payload.size() == 2U)
-    {
-        device.setButtonDown(payload.at(1U) == '1');
-    }
-    else if (first == 'h' && (payload.size() == 4U || payload.size() == 5U))
-    {
-        device.setPresetHigh(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'l' && (payload.size() == 4U || payload.size() == 5U))
-    {
-        device.setPresetLow(static_cast<uint16_t>(atoi(payload.substr(1U).c_str())));
-    }
-    else if (first == 'u' && payload.size() == 2U)
-    {
-        device.setButtonUp(payload.at(1U) == '1');
+        const bool state{payload.at(1U) == '1'};
+        switch (first)
+        {
+        case 'd':
+            device.setButtonDown(state);
+            break;
+        case 'u':
+            device.setButtonUp(state);
+            break;
+        }
     }
     else if (first == 'v' && payload.size() >= 2U)
     {
@@ -134,9 +153,9 @@ void ConsoleHandler::parse(std::string payload)
  *
  * @param payload Message to transmit without the terminating newline.
  */
-void ConsoleHandler::send(std::string payload)
+void ConsoleHandler::send(std::string_view payload)
 {
-    ESP_LOGD("TX", "%s", payload.c_str());
+    ESP_LOGD("TX", "%.*s", static_cast<int>(payload.size()), payload.data());
     Serial1.write(payload.data(), payload.size());
     Serial1.write('\n');
     device.setTx(payload);

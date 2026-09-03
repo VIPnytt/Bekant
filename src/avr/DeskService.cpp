@@ -17,21 +17,15 @@ void DeskService::begin()
 {
     Serial1.begin(115'200UL);
     delay(0b1U << 11U);
-    pinMode(Pin::tone, OUTPUT);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
+    pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     Serial1.flush();
     Serial1.print("v1.0.0\n");
-    if (presetHigh != 0xFFFFU)
-    {
-        Serial1.printf("h%u\n", presetHigh);
-    }
-    if (presetLow != 0xFFFFU)
-    {
-        Serial1.printf("l%u\n", presetLow);
-    }
+    Serial1.printf("h%u\n", presetHigh);
+    Serial1.printf("l%u\n", presetLow);
     Serial1.flush();
     lin.begin();
     constexpr unsigned char data[21U][4U]{
@@ -57,9 +51,9 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    signed char pid{-1};
-    unsigned char errorCount{0U};
-    for (size_t idx{0U}; idx < sizeof(data) / sizeof(data[0U]); ++idx)
+    char pid{-1};
+    unsigned char count{0U};
+    for (unsigned int idx{0U}; idx < sizeof(data) / sizeof(data[0U]); ++idx)
     {
         if (idx == 4U || idx == 11U)
         {
@@ -73,7 +67,7 @@ void DeskService::begin()
             }
             if (pid >= 8)
             {
-                ++errorCount;
+                ++count;
             }
         }
         else if (idx == 18U)
@@ -91,10 +85,10 @@ void DeskService::begin()
     }
     constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
     lin.send(0x12U, magicPacket);
-    if (errorCount != 0U)
+    if (count != 0U)
     {
         tone(0b1U << 8U);
-        Serial1.printf("I%u\n", errorCount);
+        Serial1.printf("I%u\n", count);
     }
 }
 
@@ -254,19 +248,19 @@ void DeskService::handleStateIdle()
  */
 void DeskService::handleStatePrepare()
 {
-    if (encoderTarget < getEncoderMin())
+    if (target < getEncoderMin())
     {
-        if (encoderTarget >= Encoder::minLimit + Encoder::targetOffset)
+        if (target >= Encoder::minLimit + Encoder::targetOffset)
         {
-            encoderTarget -= Encoder::targetOffset;
+            target -= Encoder::targetOffset;
         }
         state = State::DOWN;
     }
-    else if (encoderTarget > getEncoderMax())
+    else if (target > getEncoderMax())
     {
-        if (encoderTarget <= Encoder::maxLimit - Encoder::targetOffset)
+        if (target <= Encoder::maxLimit - Encoder::targetOffset)
         {
-            encoderTarget += Encoder::targetOffset;
+            target += Encoder::targetOffset;
         }
         state = State::UP;
     }
@@ -287,7 +281,7 @@ void DeskService::handleStatePrepare()
  */
 void DeskService::handleStateDown()
 {
-    if (encoderTarget >= getEncoderMin() || millis() - lastMillis > (0b1U << 8U))
+    if (target >= getEncoderMin() || millis() - lastMillis > (0b1U << 8U))
     {
         state = State::STOP;
         return;
@@ -300,7 +294,7 @@ void DeskService::handleStateDown()
  */
 void DeskService::handleStateUp()
 {
-    if (encoderTarget <= getEncoderMax() || millis() - lastMillis > (0b1U << 8U))
+    if (target <= getEncoderMax() || millis() - lastMillis > (0b1U << 8U))
     {
         state = State::STOP;
         return;
@@ -352,24 +346,24 @@ void DeskService::sendCommand(Command command)
                                                                                     : Encoder::maxLimit};
     const unsigned int minTarget{maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
                                                                                     : Encoder::minLimit};
-    sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
+    sendCommand(command, constrain(target, minTarget, maxTarget));
 }
 
 /**
  * @brief Sends a command with its payload over the LIN interface.
  *
  * @param command Command code to transmit.
- * @param payload Command payload.
+ * @param position Command payload.
  */
-void DeskService::sendCommand(Command command, unsigned int payload)
+void DeskService::sendCommand(Command command, unsigned int position)
 {
     for (unsigned char idx{0U}; idx < 6U; ++idx)
     {
         lin.send(0x10U);
     }
     lin.send(0x1U);
-    const unsigned char packet[3U]{static_cast<unsigned char>(payload & 0xFFU),
-                                   static_cast<unsigned char>(payload >> 8U),
+    const unsigned char packet[3U]{static_cast<unsigned char>(position & 0xFFU),
+                                   static_cast<unsigned char>(position >> 8U),
                                    static_cast<unsigned char>(command)};
     lin.send(0x12U, packet);
 }
@@ -385,7 +379,7 @@ void DeskService::tone(unsigned int frequency)
     {
         const unsigned int halfperiod{static_cast<unsigned int>(500'000UL / frequency)};
         const unsigned int delay{static_cast<unsigned int>(halfperiod - (48'000'000UL / F_CPU))};
-        for (uint32_t idx{0U}; idx < (0b1UL << 17U) / halfperiod; ++idx)
+        for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfperiod; ++idx)
         {
             digitalWrite(Pin::tone, HIGH);
             delayMicroseconds(delay);
@@ -415,7 +409,7 @@ void DeskService::recalibrate()
  */
 void DeskService::setPresetHigh(unsigned int preset)
 {
-    if (preset != 0U && preset != presetHigh)
+    if (preset != presetHigh)
     {
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
@@ -432,7 +426,7 @@ void DeskService::setPresetHigh(unsigned int preset)
  */
 void DeskService::setPresetLow(unsigned int preset)
 {
-    if (preset != 0U && preset != presetLow)
+    if (preset != presetLow)
     {
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
@@ -443,13 +437,13 @@ void DeskService::setPresetLow(unsigned int preset)
 /**
  * @brief Sets a valid target position and marks movement as pending.
  *
- * @param target Target position to move the desk to. Zero and `0xFFFF` are ignored.
+ * @param position Target position to move the desk to. Zero and `0xFFFF` are ignored.
  */
-void DeskService::setTarget(unsigned int target)
+void DeskService::setTarget(unsigned int position)
 {
-    if (target != 0U && target != 0xFFFFU)
+    if (position != target)
     {
-        encoderTarget = target;
+        target = position;
         pending = true;
     }
 }

@@ -2,7 +2,7 @@
 
 #include "esp/DeviceService.h"
 
-#include "esp/constants.h" // NOLINT(misc-include-cleaner)
+#include "esp/constants.h"
 
 #include <WiFi.h> // NOLINT(misc-include-cleaner)
 #include <esp_crt_bundle.h>
@@ -188,10 +188,11 @@ void DeviceService::request(JsonObjectConst doc)
     {
         device.setDriveUp(doc["button"]["up"].as<bool>());
     }
-    if (doc["desk"].is<float>())
+    if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
+        doc["desk"].as<float>() >= ReferenceHeight::heightLow)
     {
         status.setWhite();
-        console.send("e" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
+        console.send("p" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
     }
     if (doc["oe"].is<bool>())
     {
@@ -202,7 +203,8 @@ void DeviceService::request(JsonObjectConst doc)
         status.setWhite();
         console.send("h");
     }
-    if (doc["preset"]["high"].is<float>())
+    if (doc["preset"]["high"].is<float>() && doc["preset"]["high"].as<float>() <= ReferenceHeight::heightHigh &&
+        doc["preset"]["high"].as<float>() >= ReferenceHeight::heightLow)
     {
         status.setWhite();
         console.send("h" + std::to_string(static_cast<int>(encode(doc["preset"]["high"].as<float>()))));
@@ -212,7 +214,8 @@ void DeviceService::request(JsonObjectConst doc)
         status.setWhite();
         console.send("l");
     }
-    if (doc["preset"]["low"].is<float>())
+    if (doc["preset"]["low"].is<float>() && doc["preset"]["low"].as<float>() <= ReferenceHeight::heightHigh &&
+        doc["preset"]["low"].as<float>() >= ReferenceHeight::heightLow)
     {
         status.setWhite();
         console.send("l" + std::to_string(static_cast<int>(encode(doc["preset"]["low"].as<float>()))));
@@ -221,10 +224,10 @@ void DeviceService::request(JsonObjectConst doc)
     {
         device.setReset(doc["reset"].as<bool>());
     }
-    if (doc["tx"].is<std::string>())
+    if (doc["tx"].is<std::string_view>())
     {
         status.setWhite();
-        console.send(doc["tx"].as<std::string>());
+        console.send(doc["tx"].as<std::string_view>());
     }
 }
 
@@ -302,11 +305,11 @@ void DeviceService::transmit(JsonDocument &doc)
 #ifdef PIN_OE
     doc["oe"].set(enable);
 #endif // PIN_OE
-    if (presetHigh != 0U)
+    if (presetHigh <= ReferenceHeight::encoderHigh && presetHigh >= ReferenceHeight::encoderLow)
     {
         doc["preset"]["high"].set(decode(static_cast<float>(presetHigh)));
     }
-    if (presetLow != 0U)
+    if (presetLow <= ReferenceHeight::encoderHigh && presetLow >= ReferenceHeight::encoderLow)
     {
         doc["preset"]["low"].set(decode(static_cast<float>(presetLow)));
     }
@@ -488,7 +491,7 @@ void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : H
  *
  * @param payload Received payload to store.
  */
-void DeviceService::setRx(std::string payload)
+void DeviceService::setRx(std::string_view payload)
 {
     payloadRx = payload;
     pending = true;
@@ -499,7 +502,7 @@ void DeviceService::setRx(std::string payload)
  *
  * @param payload Transmitted serial payload.
  */
-void DeviceService::setTx(std::string payload)
+void DeviceService::setTx(std::string_view payload)
 {
     payloadTx = payload;
     pending = true;
