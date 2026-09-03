@@ -72,7 +72,7 @@ void DeviceService::begin()
     isp.begin();
     console.begin();
     mqtt.begin();
-    fetchLatest();
+    fetchRelease();
 }
 
 /**
