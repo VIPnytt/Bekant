@@ -2,7 +2,7 @@
 
 #include "esp/DeviceService.h"
 
-#include "esp/constants.h" // NOLINT(misc-include-cleaner)
+#include "esp/constants.h"
 
 #include <WiFi.h> // NOLINT(misc-include-cleaner)
 #include <esp_crt_bundle.h>
@@ -223,6 +223,11 @@ void DeviceService::request(JsonObjectConst doc)
     if (doc["reset"].is<bool>())
     {
         device.setReset(doc["reset"].as<bool>());
+    }
+    if (doc["tone"].is<uint16_t>() && doc["tone"].as<uint16_t>() != 0U)
+    {
+        status.setWhite();
+        console.send("t" + std::to_string(doc["tone"].as<uint16_t>()));
     }
     if (doc["tx"].is<std::string_view>())
     {
