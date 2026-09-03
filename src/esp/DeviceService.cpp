@@ -12,6 +12,8 @@
 
 /**
  * @brief Initializes hardware, restores persisted state, attaches input interrupts, and starts device services.
+ *
+ * Also checks the latest available firmware release.
  */
 void DeviceService::begin()
 {
@@ -503,6 +505,11 @@ void DeviceService::setTx(std::string payload)
     pending = true;
 }
 
+/**
+ * @brief Stores the AVR firmware version and marks device state for publication.
+ *
+ * @param avr AVR firmware version.
+ */
 void DeviceService::setVersion(std::string_view avr)
 {
     versionAvr = avr;
@@ -526,6 +533,13 @@ void DeviceService::setVersion(std::string_view avr)
  */
 void DeviceService::statusRed() { status.setRed(); }
 
+/**
+ * @brief Checks GitHub for the latest firmware release.
+ *
+ * Stores the latest release version without its leading `v` and marks the
+ * device state for publication when the response is valid. Client, HTTP, and
+ * JSON parsing failures leave the release state unchanged.
+ */
 void DeviceService::fetchRelease()
 {
     const std::string userAgent{

@@ -10,8 +10,8 @@
 /**
  * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
  *
- * Transmits valid stored presets and the required LIN initialization packets. Reports
- * initialization errors with a tone and a serial status message.
+ * Transmits the firmware version, valid stored presets, and required LIN initialization
+ * packets. Reports initialization errors with a tone and a serial status message.
  */
 void DeskService::begin()
 {
