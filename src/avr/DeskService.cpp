@@ -58,7 +58,7 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    unsigned char errorCount{0U};
+    bool error{false};
     unsigned char pid{0U};
     for (unsigned char idx{0U}; idx < static_cast<unsigned char>(sizeof(data) / sizeof(data[0U])); ++idx)
     {
@@ -75,7 +75,7 @@ void DeskService::begin()
             }
             if (pid == 8U)
             {
-                ++errorCount;
+                error = true;
             }
             break;
         case 18U:
@@ -91,10 +91,10 @@ void DeskService::begin()
     }
     constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
     lin.send(0x12U, magicPacket);
-    if (errorCount != 0U)
+    if (error)
     {
+        Serial1.write(static_cast<int>('I'));
         tone(0b1U << 8U);
-        Serial1.printf("I%u\n", errorCount);
     }
 }
 
@@ -142,37 +142,49 @@ void DeskService::read()
     lin.send(0x11U, empty);
     const bool validA{lin.request(0x8U, nodeA)};
     const bool validB{lin.request(0x9U, nodeB)};
-    const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
-    const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
-    if (_encoderA != encoderA)
+    if (validA)
     {
-        if (!validA)
+        const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
+        if (_encoderA != encoderA)
         {
-            Serial1.printf("A%u\n", _encoderA);
-            if (pending)
-            {
-                tone(0b1U << 8U);
-            }
-            return;
+            encoderA = _encoderA;
+            lastMillis = millis();
+            Serial1.write(static_cast<int>('a'));
+            Serial1.print(encoderA);
+            Serial1.write(static_cast<int>('\n'));
         }
-        encoderA = _encoderA;
-        lastMillis = millis();
-        Serial1.printf("a%u\n", encoderA);
     }
-    if (_encoderB != encoderB)
+    else
     {
-        if (!validB)
+        Serial1.write(static_cast<int>('A'));
+        Serial1.write(static_cast<int>('\n'));
+        if (pending)
         {
-            Serial1.printf("B%u\n", _encoderB);
-            if (pending)
-            {
-                tone(0b1U << 8U);
-            }
-            return;
+            tone(0b1U << 8U);
         }
-        encoderB = _encoderB;
-        lastMillis = millis();
-        Serial1.printf("b%u\n", encoderB);
+        return;
+    }
+    if (validB)
+    {
+        const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
+        if (_encoderB != encoderB)
+        {
+            encoderB = _encoderB;
+            lastMillis = millis();
+            Serial1.write(static_cast<int>('b'));
+            Serial1.print(encoderB);
+            Serial1.write(static_cast<int>('\n'));
+        }
+    }
+    else
+    {
+        Serial1.write(static_cast<int>('B'));
+        Serial1.write(static_cast<int>('\n'));
+        if (pending)
+        {
+            tone(0b1U << 8U);
+        }
+        return;
     }
 }
 
