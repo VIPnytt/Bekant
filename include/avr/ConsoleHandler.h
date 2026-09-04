@@ -2,10 +2,13 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
+/**
+ * Handles buffered console input.
+ */
 class ConsoleHandler
 {
 private:
-    char buffer[5U]{'\n'};
+    char buffer[5U]{0};
 
     unsigned char length{0U};
 
