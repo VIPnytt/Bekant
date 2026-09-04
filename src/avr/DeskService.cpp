@@ -140,11 +140,14 @@ void DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
+    unsigned char nodeA[3U]{};
+    unsigned char nodeB[3U]{};
     const bool validA{lin.request(0x8U, nodeA)};
     const bool validB{lin.request(0x9U, nodeB)};
     if (validA)
     {
         const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
+        stateA = nodeA[2U];
         if (_encoderA != encoderA)
         {
             encoderA = _encoderA;
@@ -167,6 +170,7 @@ void DeskService::read()
     if (validB)
     {
         const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
+        stateB = nodeB[2U];
         if (_encoderB != encoderB)
         {
             encoderB = _encoderB;
@@ -238,8 +242,7 @@ void DeskService::process()
  */
 bool DeskService::isIdle()
 {
-    return (nodeA[2U] == 0U || nodeA[2U] == 0x25U || nodeA[2U] == 0x60U) &&
-           (nodeB[2U] == 0U || nodeB[2U] == 0x25U || nodeB[2U] == 0x60U);
+    return (stateA == 0U || stateA == 0x25U || stateA == 0x60U) && (stateB == 0U || stateB == 0x25U || stateB == 0x60U);
 }
 
 /**
@@ -349,7 +352,7 @@ void DeskService::handleStateDone()
  */
 void DeskService::handleStateRecalOngoing()
 {
-    if (nodeA[2U] == 1U && nodeB[2U] == 1U && getEncoderMax() <= 99U)
+    if (stateA == 1U && stateB == 1U && getEncoderMax() <= 99U)
     {
         state = State::RECAL_DONE;
     }

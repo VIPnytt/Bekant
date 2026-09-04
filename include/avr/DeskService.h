@@ -54,8 +54,8 @@ private:
 
     bool pending{false};
 
-    unsigned char nodeA[3U]{0U};
-    unsigned char nodeB[3U]{0U};
+    unsigned char stateA{0U};
+    unsigned char stateB{0U};
 
     unsigned int encoderA{0U};
     unsigned int encoderB{0U};
