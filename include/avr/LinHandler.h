@@ -88,7 +88,6 @@ public:
         {
             return false;
         }
-        unsigned char byteCount{0U};
         for (unsigned char &dataByte : data)
         {
             receivedByte = readWithTimeout(remainingTime);
@@ -97,7 +96,6 @@ public:
                 return false;
             }
             dataByte = static_cast<unsigned char>(receivedByte);
-            ++byteCount;
         }
         receivedByte = readWithTimeout(remainingTime);
         return receivedByte != -1 && calcChecksum(data, identifier == 0x3DU ? 0U : idByte) == receivedByte;
