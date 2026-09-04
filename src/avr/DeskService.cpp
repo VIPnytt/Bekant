@@ -6,6 +6,7 @@
 
 #include <EEPROM.h>
 #include <HardwareSerial.h>
+#include <wiring.h>
 
 /**
  * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.

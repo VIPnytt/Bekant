@@ -3,7 +3,6 @@
 #ifdef ARDUINO_ARCH_AVR
 
 #include <HardwareSerial.h>
-#include <wiring.h>
 
 namespace LinFrame
 {
@@ -71,36 +70,36 @@ public:
         Serial.write(0x55U);
         Serial.write(idByte);
         Serial.flush();
-        int byte{0U};
+        int receivedByte{0};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baud)};
         do
         {
-            byte = readWithTimeout(remainingTime);
-        } while (byte != -1 && byte != 0x55);
+            receivedByte = readWithTimeout(remainingTime);
+        } while (receivedByte != -1 && receivedByte != 0x55);
         do
         {
-            byte = readWithTimeout(remainingTime);
-        } while (byte != -1 && byte != idByte);
-        unsigned char count{0U};
-        for (unsigned char &byte : data)
+            receivedByte = readWithTimeout(remainingTime);
+        } while (receivedByte != -1 && receivedByte != idByte);
+        unsigned char byteCount{0U};
+        for (unsigned char &dataByte : data)
         {
-            byte = readWithTimeout(remainingTime);
-            if (byte == -1)
+            receivedByte = readWithTimeout(remainingTime);
+            if (receivedByte == -1)
             {
                 Serial.flush();
-                return count;
+                return byteCount;
             }
-            byte = static_cast<unsigned char>(byte);
-            ++count;
+            dataByte = static_cast<unsigned char>(receivedByte);
+            ++byteCount;
         }
-        byte = readWithTimeout(remainingTime);
-        ++count;
-        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != byte)
+        receivedByte = readWithTimeout(remainingTime);
+        ++byteCount;
+        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != receivedByte)
         {
-            count = 0xFFU;
+            byteCount = 0xFFU;
         }
         Serial.flush();
-        return count;
+        return byteCount;
     }
 };
 

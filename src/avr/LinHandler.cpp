@@ -4,6 +4,8 @@
 
 #include "avr/constants.h"
 
+#include <wiring.h>
+
 /**
  * @brief Initializes the LIN pin and serial interface.
  */
