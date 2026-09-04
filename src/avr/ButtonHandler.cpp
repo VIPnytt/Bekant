@@ -6,6 +6,7 @@
 #include "avr/constants.h"
 
 #include <HardwareSerial.h>
+#include <wiring.h>
 
 /**
  * @brief Handles button state transitions and processes the resulting input.
