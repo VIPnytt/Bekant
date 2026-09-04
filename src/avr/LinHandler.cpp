@@ -16,11 +16,11 @@ void LinHandler::begin()
 }
 
 /**
- * @brief Generates a LIN break signal on the configured pin.
+ * @brief Generates a LIN break and delimiter signal on the configured pin.
  *
- * Stops serial communication while driving the LIN pin low for the break
- * duration, then high for one bit duration before restarting serial
- * communication.
+ * Temporarily stops serial communication while driving the LIN pin low for
+ * the break duration and high for the delimiter duration, then resumes
+ * serial communication.
  */
 void LinHandler::serialBreak()
 {
@@ -50,10 +50,10 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
 }
 
 /**
- * @brief Reads the next available byte within the specified timeout.
+ * @brief Reads a serial byte, waiting up to the specified remaining time for data.
  *
- * @param remainingTime Remaining timeout in microseconds; decreased while waiting.
- * @return int The received byte, or -1 if the timeout expires.
+ * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
+ * @return int The received byte, or the serial read result when no byte is available before the timeout.
  */
 int LinHandler::readWithTimeout(unsigned int &remainingTime)
 {
@@ -68,9 +68,9 @@ int LinHandler::readWithTimeout(unsigned int &remainingTime)
 }
 
 /**
- * @brief Sends a LIN header for the specified identifier.
+ * @brief Sends a LIN break, synchronization byte, protected identifier, and response byte.
  *
- * @param identifier Six-bit LIN identifier used to construct the protected identifier.
+ * @param identifier Identifier whose low six bits are used to construct the protected identifier.
  */
 void LinHandler::send(unsigned char identifier)
 {

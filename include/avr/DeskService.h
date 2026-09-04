@@ -71,7 +71,16 @@ private:
 
     LinHandler lin{};
 
-    State state{State::IDLE};
+    /**
+ * Sends a four-byte packet.
+ *
+ * @param byte1 First packet byte.
+ * @param byte2 Second packet byte.
+ * @param byte3 Third packet byte.
+ * @param byte4 Fourth packet byte.
+ * @return `true` if a response byte is received, `false` otherwise.
+ */
+State state{State::IDLE};
 
     /**
      * Reads incoming desk communication data.

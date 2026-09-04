@@ -105,7 +105,7 @@ void DeskService::begin()
  * @param byte2 Second command byte.
  * @param byte3 Third command byte.
  * @param byte4 Fourth command byte.
- * @return Length or status of the received response.
+ * @return `true` if the response request succeeds, `false` otherwise.
  */
 bool DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4)
 {
@@ -131,10 +131,10 @@ void DeskService::handle()
 }
 
 /**
- * @brief Polls both desk encoders and advances movement processing.
+ * @brief Polls both desk encoders and updates valid position readings.
  *
- * Updates encoder readings when communication succeeds and reports communication
- * errors, optionally sounding an alert while the desk is moving.
+ * Reports changed readings and communication failures, sounding an alert when
+ * a failure occurs during a pending movement.
  */
 void DeskService::read()
 {
