@@ -28,10 +28,11 @@ private:
     int readWithTimeout(unsigned int &remainingTime);
 
     /**
-     * Calculates the LIN checksum for a data array.
-     * @param data Bytes included in the checksum.
+     * Calculates the complemented checksum for a byte array.
+     *
+     * @param data Bytes to include in the checksum.
      * @param sum Initial checksum sum.
-     * @returns The bitwise-complemented LIN checksum.
+     * @return The complemented checksum.
      */
     template <unsigned int N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
@@ -62,6 +63,13 @@ public:
         Serial.flush();
     }
 
+    /**
+     * Requests a LIN frame and stores its payload in the provided buffer.
+     *
+     * @param identifier LIN frame identifier to request.
+     * @param data Buffer to populate with the received payload.
+     * @returns `true` if the response is received with a valid checksum, `false` on timeout or checksum failure.
+     */
     template <unsigned int N> bool request(unsigned char identifier, unsigned char (&data)[N])
     {
         const unsigned char idByte{
