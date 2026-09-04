@@ -112,7 +112,6 @@ unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, 
 {
     const unsigned char packet[8U]{byte1, byte2, byte3, byte4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
     lin.send(0x3C, packet);
-    delay(sizeof(packet));
     unsigned char response[sizeof(packet)]{};
     return lin.request(0x3DU, response);
 }

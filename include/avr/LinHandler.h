@@ -5,6 +5,18 @@
 #include <HardwareSerial.h>
 #include <wiring.h>
 
+namespace LinFrame
+{
+static constexpr unsigned char breakBits{13U};
+static constexpr unsigned char delimiterBits{1U};
+static constexpr unsigned char syncBits{10U};
+static constexpr unsigned char identifierBits{10U};
+static constexpr unsigned char headerBits{breakBits + delimiterBits + syncBits + identifierBits};
+static constexpr unsigned char dataBits{80U};
+static constexpr unsigned char checksumBits{10U};
+static constexpr unsigned char frameBits{headerBits + dataBits + checksumBits};
+} // namespace LinFrame
+
 class LinHandler
 {
 private:
@@ -14,7 +26,7 @@ private:
 
     unsigned char addressParity(unsigned int identifier);
 
-    int readWithTimeout(int16_t &remainingTime);
+    int readWithTimeout(unsigned int &remainingTime);
 
     /**
      * Calculates the LIN checksum for a data array.
@@ -49,44 +61,41 @@ public:
         Serial.write(data, N);
         Serial.write(calcChecksum(data, identifier == 0x3CU ? 0U : addressByte));
         Serial.flush();
-        delay(static_cast<unsigned long>(N) + 3UL);
     }
 
     template <unsigned int N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
     {
-        delay(static_cast<unsigned long>(N) + 1UL);
-        unsigned char count{0U};
-        int _byte{0U};
         const unsigned char idByte{
             static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
-        int16_t remainingTime{static_cast<int16_t>(124'000'000UL / baud)};
         serialBreak();
         Serial.write(0x55U);
         Serial.write(idByte);
         Serial.flush();
+        int byte{0U};
+        unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baud)};
         do
         {
-            _byte = readWithTimeout(remainingTime);
-        } while (_byte != -1 && _byte != 0x55);
+            byte = readWithTimeout(remainingTime);
+        } while (byte != -1 && byte != 0x55);
         do
         {
-            _byte = readWithTimeout(remainingTime);
-        } while (_byte != -1 && _byte != idByte);
-        count = 0U;
+            byte = readWithTimeout(remainingTime);
+        } while (byte != -1 && byte != idByte);
+        unsigned char count{0U};
         for (unsigned char &byte : data)
         {
-            _byte = readWithTimeout(remainingTime);
-            if (_byte == -1)
+            byte = readWithTimeout(remainingTime);
+            if (byte == -1)
             {
                 Serial.flush();
                 return count;
             }
-            byte = static_cast<unsigned char>(_byte);
+            byte = static_cast<unsigned char>(byte);
             ++count;
         }
-        _byte = readWithTimeout(remainingTime);
+        byte = readWithTimeout(remainingTime);
         ++count;
-        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != _byte)
+        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != byte)
         {
             count = 0xFFU;
         }

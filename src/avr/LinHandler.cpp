@@ -25,9 +25,9 @@ void LinHandler::serialBreak()
     Serial.end();
     pinMode(Pin::lin, OUTPUT);
     digitalWrite(Pin::lin, LOW);
-    delayMicroseconds(static_cast<unsigned int>(15'000'000UL / baud));
+    delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baud)); // ~780 µs
     digitalWrite(Pin::lin, HIGH);
-    delayMicroseconds(static_cast<unsigned int>(1'000'000UL / baud));
+    delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baud));
     Serial.begin(baud);
 }
 
@@ -53,16 +53,14 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
  * @param remainingTime Remaining timeout in microseconds; decreased while waiting.
  * @return int The received byte, or -1 if the timeout expires.
  */
-int LinHandler::readWithTimeout(int16_t &remainingTime)
+int LinHandler::readWithTimeout(unsigned int &remainingTime)
 {
-    while (Serial.available() == 0)
+    constexpr unsigned int interval{static_cast<unsigned int>(1'000'000UL / baud)};
+    while (remainingTime != 0U && Serial.available() == 0)
     {
-        delayMicroseconds(100U);
-        remainingTime -= 100;
-        if (remainingTime <= 0)
-        {
-            return -1;
-        }
+        const unsigned int delayTime{remainingTime >= interval ? interval : remainingTime};
+        delayMicroseconds(delayTime);
+        remainingTime -= delayTime;
     }
     return Serial.read();
 }
@@ -81,7 +79,6 @@ void LinHandler::send(unsigned char identifier)
     Serial.write(addressByte);
     Serial.write(identifier == 0x3CU ? 0xFFU : static_cast<unsigned char>(~addressByte));
     Serial.flush();
-    delay(3U);
 }
 
 #endif // ARDUINO_ARCH_AVR
