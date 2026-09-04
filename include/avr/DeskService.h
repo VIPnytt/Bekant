@@ -71,83 +71,79 @@ private:
 
     LinHandler lin{};
 
+    State state{State::IDLE};
+
     /**
- * Reads incoming desk communication data.
- */
-
-/**
- * Processes the current desk service state.
- */
-
-/**
- * Handles the idle state.
- */
-
-/**
- * Handles preparation before desk movement.
- */
-
-/**
- * Handles downward desk movement.
- */
-
-/**
- * Handles upward desk movement.
- */
-
-/**
- * Handles completion of a desk operation.
- */
-
-/**
- * Handles an ongoing recalibration.
- */
-
-/**
- * Sends a desk command.
- *
- * @param command Command to send.
- */
-
-/**
- * Sends a desk command with a target encoder position.
- *
- * @param command Command to send.
- * @param position Encoder position associated with the command.
- */
-
-/**
- * Determines whether the desk service is idle.
- *
- * @return `true` if the service is idle, `false` otherwise.
- */
-
-/**
- * Sends a four-byte packet.
- *
- * @param byte1 First packet byte.
- * @param byte2 Second packet byte.
- * @param byte3 Third packet byte.
- * @param byte4 Fourth packet byte.
- * @return Byte result received for the packet.
- */
-State state{State::IDLE};
-
+     * Reads incoming desk communication data.
+     */
     void read();
+
+    /**
+     * Processes the current desk service state.
+     */
     void process();
 
+    /**
+     * Handles the idle state.
+     */
     void handleStateIdle();
+
+    /**
+     * Handles preparation before desk movement.
+     */
     void handleStatePrepare();
+
+    /**
+     * Handles downward desk movement.
+     */
     void handleStateDown();
+
+    /**
+     * Handles upward desk movement.
+     */
     void handleStateUp();
+
+    /**
+     * Handles completion of a desk operation.
+     */
     void handleStateDone();
+
+    /**
+     * Handles an ongoing recalibration.
+     */
     void handleStateRecalOngoing();
 
+    /**
+     * Sends a desk command.
+     *
+     * @param command Command to send.
+     */
     void sendCommand(Command command);
+
+    /**
+     * Sends a desk command with a target encoder position.
+     *
+     * @param command Command to send.
+     * @param position Encoder position associated with the command.
+     */
     void sendCommand(Command command, unsigned int position);
 
+    /**
+     * Determines whether the desk service is idle.
+     *
+     * @return `true` if the service is idle, `false` otherwise.
+     */
     [[nodiscard]] bool isIdle();
 
+    /**
+     * Sends a four-byte packet.
+     *
+     * @param byte1 First packet byte.
+     * @param byte2 Second packet byte.
+     * @param byte3 Third packet byte.
+     * @param byte4 Fourth packet byte.
+     * @return Byte result received for the packet.
+     */
     unsigned char sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
 };
 
