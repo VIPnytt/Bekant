@@ -13,9 +13,6 @@ static constexpr unsigned char identifierBits{10U};
 static constexpr unsigned char headerBits{breakBits + delimiterBits + syncBits + identifierBits};
 static constexpr unsigned char dataBits{80U};
 static constexpr unsigned char checksumBits{10U};
-/**
- * Total number of bits in a LIN frame.
- */
 static constexpr unsigned char frameBits{headerBits + dataBits + checksumBits};
 } // namespace LinFrame
 
@@ -31,19 +28,13 @@ private:
     int readWithTimeout(unsigned int &remainingTime);
 
     /**
-     * Calculates the LIN checksum for a data array.
-     * @param data Bytes included in the checksum.
-     * @param sum Initial checksum sum.
-     * @returns The bitwise-complemented LIN checksum.
-     */
-    template <unsigned int N> unsigned /**
      * Calculates the complemented checksum for a byte array.
      *
      * @param data Bytes to include in the checksum.
      * @param sum Initial checksum sum.
      * @return The complemented checksum.
      */
-    char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
+    template <unsigned int N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
         for (const unsigned char byte : data)
         {
@@ -72,16 +63,16 @@ public:
         Serial.flush();
     }
 
+    /**
+     * Requests a LIN frame and stores its payload in the provided buffer.
+     *
+     * @param identifier LIN frame identifier to request.
+     * @param data Buffer to populate with the received payload.
+     * @returns `true` if the response is received with a valid checksum, `false` on timeout or checksum failure.
+     */
     template <unsigned int N> bool request(unsigned char identifier, unsigned char (&data)[N])
     {
-        /**
- * Requests a LIN frame and stores its payload in the provided buffer.
- *
- * @param identifier LIN frame identifier to request.
- * @param data Buffer to populate with the received payload.
- * @returns `true` if the response is received with a valid checksum, `false` on timeout or checksum failure.
- */
-const unsigned char idByte{
+        const unsigned char idByte{
             static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
         serialBreak();
         Serial.write(0x55U);
