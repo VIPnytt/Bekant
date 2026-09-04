@@ -17,7 +17,7 @@
 void DeskService::begin()
 {
     Serial1.begin(115'200UL);
-    delay(0b1U << 11U);
+    delay(0b1UL << 11U);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
     pinMode(Pin::tone, OUTPUT);
@@ -58,36 +58,35 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    char pid{-1};
     unsigned char errorCount{0U};
+    unsigned char pid{0U};
     for (unsigned char idx{0U}; idx < static_cast<unsigned char>(sizeof(data) / sizeof(data[0U])); ++idx)
     {
-        if (idx == 4U || idx == 11U)
+        switch (idx)
         {
-            while (pid < 8)
+        case 4U:
+        case 11U:
+            for (; pid < 8U; ++pid)
             {
-                ++pid;
                 if (sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]) != 0U)
                 {
                     break;
                 }
             }
-            if (pid >= 8)
+            if (pid == 8U)
             {
                 ++errorCount;
             }
-        }
-        else if (idx == 18U)
-        {
-            while (pid < 8)
+            break;
+        case 18U:
+            for (; pid < 8U; ++pid)
             {
-                ++pid;
                 sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]);
             }
-        }
-        else
-        {
+            break;
+        default:
             sendPacket(data[idx][0U] == 0U ? pid : data[idx][0U], data[idx][1U], data[idx][2U], data[idx][3U]);
+            break;
         }
     }
     constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
