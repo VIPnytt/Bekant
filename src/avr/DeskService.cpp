@@ -68,7 +68,7 @@ void DeskService::begin()
         case 11U:
             for (; pid < 8U; ++pid)
             {
-                if (sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]) != 0U)
+                if (sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]))
                 {
                     break;
                 }
@@ -107,8 +107,7 @@ void DeskService::begin()
  * @param byte4 Fourth command byte.
  * @return Length or status of the received response.
  */
-unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3,
-                                      unsigned char byte4)
+bool DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4)
 {
     const unsigned char packet[8U]{byte1, byte2, byte3, byte4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
     lin.send(0x3C, packet);
@@ -141,13 +140,13 @@ void DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    const unsigned char charsA{lin.request(0x8U, nodeA)};
-    const unsigned char charsB{lin.request(0x9U, nodeB)};
+    const bool validA{lin.request(0x8U, nodeA)};
+    const bool validB{lin.request(0x9U, nodeB)};
     const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
     const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
     if (_encoderA != encoderA)
     {
-        if (charsA != static_cast<unsigned char>(sizeof(nodeA) + 1ULL))
+        if (!validA)
         {
             Serial1.printf("A%u\n", _encoderA);
             if (pending)
@@ -162,7 +161,7 @@ void DeskService::read()
     }
     if (_encoderB != encoderB)
     {
-        if (charsB != static_cast<unsigned char>(sizeof(nodeB) + 1ULL))
+        if (!validB)
         {
             Serial1.printf("B%u\n", _encoderB);
             if (pending)

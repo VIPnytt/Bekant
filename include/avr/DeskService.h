@@ -144,7 +144,7 @@ private:
      * @param byte4 Fourth packet byte.
      * @return Byte result received for the packet.
      */
-    unsigned char sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
+    bool sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
 };
 
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)

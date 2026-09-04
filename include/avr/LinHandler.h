@@ -62,7 +62,7 @@ public:
         Serial.flush();
     }
 
-    template <unsigned int N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
+    template <unsigned int N> bool request(unsigned char identifier, unsigned char (&data)[N])
     {
         const unsigned char idByte{
             static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
@@ -72,34 +72,35 @@ public:
         Serial.flush();
         int receivedByte{0};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baud)};
-        do
+        do // NOLINT(cppcoreguidelines-avoid-do-while)
         {
             receivedByte = readWithTimeout(remainingTime);
         } while (receivedByte != -1 && receivedByte != 0x55);
-        do
+        if (receivedByte == -1)
+        {
+            return false;
+        }
+        do // NOLINT(cppcoreguidelines-avoid-do-while)
         {
             receivedByte = readWithTimeout(remainingTime);
         } while (receivedByte != -1 && receivedByte != idByte);
+        if (receivedByte == -1)
+        {
+            return false;
+        }
         unsigned char byteCount{0U};
         for (unsigned char &dataByte : data)
         {
             receivedByte = readWithTimeout(remainingTime);
             if (receivedByte == -1)
             {
-                Serial.flush();
-                return byteCount;
+                return false;
             }
             dataByte = static_cast<unsigned char>(receivedByte);
             ++byteCount;
         }
         receivedByte = readWithTimeout(remainingTime);
-        ++byteCount;
-        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != receivedByte)
-        {
-            byteCount = 0xFFU;
-        }
-        Serial.flush();
-        return byteCount;
+        return receivedByte != -1 && calcChecksum(data, identifier == 0x3DU ? 0U : idByte) == receivedByte;
     }
 };
 
