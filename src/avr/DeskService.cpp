@@ -366,10 +366,10 @@ void DeskService::sendCommand(Command command)
 }
 
 /**
- * @brief Sends a command with its payload over the LIN interface.
+ * @brief Sends a command and position payload over the LIN interface.
  *
  * @param command Command code to transmit.
- * @param position Command payload.
+ * @param position Position value included in the command payload.
  */
 void DeskService::sendCommand(Command command, unsigned int position)
 {

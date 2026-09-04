@@ -16,6 +16,12 @@ private:
 
     int readWithTimeout(int16_t &remainingTime);
 
+    /**
+     * Calculates the LIN checksum for a data array.
+     * @param data Bytes included in the checksum.
+     * @param sum Initial checksum sum.
+     * @returns The bitwise-complemented LIN checksum.
+     */
     template <unsigned int N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
         for (const unsigned char byte : data)
