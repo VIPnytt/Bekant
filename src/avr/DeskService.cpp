@@ -6,6 +6,7 @@
 
 #include <EEPROM.h>
 #include <HardwareSerial.h>
+#include <wiring.h>
 
 /**
  * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
@@ -16,7 +17,7 @@
 void DeskService::begin()
 {
     Serial1.begin(115'200UL);
-    delay(0b1U << 11U);
+    delay(0b1UL << 11U);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
     pinMode(Pin::tone, OUTPUT);
@@ -57,125 +58,143 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    char pid{-1};
-    unsigned char errorCount{0U};
+    bool failed{false};
+    unsigned char pid{0U};
     for (unsigned char idx{0U}; idx < static_cast<unsigned char>(sizeof(data) / sizeof(data[0U])); ++idx)
     {
-        if (idx == 4U || idx == 11U)
+        switch (idx)
         {
-            while (pid < 8)
+        case 4U:
+        case 11U:
+            for (; pid < 8U; ++pid)
             {
-                ++pid;
-                if (sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]) != 0U)
+                if (sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]))
                 {
                     break;
                 }
             }
-            if (pid >= 8)
+            if (pid == 8U)
             {
-                ++errorCount;
+                failed = true;
             }
-        }
-        else if (idx == 18U)
-        {
-            while (pid < 8)
+            break;
+        case 18U:
+            for (; pid < 8U; ++pid)
             {
-                ++pid;
                 sendPacket(pid, data[idx][1U], data[idx][2U], data[idx][3U]);
             }
-        }
-        else
-        {
+            break;
+        default:
             sendPacket(data[idx][0U] == 0U ? pid : data[idx][0U], data[idx][1U], data[idx][2U], data[idx][3U]);
+            break;
         }
     }
     constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
     lin.send(0x12U, magicPacket);
-    if (errorCount != 0U)
+    if (failed)
     {
+        Serial1.write(static_cast<int>('I'));
         tone(0b1U << 8U);
-        Serial1.printf("I%u\n", errorCount);
     }
 }
 
 /**
- * @brief Sends a four-byte LIN command packet and requests a response.
+ * @brief Sends a LIN command packet and requests its response.
  *
  * @param byte1 First command byte.
  * @param byte2 Second command byte.
  * @param byte3 Third command byte.
  * @param byte4 Fourth command byte.
- * @return Length or status of the received response.
+ * @return `true` if the response request succeeds, `false` otherwise.
  */
-unsigned char DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3,
-                                      unsigned char byte4)
+bool DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4)
 {
     const unsigned char packet[8U]{byte1, byte2, byte3, byte4, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
     lin.send(0x3C, packet);
-    delay(sizeof(packet));
     unsigned char response[sizeof(packet)]{};
     return lin.request(0x3DU, response);
 }
 
 /**
- * @brief Processes encoder updates and handles user input when recalibration is inactive.
+ * @brief Reads encoder data, advances the state machine on successful communication, and handles user input outside
+ * recalibration states.
  */
 void DeskService::handle()
 {
-    read();
-    process();
+    if (read())
+    {
+        process();
+    }
     if (state != State::RECAL_PREPARE && state != State::RECAL_ONGOING && state != State::RECAL_DONE)
     {
         console.handle();
         button.handle();
-        Serial1.flush();
     }
 }
 
 /**
- * @brief Polls both desk encoders and advances movement processing.
+ * @brief Polls both desk encoders and updates their positions and states.
  *
- * Updates encoder readings when communication succeeds and reports communication
- * errors, optionally sounding an alert while the desk is moving.
+ * Reports changed positions and communication failures. Cancels pending
+ * movement and sounds an alert when either encoder request fails.
+ *
+ * @return true if both encoder requests succeed, false otherwise.
  */
-void DeskService::read()
+bool DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    const unsigned char charsA{lin.request(0x8U, nodeA)};
-    const unsigned char charsB{lin.request(0x9U, nodeB)};
-    const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
-    const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
-    if (_encoderA != encoderA)
+    unsigned char nodeA[3U]{};
+    unsigned char nodeB[3U]{};
+    const bool validA{lin.request(0x8U, nodeA)};
+    const bool validB{lin.request(0x9U, nodeB)};
+    if (validA)
     {
-        if (charsA != static_cast<unsigned char>(sizeof(nodeA) + 1ULL))
+        const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
+        stateA = nodeA[2U];
+        if (_encoderA != encoderA)
         {
-            Serial1.printf("A%u\n", _encoderA);
-            if (pending)
-            {
-                tone(0b1U << 8U);
-            }
-            return;
+            encoderA = _encoderA;
+            lastMillis = millis();
+            Serial1.write(static_cast<int>('a'));
+            Serial1.print(encoderA);
+            Serial1.write(static_cast<int>('\n'));
         }
-        encoderA = _encoderA;
-        lastMillis = millis();
-        Serial1.printf("a%u\n", encoderA);
     }
-    if (_encoderB != encoderB)
+    else
     {
-        if (charsB != static_cast<unsigned char>(sizeof(nodeB) + 1ULL))
+        Serial1.write(static_cast<int>('A'));
+        Serial1.write(static_cast<int>('\n'));
+        if (pending)
         {
-            Serial1.printf("B%u\n", _encoderB);
-            if (pending)
-            {
-                tone(0b1U << 8U);
-            }
-            return;
+            pending = false;
+            tone(0b1U << 8U);
         }
-        encoderB = _encoderB;
-        lastMillis = millis();
-        Serial1.printf("b%u\n", encoderB);
     }
+    if (validB)
+    {
+        const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
+        stateB = nodeB[2U];
+        if (_encoderB != encoderB)
+        {
+            encoderB = _encoderB;
+            lastMillis = millis();
+            Serial1.write(static_cast<int>('b'));
+            Serial1.print(encoderB);
+            Serial1.write(static_cast<int>('\n'));
+        }
+    }
+    else
+    {
+        Serial1.write(static_cast<int>('B'));
+        Serial1.write(static_cast<int>('\n'));
+        if (pending)
+        {
+            pending = false;
+            tone(0b1U << 8U);
+        }
+    }
+    return validA && validB;
 }
 
 /**
@@ -226,10 +245,9 @@ void DeskService::process()
  *
  * @return `true` if both nodes report an idle-compatible status, `false` otherwise.
  */
-bool DeskService::isIdle()
+bool DeskService::isIdle() const
 {
-    return (nodeA[2U] == 0U || nodeA[2U] == 0x25U || nodeA[2U] == 0x60U) &&
-           (nodeB[2U] == 0U || nodeB[2U] == 0x25U || nodeB[2U] == 0x60U);
+    return (stateA == 0U || stateA == 0x25U || stateA == 0x60U) && (stateB == 0U || stateB == 0x25U || stateB == 0x60U);
 }
 
 /**
@@ -333,13 +351,13 @@ void DeskService::handleStateDone()
 /**
  * @brief Advances the ongoing recalibration process.
  *
- * Completes recalibration when both nodes report the required state and the
- * encoder readings are within the calibration limit; otherwise, continues
- * issuing the calibration command.
+ * Transitions to the recalibration-complete state when both nodes are ready
+ * and the maximum encoder reading is within the calibration limit; otherwise,
+ * continues recalibration.
  */
 void DeskService::handleStateRecalOngoing()
 {
-    if (nodeA[2U] == 1U && nodeB[2U] == 1U && getEncoderMax() <= 99U)
+    if (stateA == 1U && stateB == 1U && getEncoderMax() <= 99U)
     {
         state = State::RECAL_DONE;
     }

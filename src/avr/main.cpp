@@ -3,6 +3,7 @@
 #include "avr/DeskService.h"
 
 #include <avr/wdt.h>
+#include <wiring.h>
 
 /**
  * @brief Initializes the desk service and enables the AVR watchdog timer.

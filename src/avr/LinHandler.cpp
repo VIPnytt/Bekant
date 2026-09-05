@@ -4,6 +4,8 @@
 
 #include "avr/constants.h"
 
+#include <wiring.h>
+
 /**
  * @brief Initializes the LIN pin and serial interface.
  */
@@ -14,20 +16,20 @@ void LinHandler::begin()
 }
 
 /**
- * @brief Generates a LIN break signal on the configured pin.
+ * @brief Generates a LIN break and delimiter signal on the configured pin.
  *
- * Stops serial communication while driving the LIN pin low for the break
- * duration, then high for one bit duration before restarting serial
- * communication.
+ * Temporarily stops serial communication while driving the LIN pin low for
+ * the break duration and high for the delimiter duration, then resumes
+ * serial communication.
  */
 void LinHandler::serialBreak()
 {
     Serial.end();
     pinMode(Pin::lin, OUTPUT);
     digitalWrite(Pin::lin, LOW);
-    delayMicroseconds(static_cast<unsigned int>(15'000'000UL / baud));
+    delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baud)); // ~780 µs
     digitalWrite(Pin::lin, HIGH);
-    delayMicroseconds(static_cast<unsigned int>(1'000'000UL / baud));
+    delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baud));
     Serial.begin(baud);
 }
 
@@ -48,29 +50,29 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
 }
 
 /**
- * @brief Reads the next available byte within the specified timeout.
+ * @brief Reads a serial byte within the available time budget.
  *
- * @param remainingTime Remaining timeout in microseconds; decreased while waiting.
- * @return int The received byte, or -1 if the timeout expires.
+ * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
+ * @return int The received byte, or -1 if no byte is available before the timeout.
  */
-int LinHandler::readWithTimeout(int16_t &remainingTime)
+int LinHandler::readWithTimeout(unsigned int &remainingTime)
 {
-    while (Serial.available() == 0)
+    constexpr unsigned int interval{static_cast<unsigned int>(1'000'000UL / baud)};
+    while (remainingTime != 0U && Serial.available() == 0)
     {
-        delayMicroseconds(100U);
-        remainingTime -= 100;
-        if (remainingTime <= 0)
-        {
-            return -1;
-        }
+        const unsigned int delayTime{remainingTime >= interval ? interval : remainingTime};
+        delayMicroseconds(delayTime);
+        remainingTime -= delayTime;
     }
     return Serial.read();
 }
 
 /**
- * @brief Sends a LIN header for the specified identifier.
+ * @brief Sends a LIN break, synchronization byte, protected identifier, and response byte.
  *
- * @param identifier Six-bit LIN identifier used to construct the protected identifier.
+ * @param identifier Identifier whose low six bits are used to construct the protected identifier.
+ *                   Identifier 0x3C receives a response of 0xFF; other identifiers receive the
+ *                   bitwise inverse of the protected identifier.
  */
 void LinHandler::send(unsigned char identifier)
 {
@@ -81,7 +83,6 @@ void LinHandler::send(unsigned char identifier)
     Serial.write(addressByte);
     Serial.write(identifier == 0x3CU ? 0xFFU : static_cast<unsigned char>(~addressByte));
     Serial.flush();
-    delay(3U);
 }
 
 #endif // ARDUINO_ARCH_AVR

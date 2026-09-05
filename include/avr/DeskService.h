@@ -54,8 +54,8 @@ private:
 
     bool pending{false};
 
-    unsigned char nodeA[3U]{0U};
-    unsigned char nodeB[3U]{0U};
+    unsigned char stateA{0U};
+    unsigned char stateB{0U};
 
     unsigned int encoderA{0U};
     unsigned int encoderB{0U};
@@ -75,8 +75,10 @@ private:
 
     /**
      * Reads incoming desk communication data.
+     *
+     * @return `true` if data is received, `false` otherwise.
      */
-    void read();
+    [[nodiscard]] bool read();
 
     /**
      * Processes the current desk service state.
@@ -133,7 +135,7 @@ private:
      *
      * @return `true` if the service is idle, `false` otherwise.
      */
-    [[nodiscard]] bool isIdle();
+    [[nodiscard]] bool isIdle() const;
 
     /**
      * Sends a four-byte packet.
@@ -142,9 +144,9 @@ private:
      * @param byte2 Second packet byte.
      * @param byte3 Third packet byte.
      * @param byte4 Fourth packet byte.
-     * @return Byte result received for the packet.
+     * @return `true` if a response byte is received, `false` otherwise.
      */
-    unsigned char sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
+    bool sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
 };
 
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)

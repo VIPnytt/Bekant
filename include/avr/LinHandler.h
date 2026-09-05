@@ -3,7 +3,18 @@
 #ifdef ARDUINO_ARCH_AVR
 
 #include <HardwareSerial.h>
-#include <wiring.h>
+
+namespace LinFrame
+{
+static constexpr unsigned char breakBits{13U};
+static constexpr unsigned char delimiterBits{1U};
+static constexpr unsigned char syncBits{10U};
+static constexpr unsigned char identifierBits{10U};
+static constexpr unsigned char headerBits{breakBits + delimiterBits + syncBits + identifierBits};
+static constexpr unsigned char dataBits{80U};
+static constexpr unsigned char checksumBits{10U};
+static constexpr unsigned char frameBits{headerBits + dataBits + checksumBits};
+} // namespace LinFrame
 
 class LinHandler
 {
@@ -14,13 +25,13 @@ private:
 
     unsigned char addressParity(unsigned int identifier);
 
-    int readWithTimeout(int16_t &remainingTime);
+    int readWithTimeout(unsigned int &remainingTime);
 
     /**
-     * Calculates the LIN checksum for a data array.
-     * @param data Bytes included in the checksum.
+     * Calculates the complemented checksum for a sequence of bytes.
+     * @param data Bytes to include in the checksum.
      * @param sum Initial checksum sum.
-     * @returns The bitwise-complemented LIN checksum.
+     * @return The complemented checksum.
      */
     template <unsigned int N> unsigned char calcChecksum(const unsigned char (&data)[N], unsigned int sum)
     {
@@ -49,49 +60,52 @@ public:
         Serial.write(data, N);
         Serial.write(calcChecksum(data, identifier == 0x3CU ? 0U : addressByte));
         Serial.flush();
-        delay(static_cast<unsigned long>(N) + 3UL);
     }
 
-    template <unsigned int N> unsigned char request(unsigned char identifier, unsigned char (&data)[N])
+    /**
+     * Requests a LIN frame and stores its payload in the provided buffer.
+     *
+     * @param identifier LIN frame identifier to request.
+     * @param data Buffer to receive the frame payload.
+     * @return `true` if a complete frame with a valid checksum is received, `false` on timeout or checksum failure.
+     */
+    template <unsigned int N> bool request(unsigned char identifier, unsigned char (&data)[N])
     {
-        delay(static_cast<unsigned long>(N) + 1UL);
-        unsigned char count{0U};
-        int _byte{0U};
         const unsigned char idByte{
             static_cast<unsigned char>((identifier & 0x3FU) | addressParity(static_cast<unsigned int>(identifier)))};
-        int16_t remainingTime{static_cast<int16_t>(124'000'000UL / baud)};
         serialBreak();
         Serial.write(0x55U);
         Serial.write(idByte);
         Serial.flush();
-        do
+        int receivedByte{0};
+        unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baud)};
+        do // NOLINT(cppcoreguidelines-avoid-do-while)
         {
-            _byte = readWithTimeout(remainingTime);
-        } while (_byte != -1 && _byte != 0x55);
-        do
+            receivedByte = readWithTimeout(remainingTime);
+        } while (receivedByte != -1 && receivedByte != 0x55);
+        if (receivedByte == -1)
         {
-            _byte = readWithTimeout(remainingTime);
-        } while (_byte != -1 && _byte != idByte);
-        count = 0U;
-        for (unsigned char &byte : data)
+            return false;
+        }
+        do // NOLINT(cppcoreguidelines-avoid-do-while)
         {
-            _byte = readWithTimeout(remainingTime);
-            if (_byte == -1)
+            receivedByte = readWithTimeout(remainingTime);
+        } while (receivedByte != -1 && receivedByte != idByte);
+        if (receivedByte == -1)
+        {
+            return false;
+        }
+        for (unsigned char &dataByte : data)
+        {
+            receivedByte = readWithTimeout(remainingTime);
+            if (receivedByte == -1)
             {
-                Serial.flush();
-                return count;
+                return false;
             }
-            byte = static_cast<unsigned char>(_byte);
-            ++count;
+            dataByte = static_cast<unsigned char>(receivedByte);
         }
-        _byte = readWithTimeout(remainingTime);
-        ++count;
-        if (calcChecksum(data, identifier == 0x3DU ? 0U : idByte) != _byte)
-        {
-            count = 0xFFU;
-        }
-        Serial.flush();
-        return count;
+        receivedByte = readWithTimeout(remainingTime);
+        return receivedByte != -1 && calcChecksum(data, identifier == 0x3DU ? 0U : idByte) == receivedByte;
     }
 };
 
