@@ -49,7 +49,7 @@ void ConsoleHandler::process()
         const unsigned int value{parseDigits()};
         if (value <= Encoder::maxLimit && value >= Encoder::minLimit)
         {
-            switch (buffer[0U])
+            switch (buffer[0U]) // NOLINT(bugprone-switch-missing-default-case)
             {
             case 'h':
                 desk.setPresetHigh(value);
@@ -67,12 +67,12 @@ void ConsoleHandler::process()
         }
         else if (buffer[0U] == 'h' || buffer[0U] == 'l' || buffer[0U] == 'p' || buffer[0U] == 't')
         {
-            send(buffer[0U] - ' ', value);
+            send(static_cast<char>(buffer[0U] - ' '), value);
         }
     }
     else
     {
-        switch (buffer[0U])
+        switch (buffer[0U]) // NOLINT(bugprone-switch-missing-default-case)
         {
         case 'c':
             desk.recalibrate();
