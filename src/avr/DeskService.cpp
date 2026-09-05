@@ -154,7 +154,9 @@ bool DeskService::read()
             }
             state8 = node8[2U];
             Serial1.write(0x8U);
-            Serial1.write(node8, sizeof(node8));
+            Serial1.write(node8[0U]);
+            Serial1.write(node8[1U]);
+            Serial1.write(node8[2U]);
             Serial1.write(static_cast<unsigned char>('\n'));
         }
     }
@@ -179,7 +181,9 @@ bool DeskService::read()
             }
             state9 = node9[2U];
             Serial1.write(0x9U);
-            Serial1.write(node9, sizeof(node9));
+            Serial1.write(node9[0U]);
+            Serial1.write(node9[1U]);
+            Serial1.write(node9[2U]);
             Serial1.write(static_cast<unsigned char>('\n'));
         }
     }
