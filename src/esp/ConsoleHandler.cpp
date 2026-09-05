@@ -86,8 +86,8 @@ void ConsoleHandler::forward()
 /**
  * @brief Interprets a console payload and updates the corresponding device state.
  *
- * @param payload Command containing an encoder value, preset value, button state, or version string.
- * Invalid commands set the device status to red.
+ * @param payload Binary encoder/state data, a version string, or a numeric button or preset command.
+ * Invalid or malformed payloads set the device status to red.
  */
 void ConsoleHandler::parse(std::string_view payload)
 {
