@@ -6,18 +6,21 @@
 
 #include <EEPROM.h>
 #include <HardwareSerial.h>
+#include <avr/wdt.h>
 #include <wiring.h>
 
 /**
- * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
+ * @brief Initializes the desk service hardware, stored presets, watchdog, and LIN interface.
  *
- * Transmits the firmware version, valid stored presets, and required LIN initialization
- * packets. Reports initialization errors with a tone and a serial status message.
+ * Reports the firmware version and preset validity, performs the required LIN initialization
+ * sequence, and sends a final initialization packet. On a required LIN initialization failure,
+ * reports the error, sounds a tone, and stops initialization early.
  */
 void DeskService::begin()
 {
     Serial1.begin(115'200UL);
     delay(0b1UL << 11U);
+    wdt_enable(WDTO_8S);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
     pinMode(Pin::tone, OUTPUT);
@@ -50,7 +53,6 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    bool failed{false};
     unsigned char pid{0U};
     for (unsigned char idx{0U}; idx < static_cast<unsigned char>(sizeof(data) / sizeof(data[0U])); ++idx)
     {
@@ -67,7 +69,10 @@ void DeskService::begin()
             }
             if (pid == 8U)
             {
-                failed = true;
+                Serial1.write(static_cast<int>('I'));
+                Serial1.write(static_cast<int>('\n'));
+                tone(0b1U << 8U);
+                return;
             }
             break;
         case 18U:
@@ -83,11 +88,7 @@ void DeskService::begin()
     }
     constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
     lin.send(0x12U, magicPacket);
-    if (failed)
-    {
-        Serial1.write(static_cast<int>('I'));
-        tone(0b1U << 8U);
-    }
+    wdt_reset();
 }
 
 /**
@@ -127,8 +128,9 @@ void DeskService::handle()
 /**
  * @brief Polls both desk encoders and updates their positions and states.
  *
- * Reports changed positions and communication failures. Cancels pending
- * movement and sounds an alert when either encoder request fails.
+ * Reports encoder communication failures and sounds an alert when movement is
+ * pending and either request fails. Resets the watchdog after both requests
+ * succeed.
  *
  * @return true if both encoder requests succeed, false otherwise.
  */
@@ -157,7 +159,6 @@ bool DeskService::read()
         Serial1.write(static_cast<int>('\n'));
         if (pending)
         {
-            pending = false;
             tone(0b1U << 8U);
         }
     }
@@ -178,11 +179,15 @@ bool DeskService::read()
         Serial1.write(static_cast<int>('\n'));
         if (pending)
         {
-            pending = false;
             tone(0b1U << 8U);
         }
     }
-    return validA && validB;
+    if (!validA || !validB)
+    {
+        return false;
+    }
+    wdt_reset();
+    return true;
 }
 
 /**
