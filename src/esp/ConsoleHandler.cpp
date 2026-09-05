@@ -96,13 +96,15 @@ void ConsoleHandler::parse(std::string_view payload)
     const char first{payload.at(0U)};
     if (first == static_cast<char>(0x8U) && payload.size() == 4U)
     {
-        device.setEncoder8(static_cast<uint16_t>(payload.at(1U)) | (static_cast<uint16_t>(payload.at(2U)) << 8U));
+        device.setEncoder8(static_cast<uint16_t>(payload.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(payload.at(2U)) << 8U));
         device.setState8(static_cast<uint8_t>(payload.at(3U)));
         return;
     }
     if (first == static_cast<char>(0x9U) && payload.size() == 4U)
     {
-        device.setEncoder9(static_cast<uint16_t>(payload.at(1U)) | (static_cast<uint16_t>(payload.at(2U)) << 8U));
+        device.setEncoder9(static_cast<uint16_t>(payload.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(payload.at(2U)) << 8U));
         device.setState9(static_cast<uint8_t>(payload.at(3U)));
         return;
     }
