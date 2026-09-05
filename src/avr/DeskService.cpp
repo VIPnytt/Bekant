@@ -10,10 +10,11 @@
 #include <wiring.h>
 
 /**
- * @brief Initializes serial communication, hardware pins, stored presets, and the LIN interface.
+ * @brief Initializes the desk service hardware, stored presets, watchdog, and LIN interface.
  *
- * Transmits the firmware version, valid stored presets, and required LIN initialization
- * packets. Reports initialization errors with a tone and a serial status message.
+ * Reports the firmware version and preset validity, performs the required LIN initialization
+ * sequence, and sends a final initialization packet. On a required LIN initialization failure,
+ * reports the error, sounds a tone, and stops initialization early.
  */
 void DeskService::begin()
 {
@@ -127,8 +128,9 @@ void DeskService::handle()
 /**
  * @brief Polls both desk encoders and updates their positions and states.
  *
- * Reports changed positions and communication failures. Cancels pending
- * movement and sounds an alert when either encoder request fails.
+ * Reports encoder communication failures and sounds an alert when movement is
+ * pending and either request fails. Resets the watchdog after both requests
+ * succeed.
  *
  * @return true if both encoder requests succeed, false otherwise.
  */
