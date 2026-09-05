@@ -50,10 +50,10 @@ unsigned char LinHandler::addressParity(unsigned int identifier)
 }
 
 /**
- * @brief Reads a serial byte, waiting up to the specified remaining time for data.
+ * @brief Reads a serial byte within the available time budget.
  *
  * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
- * @return int The received byte, or the serial read result when no byte is available before the timeout.
+ * @return int The received byte, or -1 if no byte is available before the timeout.
  */
 int LinHandler::readWithTimeout(unsigned int &remainingTime)
 {
@@ -71,6 +71,8 @@ int LinHandler::readWithTimeout(unsigned int &remainingTime)
  * @brief Sends a LIN break, synchronization byte, protected identifier, and response byte.
  *
  * @param identifier Identifier whose low six bits are used to construct the protected identifier.
+ *                   Identifier 0x3C receives a response of 0xFF; other identifiers receive the
+ *                   bitwise inverse of the protected identifier.
  */
 void LinHandler::send(unsigned char identifier)
 {
