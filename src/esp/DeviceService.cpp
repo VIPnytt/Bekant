@@ -40,8 +40,8 @@ void DeviceService::begin()
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        nvs_get_u16(handle, "a", &encoderA);
-        nvs_get_u16(handle, "b", &encoderB);
+        nvs_get_u16(handle, "8", &encoder8);
+        nvs_get_u16(handle, "9", &encoder9);
         nvs_get_u16(handle, "h", &presetHigh);
         nvs_get_u16(handle, "l", &presetLow);
 #ifdef PIN_OE
@@ -255,8 +255,8 @@ void DeviceService::save()
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
     {
         saved = true;
-        nvs_set_u16(handle, "a", encoderA);
-        nvs_set_u16(handle, "b", encoderB);
+        nvs_set_u16(handle, "8", encoder8);
+        nvs_set_u16(handle, "9", encoder9);
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
@@ -277,27 +277,9 @@ void DeviceService::transmit(JsonDocument &doc)
 {
     doc["button"]["down"].set(buttonDown || driveDown.first);
     doc["button"]["up"].set(buttonUp || driveUp.first);
-    if (encoderA != 0U && encoderB != 0U)
-    {
-        const float legA{decode(static_cast<float>(encoderA))};
-        const float legB{decode(static_cast<float>(encoderB))};
-        doc["desk"].set(decode(static_cast<float>(encoderA + encoderB) / 2.0F));
-        doc["encoders"][0U].set(encoderA);
-        doc["encoders"][1U].set(encoderB);
-        doc["legs"][0U].set(legA);
-        doc["legs"][1U].set(legB);
-        doc["offset"].set(legA - legB);
-    }
-    else if (encoderA != 0U)
-    {
-        doc["encoders"][0U].set(encoderA);
-        doc["legs"][0U].set(decode(static_cast<float>(encoderA)));
-    }
-    else if (encoderB != 0U)
-    {
-        doc["encoders"][1U].set(encoderB);
-        doc["legs"][1U].set(decode(static_cast<float>(encoderB)));
-    }
+    doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
+    doc["encoders"][0U].set(encoder8);
+    doc["encoders"][1U].set(encoder9);
     if (!versionAvr.empty())
     {
         doc["firmware"]["avr"].set(versionAvr);
@@ -307,9 +289,14 @@ void DeviceService::transmit(JsonDocument &doc)
     {
         doc["firmware"]["latest"].set(versionLatest);
     }
+    const float leg8{decode(static_cast<float>(encoder8))};
+    const float leg9{decode(static_cast<float>(encoder9))};
+    doc["legs"][0U].set(leg8);
+    doc["legs"][1U].set(leg9);
 #ifdef PIN_OE
     doc["oe"].set(enable);
 #endif // PIN_OE
+    doc["offset"].set(leg8 - leg9);
     if (presetHigh <= ReferenceHeight::encoderHigh && presetHigh >= ReferenceHeight::encoderLow)
     {
         doc["preset"]["high"].set(decode(static_cast<float>(presetHigh)));
@@ -322,12 +309,14 @@ void DeviceService::transmit(JsonDocument &doc)
     doc["rssi"].set(WiFi.RSSI());
     if (payloadRx.size() != 0U)
     {
-        doc["rx"].set(payloadRx);
+        std::visit([&doc](const auto &payload) { doc["rx"].set(payload); }, printable(payloadRx));
     }
+    doc["states"][0U].set(state8);
+    doc["states"][1U].set(state9);
     doc["temperature"].set(temperatureRead());
     if (payloadTx.size() != 0U)
     {
-        doc["tx"].set(payloadTx);
+        std::visit([&doc](const auto &payload) { doc["tx"].set(payload); }, printable(payloadTx));
     }
 #ifdef PIN_ADC
     doc["voltage"].set(
@@ -335,6 +324,23 @@ void DeviceService::transmit(JsonDocument &doc)
         static_cast<float>(Voltage::resistanceGnd) / 1'000.0F);
 #endif // PIN_ADC
     mqtt.transmit(doc);
+}
+
+std::variant<std::string, std::string_view> DeviceService::printable(std::string_view bytes)
+{
+    constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    if (std::all_of(bytes.begin(), bytes.end(), [](const char byte) { return byte >= ' ' && byte <= '~'; }))
+    {
+        return bytes;
+    }
+    std::string hex{"0x"};
+    hex.reserve(hex.size() + (bytes.size() * 2U));
+    for (const char byte : bytes)
+    {
+        hex += map.at(static_cast<unsigned char>(byte) >> 4U);
+        hex += map.at(static_cast<unsigned char>(byte) & 0xFU);
+    }
+    return hex;
 }
 
 /**
@@ -401,17 +407,17 @@ void DeviceService::setDriveUp(bool state)
  * Changes to the encoder value mark the persistent state as unsaved and update
  * the status indicator based on the active button or drive controls.
  *
- * @param state New encoder A value.
+ * @param position New encoder A value.
  */
-void DeviceService::setEncoderA(uint16_t state)
+void DeviceService::setEncoder8(uint16_t position)
 {
-    if (state != encoderA)
+    if (position != encoder8)
     {
         ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
          (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
             ? status.setGreen()
             : status.setBlue();
-        encoderA = state;
+        encoder8 = position;
         saved = false;
         pending = true;
     }
@@ -422,17 +428,17 @@ void DeviceService::setEncoderA(uint16_t state)
  *
  * Marks the device state for persistence and publication when the value changes.
  *
- * @param state New secondary encoder value.
+ * @param position New secondary encoder value.
  */
-void DeviceService::setEncoderB(uint16_t state)
+void DeviceService::setEncoder9(uint16_t position)
 {
-    if (state != encoderB)
+    if (position != encoder9)
     {
         ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
          (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
             ? status.setGreen()
             : status.setBlue();
-        encoderB = state;
+        encoder9 = position;
         saved = false;
         pending = true;
     }
@@ -507,6 +513,24 @@ void DeviceService::setRx(std::string_view payload)
     if (payload != payloadRx)
     {
         payloadRx = payload;
+        pending = true;
+    }
+}
+
+void DeviceService::setState8(uint8_t state)
+{
+    if (state != state8)
+    {
+        state8 = state;
+        pending = true;
+    }
+}
+
+void DeviceService::setState9(uint8_t state)
+{
+    if (state != state9)
+    {
+        state9 = state;
         pending = true;
     }
 }
