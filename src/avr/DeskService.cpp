@@ -23,17 +23,9 @@ void DeskService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
-    Serial1.flush();
-    Serial1.print("v1.0.0\n");
-    if (presetHigh != 0xFFFFU)
-    {
-        Serial1.printf("h%u\n", presetHigh);
-    }
-    if (presetLow != 0xFFFFU)
-    {
-        Serial1.printf("l%u\n", presetLow);
-    }
-    Serial1.flush();
+    Serial1.print("Bekant\nv1.0.0\n");
+    console.send(presetHigh <= Encoder::maxLimit && presetHigh >= Encoder::minLimit ? 'h' : 'H', presetHigh);
+    console.send(presetLow <= Encoder::maxLimit && presetLow >= Encoder::minLimit ? 'l' : 'L', presetLow);
     lin.begin();
     constexpr unsigned char data[21U][4U]{
         {0xFFU, 0x7U, 0xFFU, 0xFFU},
@@ -156,9 +148,7 @@ bool DeskService::read()
         {
             encoderA = _encoderA;
             lastMillis = millis();
-            Serial1.write(static_cast<int>('a'));
-            Serial1.print(encoderA);
-            Serial1.write(static_cast<int>('\n'));
+            console.send('a', encoderA);
         }
     }
     else
@@ -179,9 +169,7 @@ bool DeskService::read()
         {
             encoderB = _encoderB;
             lastMillis = millis();
-            Serial1.write(static_cast<int>('b'));
-            Serial1.print(encoderB);
-            Serial1.write(static_cast<int>('\n'));
+            console.send('b', encoderB);
         }
     }
     else
@@ -443,12 +431,14 @@ void DeskService::recalibrate()
  */
 void DeskService::setPresetHigh(unsigned int preset)
 {
-    if (preset != 0U && preset != presetHigh)
+    if (preset != presetHigh && preset <= Encoder::maxLimit && preset >= Encoder::minLimit)
     {
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
-        Serial1.printf("h%u\n", presetHigh);
+        console.send('h', presetHigh);
+        return;
     }
+    console.send('H', preset);
 }
 
 /**
@@ -460,12 +450,14 @@ void DeskService::setPresetHigh(unsigned int preset)
  */
 void DeskService::setPresetLow(unsigned int preset)
 {
-    if (preset != 0U && preset != presetLow)
+    if (preset != presetLow && preset <= Encoder::maxLimit && preset >= Encoder::minLimit)
     {
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
-        Serial1.printf("l%u\n", presetLow);
+        console.send('l', presetLow);
+        return;
     }
+    console.send('L', preset);
 }
 
 /**
@@ -479,7 +471,10 @@ void DeskService::setTarget(unsigned int position)
     {
         encoderTarget = position;
         pending = true;
+        console.send('p', encoderTarget);
+        return;
     }
+    console.send('P', position);
 }
 
 /**

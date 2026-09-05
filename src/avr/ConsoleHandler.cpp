@@ -3,6 +3,7 @@
 #include "avr/ConsoleHandler.h"
 
 #include "avr/DeskService.h"
+#include "avr/constants.h"
 
 #include <HardwareSerial.h>
 
@@ -43,25 +44,46 @@ void ConsoleHandler::handle()
  */
 void ConsoleHandler::process()
 {
-    if (buffer[0U] == 'c')
+    if (length >= 2U)
     {
-        desk.recalibrate();
+        const unsigned int value{parseDigits()};
+        if (value <= Encoder::maxLimit && value >= Encoder::minLimit)
+        {
+            switch (buffer[0U]) // NOLINT(bugprone-switch-missing-default-case)
+            {
+            case 'h':
+                desk.setPresetHigh(value);
+                break;
+            case 'l':
+                desk.setPresetLow(value);
+                break;
+            case 'p':
+                desk.setTarget(value);
+                break;
+            case 't':
+                desk.tone(value);
+                break;
+            }
+        }
+        else if (buffer[0U] == 'h' || buffer[0U] == 'l' || buffer[0U] == 'p' || buffer[0U] == 't')
+        {
+            send(static_cast<char>(buffer[0U] - ' '), value);
+        }
     }
-    else if (buffer[0U] == 'h')
+    else
     {
-        length == 1U ? desk.setTarget(desk.getPresetHigh()) : desk.setPresetHigh(parseDigits());
-    }
-    else if (buffer[0U] == 'l')
-    {
-        length == 1U ? desk.setTarget(desk.getPresetLow()) : desk.setPresetLow(parseDigits());
-    }
-    else if (buffer[0U] == 'p')
-    {
-        desk.setTarget(parseDigits());
-    }
-    else if (buffer[0U] == 't')
-    {
-        desk.tone(parseDigits());
+        switch (buffer[0U]) // NOLINT(bugprone-switch-missing-default-case)
+        {
+        case 'c':
+            desk.recalibrate();
+            break;
+        case 'h':
+            desk.setTarget(desk.getPresetHigh());
+            break;
+        case 'l':
+            desk.setTarget(desk.getPresetLow());
+            break;
+        }
     }
 }
 
@@ -83,6 +105,13 @@ unsigned int ConsoleHandler::parseDigits()
         value += static_cast<unsigned int>(buffer[idx] - '0');
     }
     return value;
+}
+
+void ConsoleHandler::send(char command, unsigned int value)
+{
+    Serial1.write(static_cast<int>(command));
+    Serial1.print(value);
+    Serial1.write(static_cast<int>('\n'));
 }
 
 #endif // ARDUINO_ARCH_AVR
