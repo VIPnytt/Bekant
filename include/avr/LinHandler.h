@@ -28,8 +28,7 @@ private:
     int readWithTimeout(unsigned int &remainingTime);
 
     /**
-     * Calculates the complemented checksum for a byte array.
-     *
+     * Calculates the complemented checksum for a sequence of bytes.
      * @param data Bytes to include in the checksum.
      * @param sum Initial checksum sum.
      * @return The complemented checksum.
@@ -67,8 +66,8 @@ public:
      * Requests a LIN frame and stores its payload in the provided buffer.
      *
      * @param identifier LIN frame identifier to request.
-     * @param data Buffer to populate with the received payload.
-     * @returns `true` if the response is received with a valid checksum, `false` on timeout or checksum failure.
+     * @param data Buffer to receive the frame payload.
+     * @return `true` if a complete frame with a valid checksum is received, `false` on timeout or checksum failure.
      */
     template <unsigned int N> bool request(unsigned char identifier, unsigned char (&data)[N])
     {

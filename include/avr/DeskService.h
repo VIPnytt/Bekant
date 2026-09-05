@@ -75,6 +75,8 @@ private:
 
     /**
      * Reads incoming desk communication data.
+     *
+     * @return `true` if data is received, `false` otherwise.
      */
     [[nodiscard]] bool read();
 

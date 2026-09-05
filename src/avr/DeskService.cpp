@@ -99,7 +99,7 @@ void DeskService::begin()
 }
 
 /**
- * @brief Sends a four-byte LIN command packet and requests a response.
+ * @brief Sends a LIN command packet and requests its response.
  *
  * @param byte1 First command byte.
  * @param byte2 Second command byte.
@@ -116,7 +116,8 @@ bool DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned 
 }
 
 /**
- * @brief Processes encoder updates and handles user input when recalibration is inactive.
+ * @brief Reads encoder data, advances the state machine on successful communication, and handles user input outside
+ * recalibration states.
  */
 void DeskService::handle()
 {
@@ -132,10 +133,12 @@ void DeskService::handle()
 }
 
 /**
- * @brief Polls both desk encoders and updates valid position readings.
+ * @brief Polls both desk encoders and updates their positions and states.
  *
- * Reports changed readings and communication failures, sounding an alert when
- * a failure occurs during a pending movement.
+ * Reports changed positions and communication failures. Cancels pending
+ * movement and sounds an alert when either encoder request fails.
+ *
+ * @return true if both encoder requests succeed, false otherwise.
  */
 bool DeskService::read()
 {
@@ -348,9 +351,9 @@ void DeskService::handleStateDone()
 /**
  * @brief Advances the ongoing recalibration process.
  *
- * Completes recalibration when both nodes report the required state and the
- * encoder readings are within the calibration limit; otherwise, continues
- * issuing the calibration command.
+ * Transitions to the recalibration-complete state when both nodes are ready
+ * and the maximum encoder reading is within the calibration limit; otherwise,
+ * continues recalibration.
  */
 void DeskService::handleStateRecalOngoing()
 {
