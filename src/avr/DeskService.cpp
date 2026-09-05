@@ -128,7 +128,6 @@ void DeskService::handle()
     {
         console.handle();
         button.handle();
-        Serial1.flush();
     }
 }
 
