@@ -337,8 +337,8 @@ std::variant<std::string, std::string_view> DeviceService::printable(std::string
     hex.reserve(hex.size() + (bytes.size() * 2U));
     for (const char byte : bytes)
     {
-        hex += map.at(static_cast<unsigned char>(byte) >> 4U);
-        hex += map.at(static_cast<unsigned char>(byte) & 0xFU);
+        hex += map.at(static_cast<size_t>(byte) >> 4U);
+        hex += map.at(static_cast<size_t>(byte) & 0xFU);
     }
     return hex;
 }
