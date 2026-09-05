@@ -143,8 +143,8 @@ void DeskService::read()
     unsigned char node[3U]{};
     if (lin.request(0x8U, node))
     {
-        const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
-        stateA = nodeA[2U];
+        const unsigned int _encoderA{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U] << 8U)};
+        stateA = node[2U];
         if (_encoderA != encoderA)
         {
             encoderA = _encoderA;
@@ -165,8 +165,8 @@ void DeskService::read()
     }
     if (lin.request(0x9U, node))
     {
-        const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
-        stateB = nodeB[2U];
+        const unsigned int _encoderB{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U] << 8U)};
+        stateB = node[2U];
         if (_encoderB != encoderB)
         {
             encoderB = _encoderB;
