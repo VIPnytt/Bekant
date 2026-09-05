@@ -330,7 +330,8 @@ void DeviceService::transmit(JsonDocument &doc)
  * @brief Converts a byte sequence to printable text.
  *
  * @param bytes Byte sequence to convert.
- * @return The original view when all bytes are printable ASCII; otherwise, an uppercase hexadecimal string prefixed with `0x`.
+ * @return The original view when all bytes are printable ASCII; otherwise, an uppercase hexadecimal string prefixed
+ * with `0x`.
  */
 std::variant<std::string, std::string_view> DeviceService::printable(std::string_view bytes)
 {
