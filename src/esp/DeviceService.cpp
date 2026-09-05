@@ -326,6 +326,13 @@ void DeviceService::transmit(JsonDocument &doc)
     mqtt.transmit(doc);
 }
 
+/**
+ * @brief Converts a byte sequence to printable text.
+ *
+ * @param bytes Byte sequence to convert.
+ * @return The original view when all bytes are printable ASCII; otherwise, an uppercase hexadecimal string prefixed
+ * with `0x`.
+ */
 std::variant<std::string, std::string_view> DeviceService::printable(std::string_view bytes)
 {
     constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -402,12 +409,12 @@ void DeviceService::setDriveUp(bool state)
 }
 
 /**
- * @brief Updates encoder A and marks the device state for publication.
+ * @brief Updates encoder 8 and marks the device state for publication.
  *
- * Changes to the encoder value mark the persistent state as unsaved and update
- * the status indicator based on the active button or drive controls.
+ * A changed position marks the persistent state as unsaved and updates the
+ * status indicator according to the active button or drive controls.
  *
- * @param position New encoder A value.
+ * @param position New encoder 8 position.
  */
 void DeviceService::setEncoder8(uint16_t position)
 {
@@ -517,6 +524,11 @@ void DeviceService::setRx(std::string_view payload)
     }
 }
 
+/**
+ * @brief Updates the state of drive 8.
+ *
+ * @param state New drive state.
+ */
 void DeviceService::setState8(uint8_t state)
 {
     if (state != state8)
@@ -526,6 +538,11 @@ void DeviceService::setState8(uint8_t state)
     }
 }
 
+/**
+ * @brief Updates the motor state for encoder 9.
+ *
+ * @param state New motor state.
+ */
 void DeviceService::setState9(uint8_t state)
 {
     if (state != state9)
