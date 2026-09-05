@@ -18,6 +18,7 @@ private:
 
 public:
     void handle();
+    void send(char command, unsigned int value);
 };
 
 #endif // ARDUINO_ARCH_AVR

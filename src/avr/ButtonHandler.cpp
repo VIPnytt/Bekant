@@ -30,7 +30,9 @@ void ButtonHandler::handle()
         {
             cancel();
         }
-        Serial1.printf("d%u\n", static_cast<unsigned char>(stateDown));
+        Serial1.write(static_cast<int>('d'));
+        Serial1.write(static_cast<int>(stateDown ? '1' : '0'));
+        Serial1.write(static_cast<int>('\n'));
     }
     if (_buttonUp != stateUp)
     {
@@ -44,7 +46,9 @@ void ButtonHandler::handle()
         {
             cancel();
         }
-        Serial1.printf("u%u\n", static_cast<unsigned char>(stateUp));
+        Serial1.write(static_cast<int>('u'));
+        Serial1.write(static_cast<int>(stateUp ? '1' : '0'));
+        Serial1.write(static_cast<int>('\n'));
     }
     process();
 }
