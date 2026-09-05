@@ -86,14 +86,28 @@ void ConsoleHandler::forward()
 /**
  * @brief Interprets a console payload and updates the corresponding device state.
  *
- * @param payload Command containing an encoder value, preset value, button state, or version string.
- * Invalid commands set the device status to red.
+ * @param payload Binary encoder/state data, a version string, or a numeric button or preset command.
+ * Invalid or malformed payloads set the device status to red.
  */
 void ConsoleHandler::parse(std::string_view payload)
 {
     ESP_LOGD("RX", "%.*s", static_cast<int>(payload.size()), payload.data());
     device.setRx(payload);
     const char first{payload.at(0U)};
+    if (first == static_cast<char>(0x8U) && payload.size() == 4U)
+    {
+        device.setEncoder8(static_cast<uint16_t>(payload.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(payload.at(2U)) << 8U));
+        device.setState8(static_cast<uint8_t>(payload.at(3U)));
+        return;
+    }
+    if (first == static_cast<char>(0x9U) && payload.size() == 4U)
+    {
+        device.setEncoder9(static_cast<uint16_t>(payload.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(payload.at(2U)) << 8U));
+        device.setState9(static_cast<uint8_t>(payload.at(3U)));
+        return;
+    }
     if (first == 'v')
     {
         device.setVersion(payload.substr(1U));
@@ -105,12 +119,6 @@ void ConsoleHandler::parse(std::string_view payload)
     {
         switch (first) // NOLINT(hicpp-multiway-paths-covered)
         {
-        case 'a':
-            device.setEncoderA(value);
-            return;
-        case 'b':
-            device.setEncoderB(value);
-            return;
         case 'd':
             device.setButtonDown(value == 1U);
             return;

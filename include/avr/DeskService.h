@@ -54,11 +54,11 @@ private:
 
     bool pending{false};
 
-    unsigned char stateA{0U};
-    unsigned char stateB{0U};
+    unsigned char state8{0U};
+    unsigned char state9{0U};
 
-    unsigned int encoderA{0U};
-    unsigned int encoderB{0U};
+    unsigned int encoder8{0U};
+    unsigned int encoder9{0U};
     unsigned int encoderTarget{0U};
     unsigned int presetHigh{0xFFFFU};
     unsigned int presetLow{0xFFFFU};

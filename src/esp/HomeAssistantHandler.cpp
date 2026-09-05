@@ -67,7 +67,7 @@ void HomeAssistantHandler::controls()
         height[ComponentAbbreviations::device_class].set("distance");
         height[ComponentAbbreviations::icon].set("mdi:desk");
         height[ComponentAbbreviations::json_attributes_template].set(
-            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}}})");
+            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}},"States":{{value_json.states}}})");
         height[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
         height[ComponentAbbreviations::max].set(ReferenceHeight::heightHigh);
         height[ComponentAbbreviations::min].set(ReferenceHeight::heightLow);
@@ -116,7 +116,7 @@ void HomeAssistantHandler::sensors()
         desk[ComponentAbbreviations::device_class].set("distance");
         desk[ComponentAbbreviations::icon].set("mdi:desk");
         desk[ComponentAbbreviations::json_attributes_template].set(
-            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}}})");
+            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}},"States":{{value_json.states}}})");
         desk[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
         desk[ComponentAbbreviations::name].set("Desk");
         desk[ComponentAbbreviations::platform].set("sensor");
@@ -344,7 +344,7 @@ void HomeAssistantHandler::diagnostic()
         offset[ComponentAbbreviations::entity_category].set(entityCategory);
         offset[ComponentAbbreviations::icon].set("mdi:align-vertical-top");
         offset[ComponentAbbreviations::json_attributes_template].set(
-            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}}})");
+            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}},"States":{{value_json.states}}})");
         offset[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
         offset[ComponentAbbreviations::name].set("Offset");
         offset[ComponentAbbreviations::platform].set("sensor");
@@ -359,7 +359,8 @@ void HomeAssistantHandler::diagnostic()
         JsonObject position{discovery[ComponentAbbreviations::components]["encoders"].to<JsonObject>()};
         position[ComponentAbbreviations::entity_category].set(entityCategory);
         position[ComponentAbbreviations::icon].set("mdi:counter");
-        position[ComponentAbbreviations::json_attributes_template].set(R"({"raw":{{value_json.encoders}}})");
+        position[ComponentAbbreviations::json_attributes_template].set(
+            R"({"Encoders":{{value_json.encoders}},"Legs":{{value_json.legs}},"States":{{value_json.states}}})");
         position[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
         position[ComponentAbbreviations::name].set("Position");
         position[ComponentAbbreviations::platform].set("sensor");
