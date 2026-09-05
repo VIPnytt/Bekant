@@ -116,7 +116,8 @@ bool DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned 
 }
 
 /**
- * @brief Reads encoder data, advances the state machine on successful communication, and handles user input outside recalibration states.
+ * @brief Reads encoder data, advances the state machine on successful communication, and handles user input outside
+ * recalibration states.
  */
 void DeskService::handle()
 {

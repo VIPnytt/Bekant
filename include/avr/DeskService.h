@@ -71,15 +71,12 @@ private:
 
     LinHandler lin{};
 
-    /**
- * Reads incoming desk communication data.
- *
- * @return `true` if data is received, `false` otherwise.
- */
-State state{State::IDLE};
+    State state{State::IDLE};
 
     /**
      * Reads incoming desk communication data.
+     *
+     * @return `true` if data is received, `false` otherwise.
      */
     [[nodiscard]] bool read();
 
