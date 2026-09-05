@@ -10,6 +10,7 @@
 #include "esp/WifiHandler.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <variant>
 
 class DeviceService
 {
@@ -22,12 +23,15 @@ private:
     bool reset{false};
     bool saved{true};
 
-    unsigned long lastMillis{0U};
+    uint8_t state8{0U};
+    uint8_t state9{0U};
 
-    uint16_t encoderA{0U};
-    uint16_t encoderB{0U};
+    uint16_t encoder8{0U};
+    uint16_t encoder9{0U};
     uint16_t presetLow{0U};
     uint16_t presetHigh{0U};
+
+    unsigned long lastMillis{0U};
 
     std::string payloadRx{};
     std::string payloadTx{};
@@ -59,6 +63,8 @@ private:
 
     [[nodiscard]] uint16_t encode(float height);
 
+    [[nodiscard]] std::variant<std::string, std::string_view> printable(std::string_view bytes);
+
     static void onInterruptDown();
     static void onInterruptReset();
     static void onInterruptUp();
@@ -74,11 +80,13 @@ public:
     void safeMode();
     void setButtonDown(bool state);
     void setButtonUp(bool state);
-    void setEncoderA(uint16_t encoder);
-    void setEncoderB(uint16_t encoder);
+    void setEncoder8(uint16_t position);
+    void setEncoder9(uint16_t position);
     void setPresetHigh(uint16_t encoder);
     void setPresetLow(uint16_t encoder);
     void setRx(std::string_view payload);
+    void setState8(uint8_t state);
+    void setState9(uint8_t state);
     void setTx(std::string_view payload);
     void setVersion(std::string_view version);
     void statusRed();

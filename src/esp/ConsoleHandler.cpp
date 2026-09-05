@@ -94,7 +94,19 @@ void ConsoleHandler::parse(std::string_view payload)
     ESP_LOGD("RX", "%.*s", static_cast<int>(payload.size()), payload.data());
     device.setRx(payload);
     const char first{payload.at(0U)};
-    if (first == 'v')
+    if (first == static_cast<char>(0x8U) && payload.size() == 4U)
+    {
+        device.setEncoder8(static_cast<uint16_t>(payload.at(1U)) | static_cast<uint16_t>(payload.at(2U)) << 8U);
+        device.setState8(static_cast<uint8_t>(payload.at(3U)));
+        return;
+    }
+    else if (first == static_cast<char>(0x9U) && payload.size() == 4U)
+    {
+        device.setEncoder9(static_cast<uint16_t>(payload.at(1U)) | static_cast<uint16_t>(payload.at(2U)) << 8U);
+        device.setState9(static_cast<uint8_t>(payload.at(3U)));
+        return;
+    }
+    else if (first == 'v')
     {
         device.setVersion(payload.substr(1U));
         return;
@@ -105,12 +117,6 @@ void ConsoleHandler::parse(std::string_view payload)
     {
         switch (first) // NOLINT(hicpp-multiway-paths-covered)
         {
-        case 'a':
-            device.setEncoderA(value);
-            return;
-        case 'b':
-            device.setEncoderB(value);
-            return;
         case 'd':
             device.setButtonDown(value == 1U);
             return;

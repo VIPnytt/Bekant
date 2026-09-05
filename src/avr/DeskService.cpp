@@ -138,51 +138,61 @@ bool DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    unsigned char nodeA[3U]{};
-    unsigned char nodeB[3U]{};
-    const bool validA{lin.request(0x8U, nodeA)};
-    const bool validB{lin.request(0x9U, nodeB)};
-    if (validA)
+    unsigned char node8[3U]{};
+    unsigned char node9[3U]{};
+    const bool valid8{lin.request(0x8U, node8)};
+    const bool valid9{lin.request(0x9U, node9)};
+    if (valid8)
     {
-        const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
-        stateA = nodeA[2U];
-        if (_encoderA != encoderA)
+        const unsigned int _encoder8{static_cast<unsigned int>(node8[0U]) | static_cast<unsigned int>(node8[1U]) << 8U};
+        if (_encoder8 != encoder8 || state8 != node8[2U])
         {
-            encoderA = _encoderA;
-            lastMillis = millis();
-            console.send('a', encoderA);
+            if (_encoder8 != encoder8)
+            {
+                encoder8 = _encoder8;
+                lastMillis = millis();
+            }
+            state8 = node8[2U];
+            Serial1.write(0x8U);
+            Serial1.write(node8, sizeof(node8));
+            Serial1.write(static_cast<unsigned char>('\n'));
         }
     }
     else
     {
-        Serial1.write(static_cast<int>('A'));
-        Serial1.write(static_cast<int>('\n'));
+        Serial1.write(0x8U);
+        Serial1.write(static_cast<unsigned char>('\n'));
         if (pending)
         {
             tone(0b1U << 8U);
         }
     }
-    if (validB)
+    if (valid9)
     {
-        const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
-        stateB = nodeB[2U];
-        if (_encoderB != encoderB)
+        const unsigned int _encoder9{static_cast<unsigned int>(node9[0U]) | static_cast<unsigned int>(node9[1U]) << 8U};
+        if (_encoder9 != encoder9 || state9 != node9[2U])
         {
-            encoderB = _encoderB;
-            lastMillis = millis();
-            console.send('b', encoderB);
+            if (_encoder9 != encoder9)
+            {
+                encoder9 = _encoder9;
+                lastMillis = millis();
+            }
+            state9 = node9[2U];
+            Serial1.write(0x9U);
+            Serial1.write(node9, sizeof(node9));
+            Serial1.write(static_cast<unsigned char>('\n'));
         }
     }
     else
     {
-        Serial1.write(static_cast<int>('B'));
-        Serial1.write(static_cast<int>('\n'));
+        Serial1.write(0x9U);
+        Serial1.write(static_cast<unsigned char>('\n'));
         if (pending)
         {
             tone(0b1U << 8U);
         }
     }
-    if (!validA || !validB)
+    if (!valid8 || !valid9)
     {
         return false;
     }
@@ -240,7 +250,7 @@ void DeskService::process()
  */
 bool DeskService::isIdle() const
 {
-    return (stateA == 0U || stateA == 0x25U || stateA == 0x60U) && (stateB == 0U || stateB == 0x25U || stateB == 0x60U);
+    return (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U);
 }
 
 /**
@@ -350,7 +360,7 @@ void DeskService::handleStateDone()
  */
 void DeskService::handleStateRecalOngoing()
 {
-    if (stateA == 1U && stateB == 1U && getEncoderMax() <= 99U)
+    if (state8 == 1U && state9 == 1U && getEncoderMax() <= 99U)
     {
         state = State::RECAL_DONE;
     }
@@ -487,14 +497,14 @@ void DeskService::setTarget(unsigned int position)
  *
  * @return unsigned int The greater encoder value.
  */
-unsigned int DeskService::getEncoderMax() const { return encoderA > encoderB ? encoderA : encoderB; }
+unsigned int DeskService::getEncoderMax() const { return encoder8 > encoder9 ? encoder8 : encoder9; }
 
 /**
  * @brief Gets the smaller current encoder value.
  *
  * @return unsigned int The lower value reported by the encoder nodes.
  */
-unsigned int DeskService::getEncoderMin() const { return encoderA < encoderB ? encoderA : encoderB; }
+unsigned int DeskService::getEncoderMin() const { return encoder8 < encoder9 ? encoder8 : encoder9; }
 
 /**
  * @brief Retrieves the configured high preset height.
