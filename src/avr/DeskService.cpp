@@ -25,7 +25,7 @@ void DeskService::begin()
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     Serial1.print("Bekant\nv1.0.0\n");
     console.send(presetHigh <= Encoder::maxLimit && presetHigh >= Encoder::minLimit ? 'h' : 'H', presetHigh);
-    console.send(presetHigh <= Encoder::maxLimit && presetHigh >= Encoder::minLimit ? 'l' : 'L', presetLow);
+    console.send(presetLow <= Encoder::maxLimit && presetLow >= Encoder::minLimit ? 'l' : 'L', presetLow);
     lin.begin();
     constexpr unsigned char data[21U][4U]{
         {0xFFU, 0x7U, 0xFFU, 0xFFU},
