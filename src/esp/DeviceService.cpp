@@ -594,7 +594,7 @@ void DeviceService::setVersion(std::string_view avr)
  */
 void DeviceService::statusRed() { status.setRed(); }
 
-void DeviceService::statusNode()
+void DeviceService::statusNode() // NOLINT(readability-make-member-function-const)
 {
     if ((state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U))
     {
