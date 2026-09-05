@@ -420,13 +420,10 @@ void DeviceService::setEncoder8(uint16_t position)
 {
     if (position != encoder8)
     {
-        ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
-         (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
-            ? status.setGreen()
-            : status.setBlue();
         encoder8 = position;
         saved = false;
         pending = true;
+        statusNode();
     }
 }
 
@@ -441,13 +438,10 @@ void DeviceService::setEncoder9(uint16_t position)
 {
     if (position != encoder9)
     {
-        ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
-         (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
-            ? status.setGreen()
-            : status.setBlue();
         encoder9 = position;
         saved = false;
         pending = true;
+        statusNode();
     }
 }
 
@@ -535,6 +529,7 @@ void DeviceService::setState8(uint8_t state)
     {
         state8 = state;
         pending = true;
+        statusNode();
     }
 }
 
@@ -549,6 +544,7 @@ void DeviceService::setState9(uint8_t state)
     {
         state9 = state;
         pending = true;
+        statusNode();
     }
 }
 
@@ -589,6 +585,7 @@ void DeviceService::setVersion(std::string_view avr)
                  "Release notes: https://github.com/VIPnytt/Bekant/releases/v%.*s",
                  static_cast<int>(version.size()),
                  version.data());
+        status.setRed();
     }
 }
 
@@ -596,6 +593,23 @@ void DeviceService::setVersion(std::string_view avr)
  * @brief Sets the status indicator to red.
  */
 void DeviceService::statusRed() { status.setRed(); }
+
+void DeviceService::statusNode()
+{
+    if ((state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U))
+    {
+        status.setWhite(true);
+    }
+    else if ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
+             (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
+    {
+        status.setGreen();
+    }
+    else
+    {
+        status.setBlue();
+    }
+}
 
 /**
  * @brief Checks GitHub for the latest firmware release.

@@ -22,7 +22,7 @@ void StatusHandler::handle()
     }
     else if (millis() - lastMillis > (0b1U << 9U))
     {
-        color.R == 0U && (color.B == 0xFFU || color.G == 0xFFU) ? setWhite(true) : fade();
+        fade();
         lastMillis = millis();
     }
 }
