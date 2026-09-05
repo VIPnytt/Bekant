@@ -133,7 +133,7 @@ private:
      *
      * @return `true` if the service is idle, `false` otherwise.
      */
-    [[nodiscard]] bool isIdle();
+    [[nodiscard]] bool isIdle() const;
 
     /**
      * Sends a four-byte packet.

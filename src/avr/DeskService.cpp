@@ -58,7 +58,7 @@ void DeskService::begin()
         {0xD0U, 0x1U, 0x7U, 0x0U},
         {0xD0U, 0x2U, 0x7U, 0x0U},
     };
-    bool error{false};
+    bool failed{false};
     unsigned char pid{0U};
     for (unsigned char idx{0U}; idx < static_cast<unsigned char>(sizeof(data) / sizeof(data[0U])); ++idx)
     {
@@ -75,7 +75,7 @@ void DeskService::begin()
             }
             if (pid == 8U)
             {
-                error = true;
+                failed = true;
             }
             break;
         case 18U:
@@ -91,7 +91,7 @@ void DeskService::begin()
     }
     constexpr unsigned char magicPacket[3U]{0xF6U, 0xFFU, 0xBFU};
     lin.send(0x12U, magicPacket);
-    if (error)
+    if (failed)
     {
         Serial1.write(static_cast<int>('I'));
         tone(0b1U << 8U);
@@ -140,11 +140,8 @@ void DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    unsigned char nodeA[3U]{};
-    unsigned char nodeB[3U]{};
-    const bool validA{lin.request(0x8U, nodeA)};
-    const bool validB{lin.request(0x9U, nodeB)};
-    if (validA)
+    unsigned char node[3U]{};
+    if (lin.request(0x8U, node))
     {
         const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
         stateA = nodeA[2U];
@@ -165,9 +162,8 @@ void DeskService::read()
         {
             tone(0b1U << 8U);
         }
-        return;
     }
-    if (validB)
+    if (lin.request(0x9U, node))
     {
         const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
         stateB = nodeB[2U];
@@ -188,7 +184,6 @@ void DeskService::read()
         {
             tone(0b1U << 8U);
         }
-        return;
     }
 }
 
@@ -240,7 +235,7 @@ void DeskService::process()
  *
  * @return `true` if both nodes report an idle-compatible status, `false` otherwise.
  */
-bool DeskService::isIdle()
+bool DeskService::isIdle() const
 {
     return (stateA == 0U || stateA == 0x25U || stateA == 0x60U) && (stateB == 0U || stateB == 0x25U || stateB == 0x60U);
 }
