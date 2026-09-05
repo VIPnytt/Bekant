@@ -120,8 +120,10 @@ bool DeskService::sendPacket(unsigned char byte1, unsigned char byte2, unsigned 
  */
 void DeskService::handle()
 {
-    read();
-    process();
+    if (read())
+    {
+        process();
+    }
     if (state != State::RECAL_PREPARE && state != State::RECAL_ONGOING && state != State::RECAL_DONE)
     {
         console.handle();
@@ -136,15 +138,18 @@ void DeskService::handle()
  * Reports changed readings and communication failures, sounding an alert when
  * a failure occurs during a pending movement.
  */
-void DeskService::read()
+bool DeskService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     lin.send(0x11U, empty);
-    unsigned char node[3U]{};
-    if (lin.request(0x8U, node))
+    unsigned char nodeA[3U]{};
+    unsigned char nodeB[3U]{};
+    const bool validA{lin.request(0x8U, nodeA)};
+    const bool validB{lin.request(0x9U, nodeB)};
+    if (validA)
     {
-        const unsigned int _encoderA{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U] << 8U)};
-        stateA = node[2U];
+        const unsigned int _encoderA{static_cast<unsigned int>(nodeA[0U]) | static_cast<unsigned int>(nodeA[1U] << 8U)};
+        stateA = nodeA[2U];
         if (_encoderA != encoderA)
         {
             encoderA = _encoderA;
@@ -160,13 +165,14 @@ void DeskService::read()
         Serial1.write(static_cast<int>('\n'));
         if (pending)
         {
+            pending = false;
             tone(0b1U << 8U);
         }
     }
-    if (lin.request(0x9U, node))
+    if (validB)
     {
-        const unsigned int _encoderB{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U] << 8U)};
-        stateB = node[2U];
+        const unsigned int _encoderB{static_cast<unsigned int>(nodeB[0U]) | static_cast<unsigned int>(nodeB[1U] << 8U)};
+        stateB = nodeB[2U];
         if (_encoderB != encoderB)
         {
             encoderB = _encoderB;
@@ -182,9 +188,11 @@ void DeskService::read()
         Serial1.write(static_cast<int>('\n'));
         if (pending)
         {
+            pending = false;
             tone(0b1U << 8U);
         }
     }
+    return validA && validB;
 }
 
 /**

@@ -76,7 +76,7 @@ private:
     /**
      * Reads incoming desk communication data.
      */
-    void read();
+    [[nodiscard]] bool read();
 
     /**
      * Processes the current desk service state.
