@@ -21,6 +21,7 @@ public:
     {
         BUTTON_DOWN,
         BUTTON_UP,
+        CALIBRATE,
         ENCODER8,
         ENCODER9,
         INITIALIZE,
