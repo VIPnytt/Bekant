@@ -108,11 +108,6 @@ void ConsoleHandler::parse(std::string_view payload)
         device.setState9(static_cast<uint8_t>(payload.at(3U)));
         return;
     }
-    if (first == 'v')
-    {
-        device.setVersion(payload.substr(1U));
-        return;
-    }
     uint16_t value{}; // NOLINT(misc-const-correctness)
     const std::from_chars_result result{std::from_chars(payload.data() + 1U, payload.data() + payload.size(), value)};
     if (result.ec == std::errc{} && result.ptr == payload.data() + payload.size())
