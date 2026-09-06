@@ -10,11 +10,11 @@
 #include <wiring.h>
 
 /**
- * @brief Initializes the desk service hardware, stored presets, watchdog, and LIN interface.
+ * @brief Initializes hardware, stored presets, the watchdog, and the LIN interface.
  *
- * Reports the firmware version and preset validity, performs the required LIN initialization
- * sequence, and sends a final initialization packet. On a required LIN initialization failure,
- * reports the error, sounds a tone, and stops initialization early.
+ * Reports the firmware version and stored presets, performs the required LIN initialization sequence,
+ * and sends a final initialization packet. Reports an initialization failure, sounds a tone, and
+ * stops initialization when a required LIN node cannot be reached.
  */
 void DeskService::begin()
 {
@@ -464,9 +464,10 @@ void DeskService::setPresetHigh(unsigned int preset)
 }
 
 /**
- * @brief Stores and reports a new lower desk preset.
+ * @brief Stores and reports the lower desk preset.
  *
- * Zero and unchanged preset values are ignored.
+ * The preset is stored when it differs from the current value and falls within
+ * the encoder limits. The resulting preset value is reported.
  *
  * @param preset Lower desk position to store.
  */
@@ -481,9 +482,9 @@ void DeskService::setPresetLow(unsigned int preset)
 }
 
 /**
- * @brief Sets a valid target position and marks movement as pending.
+ * @brief Sets the target position and marks movement as pending when accepted.
  *
- * @param position Target position to move the desk to. Zero and `0xFFFF` are ignored.
+ * @param position Target position; zero and `0xFFFF` leave the current target unchanged.
  */
 void DeskService::setTarget(unsigned int position)
 {

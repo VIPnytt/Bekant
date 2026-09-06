@@ -10,10 +10,10 @@
 #include <wiring.h>
 
 /**
- * @brief Handles button state transitions and processes the resulting input.
+ * @brief Handles button state changes and processes the resulting input.
  *
- * Updates the press sequence count, records press timing, cancels movement on
- * release, and reports transitions over the serial interface.
+ * Updates the press sequence and timing state, cancels movement when a button
+ * is released, and reports state transitions over the serial interface.
  */
 void ButtonHandler::handle()
 {
