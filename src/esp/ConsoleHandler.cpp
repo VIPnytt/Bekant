@@ -92,7 +92,7 @@ void ConsoleHandler::forward()
  * @param payload Binary encoder/state data, a version string, or a numeric button or preset command.
  * Invalid or malformed payloads set the device status to red.
  */
-void ConsoleHandler::parse()
+void ConsoleHandler::parse() const
 {
     ESP_LOGD("RX", "%.*s", static_cast<int>(rxLength + 1U), rxBuffer.data());
     device.setRx(std::span{rxBuffer}.subspan(0U, static_cast<size_t>(1U + rxLength)));

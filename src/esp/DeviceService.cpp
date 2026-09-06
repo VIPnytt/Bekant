@@ -309,7 +309,7 @@ void DeviceService::transmit(JsonDocument &doc)
     doc["rssi"].set(WiFi.RSSI());
     if (lengthRx != 0U)
     {
-        doc["rx"].set(toHex(std::span<uint8_t>(payloadRx).subspan(0U, lengthRx)));
+        doc["rx"].set(toHex(std::span<const uint8_t>(payloadRx).subspan(0U, lengthRx)));
     }
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
@@ -508,7 +508,7 @@ void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : H
  *
  * @param payload Received payload to store.
  */
-void DeviceService::setRx(const std::span<uint8_t> payload)
+void DeviceService::setRx(std::span<const uint8_t> payload)
 {
     if (lengthRx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadRx.begin()))
     {
@@ -570,7 +570,7 @@ void DeviceService::setTx(std::string_view payload)
  *
  * @param avr AVR firmware version.
  */
-void DeviceService::setVersion(const std::span<uint8_t> avr)
+void DeviceService::setVersion(std::span<const uint8_t> avr)
 {
     std::string _versionAvr{};
     _versionAvr.reserve(avr.size());
@@ -623,7 +623,7 @@ void DeviceService::statusNode() // NOLINT(readability-make-member-function-cons
     }
 }
 
-std::string DeviceService::toHex(const std::span<uint8_t> payload)
+std::string DeviceService::toHex(std::span<const uint8_t> payload)
 {
     constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     std::string hex{};

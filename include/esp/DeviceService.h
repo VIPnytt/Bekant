@@ -68,7 +68,7 @@ private:
 
     [[nodiscard]] uint16_t encode(float height);
 
-    [[nodiscard]] std::string toHex(const std::span<uint8_t> payload);
+    [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
     [[nodiscard]] std::variant<std::string, std::string_view> printable(std::string_view bytes);
 
@@ -91,11 +91,11 @@ public:
     void setEncoder9(uint16_t position);
     void setPresetHigh(uint16_t encoder);
     void setPresetLow(uint16_t encoder);
-    void setRx(const std::span<uint8_t> payload);
+    void setRx(std::span<const uint8_t> payload);
     void setState8(uint8_t state);
     void setState9(uint8_t state);
     void setTx(std::string_view payload);
-    void setVersion(const std::span<uint8_t> payload);
+    void setVersion(std::span<const uint8_t> payload);
     void statusRed();
     void transmit(JsonDocument &doc);
 

@@ -61,7 +61,7 @@ private:
     /**
      * Parses a received console payload.
      */
-    void parse();
+    void parse() const;
 
     /**
      * Records a hardware serial receive error.
