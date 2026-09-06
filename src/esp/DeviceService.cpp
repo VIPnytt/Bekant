@@ -409,10 +409,9 @@ void DeviceService::setDriveUp(bool state)
 }
 
 /**
- * @brief Updates encoder 8 and marks the device state for publication.
+ * @brief Updates encoder 8 and marks the device state for persistence and publication.
  *
- * A changed position marks the persistent state as unsaved and updates the
- * status indicator according to the active button or drive controls.
+ * Updates the status indicator when the encoder value changes.
  *
  * @param position New encoder 8 position.
  */
@@ -563,7 +562,10 @@ void DeviceService::setTx(std::string_view payload)
 }
 
 /**
- * @brief Stores the AVR firmware version and marks device state for publication.
+ * @brief Updates the AVR firmware version and flags device state for publication.
+ *
+ * Sets the status indicator red when the AVR firmware version differs from the
+ * ESP32 firmware version.
  *
  * @param avr AVR firmware version.
  */
@@ -594,6 +596,9 @@ void DeviceService::setVersion(std::string_view avr)
  */
 void DeviceService::statusRed() { status.setRed(); }
 
+/**
+ * @brief Updates the status indicator based on motor states, button input, and drive activity.
+ */
 void DeviceService::statusNode() // NOLINT(readability-make-member-function-const)
 {
     if ((state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U))
