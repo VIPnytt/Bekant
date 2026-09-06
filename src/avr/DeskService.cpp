@@ -26,7 +26,6 @@ void DeskService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
-    Serial1.print("Bekant\nv1.0.0\n");
     console.send(presetHigh <= Encoder::maxLimit && presetHigh >= Encoder::minLimit ? 'h' : 'H', presetHigh);
     console.send(presetLow <= Encoder::maxLimit && presetLow >= Encoder::minLimit ? 'l' : 'L', presetLow);
     lin.begin();

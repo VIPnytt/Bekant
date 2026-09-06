@@ -280,15 +280,6 @@ void DeviceService::transmit(JsonDocument &doc)
     doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
-    if (!versionAvr.empty())
-    {
-        doc["firmware"]["avr"].set(versionAvr);
-    }
-    doc["firmware"]["esp32"].set(version);
-    if (!versionLatest.empty())
-    {
-        doc["firmware"]["latest"].set(versionLatest);
-    }
     const float leg8{decode(static_cast<float>(encoder8))};
     const float leg9{decode(static_cast<float>(encoder9))};
     doc["legs"][0U].set(leg8);
@@ -317,6 +308,11 @@ void DeviceService::transmit(JsonDocument &doc)
     if (payloadTx.size() != 0U)
     {
         std::visit([&doc](const auto &payload) { doc["tx"].set(payload); }, printable(payloadTx));
+    }
+    doc["version"]["installed"].set(version);
+    if (!versionLatest.empty())
+    {
+        doc["version"]["latest"].set(versionLatest);
     }
 #ifdef PIN_ADC
     doc["voltage"].set(
@@ -558,36 +554,6 @@ void DeviceService::setTx(std::string_view payload)
     {
         payloadTx = payload;
         pending = true;
-    }
-}
-
-/**
- * @brief Updates the AVR firmware version and flags device state for publication.
- *
- * Sets the status indicator red when the AVR firmware version differs from the
- * ESP32 firmware version.
- *
- * @param avr AVR firmware version.
- */
-void DeviceService::setVersion(std::string_view avr)
-{
-    if (avr != versionAvr)
-    {
-        versionAvr = avr;
-        pending = true;
-    }
-    if (versionAvr != version)
-    {
-        ESP_LOGW("AVR",
-                 "Firmware update required: %.*s -> %s",
-                 static_cast<int>(version.size()),
-                 version.data(),
-                 versionAvr.c_str());
-        ESP_LOGI("AVR",
-                 "Release notes: https://github.com/VIPnytt/Bekant/releases/v%.*s",
-                 static_cast<int>(version.size()),
-                 version.data());
-        status.setRed();
     }
 }
 

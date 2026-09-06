@@ -35,7 +35,6 @@ private:
 
     std::string payloadRx{};
     std::string payloadTx{};
-    std::string versionAvr{};
     std::string versionLatest{};
 
     std::pair<bool, bool> driveDown{false, false};
@@ -89,7 +88,6 @@ public:
     void setState8(uint8_t state);
     void setState9(uint8_t state);
     void setTx(std::string_view payload);
-    void setVersion(std::string_view version);
     void statusRed();
     void transmit(JsonDocument &doc);
 
