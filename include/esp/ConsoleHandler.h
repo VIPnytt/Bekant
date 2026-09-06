@@ -23,7 +23,6 @@ public:
         STATE8,
         STATE9,
         TONE,
-        VERSION,
     };
 
     /**
