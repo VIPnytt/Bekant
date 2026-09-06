@@ -5,9 +5,8 @@
 /**
  * @brief Updates the status LED and advances its color state periodically.
  *
- * Applies pending color changes immediately; otherwise, after approximately
- * 512 milliseconds, converts solid blue or green to white or fades the
- * current color.
+ * Applies pending color changes immediately and gradually fades the current
+ * color after approximately 512 milliseconds without a pending update.
  */
 void StatusHandler::handle()
 {
