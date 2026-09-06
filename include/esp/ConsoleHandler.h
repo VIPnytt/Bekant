@@ -48,9 +48,10 @@ public:
     void send(std::string_view payload);
 
 private:
-    uint8_t rxBytes{0U};
     uint8_t rxCommand{0U};
     uint8_t rxLength{0U};
+
+    size_t rxBytes{0U};
 
     std::array<uint8_t, 0b1U << 4U> rxBuffer{};
 
