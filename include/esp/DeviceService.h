@@ -37,7 +37,6 @@ private:
     size_t lengthRx{0U};
 
     std::string payloadTx{};
-    std::string versionAvr{};
     std::string versionLatest{};
 
     std::array<uint8_t, 0b1U << 4U> payloadRx{};
@@ -95,7 +94,6 @@ public:
     void setState8(uint8_t state);
     void setState9(uint8_t state);
     void setTx(std::string_view payload);
-    void setVersion(std::span<const uint8_t> payload);
     void statusRed();
     void transmit(JsonDocument &doc);
 

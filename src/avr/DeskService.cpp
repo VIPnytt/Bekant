@@ -26,7 +26,6 @@ void DeskService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
-    console.print(ConsoleHandler::Command::VERSION, "1.0.0");
     console.print(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
     console.print(ConsoleHandler::Command::PRESET_LOW, presetLow);
     lin.begin();

@@ -154,11 +154,6 @@ void ConsoleHandler::parse() const
         device.setState9(rxBuffer.at(1U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::VERSION))
-    {
-        device.setVersion(std::span{rxBuffer}.subspan(1U, rxLength));
-        return;
-    }
     device.statusRed();
 }
 
