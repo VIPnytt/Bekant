@@ -10,6 +10,7 @@
 #include "esp/WifiHandler.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <span>
 #include <variant>
 
 class DeviceService
@@ -33,10 +34,13 @@ private:
 
     unsigned long lastMillis{0U};
 
-    std::string payloadRx{};
+    size_t lengthRx{0U};
+
     std::string payloadTx{};
     std::string versionAvr{};
     std::string versionLatest{};
+
+    std::array<uint8_t, 0b1U << 4U> payloadRx{};
 
     std::pair<bool, bool> driveDown{false, false};
     std::pair<bool, bool> driveUp{false, false};
@@ -64,6 +68,8 @@ private:
 
     [[nodiscard]] uint16_t encode(float height);
 
+    [[nodiscard]] std::string toHex(const std::span<uint8_t> payload);
+
     [[nodiscard]] std::variant<std::string, std::string_view> printable(std::string_view bytes);
 
     static void onInterruptDown();
@@ -85,11 +91,11 @@ public:
     void setEncoder9(uint16_t position);
     void setPresetHigh(uint16_t encoder);
     void setPresetLow(uint16_t encoder);
-    void setRx(std::string_view payload);
+    void setRx(const std::span<uint8_t> payload);
     void setState8(uint8_t state);
     void setState9(uint8_t state);
     void setTx(std::string_view payload);
-    void setVersion(std::string_view version);
+    void setVersion(const std::span<uint8_t> payload);
     void statusRed();
     void transmit(JsonDocument &doc);
 

@@ -307,9 +307,9 @@ void DeviceService::transmit(JsonDocument &doc)
     }
     doc["reset"].set(reset);
     doc["rssi"].set(WiFi.RSSI());
-    if (payloadRx.size() != 0U)
+    if (lengthRx != 0U)
     {
-        std::visit([&doc](const auto &payload) { doc["rx"].set(payload); }, printable(payloadRx));
+        doc["rx"].set(toHex(std::span<uint8_t>(payloadRx).subspan(0U, lengthRx)));
     }
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
@@ -508,11 +508,12 @@ void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : H
  *
  * @param payload Received payload to store.
  */
-void DeviceService::setRx(std::string_view payload)
+void DeviceService::setRx(const std::span<uint8_t> payload)
 {
-    if (payload != payloadRx)
+    if (lengthRx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadRx.begin()))
     {
-        payloadRx = payload;
+        lengthRx = payload.size();
+        std::copy(payload.begin(), payload.end(), payloadRx.begin());
         pending = true;
     }
 }
@@ -569,11 +570,17 @@ void DeviceService::setTx(std::string_view payload)
  *
  * @param avr AVR firmware version.
  */
-void DeviceService::setVersion(std::string_view avr)
+void DeviceService::setVersion(const std::span<uint8_t> avr)
 {
-    if (avr != versionAvr)
+    std::string _versionAvr{};
+    _versionAvr.reserve(avr.size());
+    for (const uint8_t byte : avr)
     {
-        versionAvr = avr;
+        _versionAvr += static_cast<char>(byte);
+    }
+    if (_versionAvr != versionAvr)
+    {
+        versionAvr = _versionAvr;
         pending = true;
     }
     if (versionAvr != version)
@@ -614,6 +621,19 @@ void DeviceService::statusNode() // NOLINT(readability-make-member-function-cons
     {
         status.setBlue();
     }
+}
+
+std::string DeviceService::toHex(const std::span<uint8_t> payload)
+{
+    constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    std::string hex{};
+    hex.reserve(payload.size() * 2U);
+    for (const uint8_t byte : payload)
+    {
+        hex += map.at(static_cast<size_t>(byte >> 4U));
+        hex += map.at(static_cast<size_t>(byte & 0xFU));
+    }
+    return hex;
 }
 
 /**

@@ -65,10 +65,6 @@ void ConsoleHandler::process()
                 break;
             }
         }
-        else if (buffer[0U] == 'h' || buffer[0U] == 'l' || buffer[0U] == 'p' || buffer[0U] == 't')
-        {
-            send(static_cast<char>(buffer[0U] - ' '), value);
-        }
     }
     else
     {
@@ -107,11 +103,38 @@ unsigned int ConsoleHandler::parseDigits()
     return value;
 }
 
-void ConsoleHandler::send(char command, unsigned int value)
+void ConsoleHandler::print(Command command, const char *text)
 {
-    Serial1.write(static_cast<int>(command));
-    Serial1.print(value);
-    Serial1.write(static_cast<int>('\n'));
+    Serial1.write((static_cast<unsigned char>(strlen(text) << 4U)) | static_cast<unsigned char>(command));
+    Serial1.print(text);
+}
+
+void ConsoleHandler::print(Command command, unsigned int value)
+{
+    write(command, static_cast<unsigned char>(value & 0xFFU), static_cast<unsigned char>(value >> 8U));
+}
+
+void ConsoleHandler::write(Command command) { Serial1.write(static_cast<unsigned char>(command)); }
+
+void ConsoleHandler::write(Command command, unsigned char byte)
+{
+    Serial1.write((1U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write(byte);
+}
+
+void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char byte2)
+{
+    Serial1.write((2U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write(byte1);
+    Serial1.write(byte2);
+}
+
+void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char byte2, unsigned char byte3)
+{
+    Serial1.write((3U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write(byte1);
+    Serial1.write(byte2);
+    Serial1.write(byte3);
 }
 
 #endif // ARDUINO_ARCH_AVR
