@@ -58,6 +58,7 @@ private:
     void setDriveUp(bool state);
     void setOutputEnable(bool state);
     void setReset(bool state);
+    void statusNode();
 
     [[nodiscard]] float decode(float encoder);
 
