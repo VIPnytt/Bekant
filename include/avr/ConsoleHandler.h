@@ -36,7 +36,6 @@ public:
     };
 
     void handle();
-    void print(Command command, const char *text);
     void print(Command command, unsigned int value);
     void write(Command command);
     void write(Command command, unsigned char byte);

@@ -94,7 +94,6 @@ void ConsoleHandler::forward()
  */
 void ConsoleHandler::parse() const
 {
-    ESP_LOGD("RX", "%.*s", static_cast<int>(rxLength + 1U), rxBuffer.data());
     device.setRx(std::span{rxBuffer}.subspan(0U, static_cast<size_t>(1U + rxLength)));
     if (rxCommand == static_cast<uint8_t>(Command::BUTTON_DOWN) && rxLength == 1U)
     {

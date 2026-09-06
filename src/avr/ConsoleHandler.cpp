@@ -103,12 +103,6 @@ unsigned int ConsoleHandler::parseDigits()
     return value;
 }
 
-void ConsoleHandler::print(Command command, const char *text)
-{
-    Serial1.write((static_cast<unsigned char>(strlen(text) << 4U)) | static_cast<unsigned char>(command));
-    Serial1.print(text);
-}
-
 void ConsoleHandler::print(Command command, unsigned int value)
 {
     write(command, static_cast<unsigned char>(value & 0xFFU), static_cast<unsigned char>(value >> 8U));
