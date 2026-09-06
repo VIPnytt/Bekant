@@ -19,9 +19,7 @@ void ConsoleHandler::begin()
 }
 
 /**
- * @brief Processes serial input, completed messages, and UART receive errors.
- *
- * Forwards primary-serial input when no secondary-serial data or receive error is available.
+ * @brief Processes one secondary-serial byte, a pending UART error, or primary-serial input.
  */
 void ConsoleHandler::handle()
 {
@@ -87,10 +85,9 @@ void ConsoleHandler::forward()
 }
 
 /**
- * @brief Interprets a console payload and updates the corresponding device state.
+ * @brief Interprets the buffered console frame and updates the corresponding device state.
  *
- * @param payload Binary encoder/state data, a version string, or a numeric button or preset command.
- * Invalid or malformed payloads set the device status to red.
+ * Invalid command and payload-length combinations set the device status to red.
  */
 void ConsoleHandler::parse() const
 {
