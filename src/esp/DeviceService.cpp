@@ -293,7 +293,7 @@ void DeviceService::transmit(JsonDocument &doc)
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
     doc["temperature"].set(temperatureRead());
-    if (payloadTx.size() != 0U)
+    if (lengthTx != 0U)
     {
         doc["tx"].set(toHex(std::span<const uint8_t>(payloadTx).subspan(0U, lengthTx)));
     }
@@ -515,7 +515,8 @@ void DeviceService::setState9(uint8_t state)
  */
 void DeviceService::setTx(std::span<const uint8_t> payload)
 {
-    if (lengthTx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadTx.begin()))
+    if (payload.size() <= payloadTx.size() &&
+        (lengthTx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadTx.begin())))
     {
         lengthTx = payload.size();
         std::copy(payload.begin(), payload.end(), payloadTx.begin());

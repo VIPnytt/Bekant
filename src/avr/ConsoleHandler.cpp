@@ -46,7 +46,11 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == static_cast<unsigned char>(Command::POSITION) && lengthRx == 2U)
     {
-        desk.setTarget(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        const uint16_t target{static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U};
+        if (target <= Encoder::maxLimit && target >= Encoder::minLimit)
+        {
+            desk.setTarget(target);
+        }
     }
     else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 0U)
     {
