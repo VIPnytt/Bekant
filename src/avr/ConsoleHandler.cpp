@@ -8,100 +8,71 @@
 #include <HardwareSerial.h>
 
 /**
- * @brief Buffers serial input and parses each completed newline-terminated command.
+ * @brief Buffers a serial command and parses it when its complete payload is received.
  *
- * Discards empty lines and prevents writes beyond the command buffer capacity.
+ * The first byte specifies the payload length and command identifier.
  */
 void ConsoleHandler::handle()
 {
     const int byte{Serial1.read()};
-    if (byte == static_cast<int>('\n') && length != 0U)
+    if (byte != -1)
     {
-        if (length <= sizeof(buffer))
+        if (lengthRx == 0U)
         {
-            process();
+            lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
+            commandRx = static_cast<unsigned char>(byte) & 0x0FU;
+            bytesRx = 0U;
         }
-        length = 0U;
-    }
-    else if (byte != -1 && byte != static_cast<int>('\n'))
-    {
-        if (length < sizeof(buffer))
+        bufferRx[bytesRx++] = static_cast<unsigned char>(byte);
+        if (bytesRx == lengthRx + 1U)
         {
-            buffer[length++] = static_cast<char>(byte);
-        }
-        else if (length == sizeof(buffer))
-        {
-            ++length;
+            parse();
+            lengthRx = 0U;
         }
     }
 }
 
 /**
- * @brief Applies the buffered serial command when it is valid.
+ * @brief Applies the buffered command when its command and payload are valid.
  *
- * Numeric commands update presets, the target, or tone frequency within the
- * encoder limits. Single-character commands recalibrate or move to a stored
- * preset; unsupported or out-of-range commands are ignored.
+ * Recalibrates, updates the target or presets, or sets the tone frequency.
+ * Position targets outside the encoder limits and unsupported command or payload
+ * combinations are ignored.
  */
-void ConsoleHandler::process()
+void ConsoleHandler::parse()
 {
-    if (length >= 2U)
+    if (commandRx == static_cast<unsigned char>(Command::CALIBRATE) && lengthRx == 0U)
     {
-        const unsigned int value{parseDigits()};
-        if (value <= Encoder::maxLimit && value >= Encoder::minLimit)
+        desk.recalibrate();
+    }
+    else if (commandRx == static_cast<unsigned char>(Command::POSITION) && lengthRx == 2U)
+    {
+        const uint16_t target{static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U};
+        if (target <= Encoder::maxLimit && target >= Encoder::minLimit)
         {
-            switch (buffer[0U]) // NOLINT(bugprone-switch-missing-default-case)
-            {
-            case 'h':
-                desk.setPresetHigh(value);
-                break;
-            case 'l':
-                desk.setPresetLow(value);
-                break;
-            case 'p':
-                desk.setTarget(value);
-                break;
-            case 't':
-                desk.tone(value);
-                break;
-            }
+            desk.setTarget(target);
         }
     }
-    else
+    else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 0U)
     {
-        switch (buffer[0U]) // NOLINT(bugprone-switch-missing-default-case)
-        {
-        case 'c':
-            desk.recalibrate();
-            break;
-        case 'h':
-            desk.setTarget(desk.getPresetHigh());
-            break;
-        case 'l':
-            desk.setTarget(desk.getPresetLow());
-            break;
-        }
+        desk.setTarget(desk.getPresetHigh());
     }
-}
-
-/**
- * @brief Parses the numeric characters following the first character in the command buffer.
- *
- * @return The parsed unsigned integer, or zero if the suffix contains a non-digit character.
- */
-unsigned int ConsoleHandler::parseDigits()
-{
-    unsigned int value{0U};
-    for (unsigned char idx{1U}; idx < length; ++idx)
+    else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 2U)
     {
-        if (buffer[idx] < '0' || buffer[idx] > '9')
-        {
-            return 0U;
-        }
-        value *= 10U;
-        value += static_cast<unsigned int>(buffer[idx] - '0');
+        desk.setPresetHigh(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
     }
-    return value;
+    else if (commandRx == static_cast<unsigned char>(Command::PRESET_LOW) && lengthRx == 0U)
+    {
+        desk.setTarget(desk.getPresetLow());
+    }
+    else if (commandRx == static_cast<unsigned char>(Command::PRESET_LOW) && lengthRx == 2U)
+    {
+        desk.setPresetLow(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+    }
+    else if (commandRx == static_cast<unsigned char>(Command::TONE) && lengthRx == 2U)
+    {
+        desk.tone(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+    }
 }
 
 /**

@@ -271,11 +271,9 @@ void DeskService::handleStateIdle()
     if (pending && isIdle())
     {
         state = State::PREPARE;
+        return;
     }
-    else
-    {
-        sendCommand(Command::IDLE);
-    }
+    sendCommand(Command::IDLE);
 }
 
 /**

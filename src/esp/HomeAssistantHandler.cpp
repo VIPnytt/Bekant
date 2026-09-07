@@ -393,7 +393,8 @@ void HomeAssistantHandler::diagnostic()
         serialTx[ComponentAbbreviations::platform].set("sensor");
         serialTx[ComponentAbbreviations::state_topic].set(stateTopic);
         serialTx[ComponentAbbreviations::unique_id].set("tx");
-        serialTx[ComponentAbbreviations::value_template].set("{{value_json.tx}}");
+        serialTx[ComponentAbbreviations::value_template].set(
+            R"({%for i in range(0,value_json.tx|length,2)%}{{value_json.tx[i:i+2]}} {%endfor%})");
     }
     {
         JsonObject temperature{discovery[ComponentAbbreviations::components]["temperature"].to<JsonObject>()};

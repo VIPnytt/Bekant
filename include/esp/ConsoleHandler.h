@@ -3,6 +3,7 @@
 #ifdef ARDUINO_ARCH_ESP32
 
 #include <HardwareSerial.h>
+#include <span>
 #include <string>
 
 class ConsoleHandler
@@ -41,21 +42,20 @@ public:
      */
     void forward();
 
-    /**
-     * Transmits a console payload.
-     * @param payload Payload to transmit.
-     */
-    void send(std::string_view payload);
+    void send(Command command);
+    void send(Command command, uint16_t value);
 
 private:
-    uint8_t rxCommand{0U};
-    uint8_t rxLength{0U};
+    uint8_t commandRx{0U};
+    uint8_t commandTx{0U};
 
-    size_t rxBytes{0U};
+    size_t bytesRx{0U};
+    size_t bytesTx{0U};
+    size_t lengthRx{0U};
+    size_t lengthTx{0U};
 
-    std::array<uint8_t, 0b1U << 4U> rxBuffer{};
-
-    std::string txBuffer{};
+    std::array<uint8_t, 0b1U << 4U> bufferRx{0U};
+    std::array<uint8_t, 0b1U << 4U> bufferTx{0U};
 
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
@@ -63,6 +63,7 @@ private:
      * Parses a received console payload.
      */
     void parse() const;
+    void write(std::span<const uint8_t> payload);
 
     /**
      * Records a hardware serial receive error.
