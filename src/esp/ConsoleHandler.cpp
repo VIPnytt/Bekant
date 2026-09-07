@@ -27,18 +27,17 @@ void ConsoleHandler::handle()
     if (byte != -1)
     {
         ESP_LOGV("RX", "0x%X", byte);
-        if (rxLength == 0U)
+        if (lengthRx == 0U)
         {
-            const uint8_t length{static_cast<uint8_t>(static_cast<uint8_t>(byte) >> 4U)};
-            rxLength = length;
-            rxCommand = static_cast<uint8_t>(byte) & 0x0FU;
-            rxBytes = 0U;
+            lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
+            commandRx = static_cast<uint8_t>(byte) & 0x0FU;
+            bytesRx = 0U;
         }
-        rxBuffer.at(rxBytes++) = static_cast<uint8_t>(byte);
-        if (rxBytes == rxLength + 1U)
+        bufferRx.at(bytesRx++) = static_cast<uint8_t>(byte);
+        if (bytesRx == lengthRx + 1U)
         {
             parse();
-            rxLength = 0U;
+            lengthRx = 0U;
         }
     }
     else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)
@@ -68,18 +67,17 @@ void ConsoleHandler::forward()
     if (byte != -1)
     {
         ESP_LOGV("TX", "0x%X", byte);
-        const size_t length{txBuffer.size()};
-        if (byte == static_cast<int>('\n') && length != 0U)
+        if (lengthTx == 0U)
         {
-            if (length <= 0b1U << 3U)
-            {
-                send(txBuffer);
-            }
-            txBuffer.clear();
+            lengthTx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
+            commandTx = static_cast<uint8_t>(byte) & 0x0FU;
+            bytesTx = 0U;
         }
-        else if (byte != static_cast<int>('\n') && byte != static_cast<int>('\r') && length <= 0b1U << 3U)
+        bufferTx.at(bytesTx++) = static_cast<uint8_t>(byte);
+        if (bytesTx == lengthTx + 1U)
         {
-            txBuffer += static_cast<char>(byte);
+            write(std::span{bufferTx}.subspan(0U, lengthTx + 1U));
+            lengthTx = 0U;
         }
     }
 }
@@ -91,79 +89,92 @@ void ConsoleHandler::forward()
  */
 void ConsoleHandler::parse() const
 {
-    device.setRx(std::span{rxBuffer}.subspan(0U, static_cast<size_t>(1U + rxLength)));
-    if (rxCommand == static_cast<uint8_t>(Command::BUTTON_DOWN) && rxLength == 1U)
+    device.setRx(std::span{bufferRx}.subspan(0U, lengthRx + 1U));
+    if (commandRx == static_cast<uint8_t>(Command::BUTTON_DOWN) && lengthRx == 1U)
     {
-        device.setButtonDown(static_cast<bool>(rxBuffer.at(1U)));
+        device.setButtonDown(static_cast<bool>(bufferRx.at(1U)));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::BUTTON_UP) && rxLength == 1U)
+    if (commandRx == static_cast<uint8_t>(Command::BUTTON_UP) && lengthRx == 1U)
     {
-        device.setButtonUp(static_cast<bool>(rxBuffer.at(1U)));
+        device.setButtonUp(static_cast<bool>(bufferRx.at(1U)));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::ENCODER8) && rxLength == 2U)
+    if (commandRx == static_cast<uint8_t>(Command::ENCODER8) && lengthRx == 2U)
     {
-        device.setEncoder8(static_cast<uint16_t>(rxBuffer.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(rxBuffer.at(2U)) << 8U));
+        device.setEncoder8(static_cast<uint16_t>(bufferRx.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::ENCODER9) && rxLength == 2U)
+    if (commandRx == static_cast<uint8_t>(Command::ENCODER9) && lengthRx == 2U)
     {
-        device.setEncoder9(static_cast<uint16_t>(rxBuffer.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(rxBuffer.at(2U)) << 8U));
+        device.setEncoder9(static_cast<uint16_t>(bufferRx.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::NODE8) && rxLength == 3U)
+    if (commandRx == static_cast<uint8_t>(Command::NODE8) && lengthRx == 3U)
     {
-        device.setEncoder8(static_cast<uint16_t>(rxBuffer.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(rxBuffer.at(2U)) << 8U));
-        device.setState8(rxBuffer.at(3U));
+        device.setEncoder8(static_cast<uint16_t>(bufferRx.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        device.setState8(bufferRx.at(3U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::NODE9) && rxLength == 3U)
+    if (commandRx == static_cast<uint8_t>(Command::NODE9) && lengthRx == 3U)
     {
-        device.setEncoder9(static_cast<uint16_t>(rxBuffer.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(rxBuffer.at(2U)) << 8U));
-        device.setState9(rxBuffer.at(3U));
+        device.setEncoder9(static_cast<uint16_t>(bufferRx.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        device.setState9(bufferRx.at(3U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::PRESET_HIGH) && rxLength == 2U)
+    if (commandRx == static_cast<uint8_t>(Command::PRESET_HIGH) && lengthRx == 2U)
     {
-        device.setPresetHigh(static_cast<uint16_t>(rxBuffer.at(1U)) |
-                             static_cast<uint16_t>(static_cast<uint16_t>(rxBuffer.at(2U)) << 8U));
+        device.setPresetHigh(static_cast<uint16_t>(bufferRx.at(1U)) |
+                             static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::PRESET_LOW) && rxLength == 2U)
+    if (commandRx == static_cast<uint8_t>(Command::PRESET_LOW) && lengthRx == 2U)
     {
-        device.setPresetLow(static_cast<uint16_t>(rxBuffer.at(1U)) |
-                            static_cast<uint16_t>(static_cast<uint16_t>(rxBuffer.at(2U)) << 8U));
+        device.setPresetLow(static_cast<uint16_t>(bufferRx.at(1U)) |
+                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::STATE8) && rxLength == 1U)
+    if (commandRx == static_cast<uint8_t>(Command::STATE8) && lengthRx == 1U)
     {
-        device.setState8(rxBuffer.at(1U));
+        device.setState8(bufferRx.at(1U));
         return;
     }
-    if (rxCommand == static_cast<uint8_t>(Command::STATE9) && rxLength == 1U)
+    if (commandRx == static_cast<uint8_t>(Command::STATE9) && lengthRx == 1U)
     {
-        device.setState9(rxBuffer.at(1U));
+        device.setState9(bufferRx.at(1U));
         return;
     }
     device.statusRed();
 }
 
-/**
- * @brief Transmits a newline-terminated payload over the secondary serial interface.
- *
- * @param payload Message to transmit without the terminating newline.
- */
-void ConsoleHandler::send(std::string_view payload)
+void ConsoleHandler::send(Command command)
 {
-    ESP_LOGD("TX", "%.*s", static_cast<int>(payload.size()), payload.data());
-    Serial1.write(payload.data(), payload.size());
-    Serial1.write('\n');
+    const std::array<uint8_t, 1U> payload{static_cast<uint8_t>(command)};
+    write(payload);
+}
+
+void ConsoleHandler::send(Command command, uint16_t value)
+{
+    const std::array<uint8_t, 3U> payload{
+        static_cast<uint8_t>((2U << 4U) | static_cast<uint8_t>(command)),
+        static_cast<uint8_t>(value & 0xFFU),
+        static_cast<uint8_t>(value >> 8U),
+    };
+    write(payload);
+}
+
+void ConsoleHandler::write(std::span<const uint8_t> payload)
+{
     device.setTx(payload);
+    device.statusWhite();
+    for (const uint8_t byte : payload)
+    {
+        Serial1.write(byte);
+    }
 }
 
 /**

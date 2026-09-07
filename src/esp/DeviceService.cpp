@@ -168,8 +168,7 @@ void DeviceService::request(JsonObjectConst doc)
         const std::string_view action{doc["action"].as<std::string_view>()};
         if (action == "calibrate")
         {
-            status.setWhite();
-            console.send("c");
+            console.send(ConsoleHandler::Command::CALIBRATE);
         }
         else if (action == "restart")
         {
@@ -191,8 +190,7 @@ void DeviceService::request(JsonObjectConst doc)
     if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["desk"].as<float>() >= ReferenceHeight::heightLow)
     {
-        status.setWhite();
-        console.send("p" + std::to_string(static_cast<int>(encode(doc["desk"].as<float>()))));
+        console.send(ConsoleHandler::Command::POSITION, encode(doc["desk"].as<float>()));
     }
     if (doc["oe"].is<bool>())
     {
@@ -200,25 +198,21 @@ void DeviceService::request(JsonObjectConst doc)
     }
     if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
     {
-        status.setWhite();
-        console.send("h");
+        console.send(ConsoleHandler::Command::PRESET_HIGH);
     }
     if (doc["preset"]["high"].is<float>() && doc["preset"]["high"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["preset"]["high"].as<float>() >= ReferenceHeight::heightLow)
     {
-        status.setWhite();
-        console.send("h" + std::to_string(static_cast<int>(encode(doc["preset"]["high"].as<float>()))));
+        console.send(ConsoleHandler::Command::PRESET_HIGH, encode(doc["preset"]["high"].as<float>()));
     }
     if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
     {
-        status.setWhite();
-        console.send("l");
+        console.send(ConsoleHandler::Command::PRESET_LOW);
     }
     if (doc["preset"]["low"].is<float>() && doc["preset"]["low"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["preset"]["low"].as<float>() >= ReferenceHeight::heightLow)
     {
-        status.setWhite();
-        console.send("l" + std::to_string(static_cast<int>(encode(doc["preset"]["low"].as<float>()))));
+        console.send(ConsoleHandler::Command::PRESET_LOW, encode(doc["preset"]["low"].as<float>()));
     }
     if (doc["reset"].is<bool>())
     {
@@ -226,13 +220,7 @@ void DeviceService::request(JsonObjectConst doc)
     }
     if (doc["tone"].is<uint16_t>() && doc["tone"].as<uint16_t>() != 0U)
     {
-        status.setWhite();
-        console.send("t" + std::to_string(doc["tone"].as<uint16_t>()));
-    }
-    if (doc["tx"].is<std::string_view>())
-    {
-        status.setWhite();
-        console.send(doc["tx"].as<std::string_view>());
+        console.send(ConsoleHandler::Command::TONE, doc["tone"].as<uint16_t>());
     }
 }
 
@@ -307,7 +295,7 @@ void DeviceService::transmit(JsonDocument &doc)
     doc["temperature"].set(temperatureRead());
     if (payloadTx.size() != 0U)
     {
-        std::visit([&doc](const auto &payload) { doc["tx"].set(payload); }, printable(payloadTx));
+        doc["tx"].set(toHex(std::span<const uint8_t>(payloadTx).subspan(0U, lengthTx)));
     }
     doc["version"]["installed"].set(version);
     if (!versionLatest.empty())
@@ -320,30 +308,6 @@ void DeviceService::transmit(JsonDocument &doc)
         static_cast<float>(Voltage::resistanceGnd) / 1'000.0F);
 #endif // PIN_ADC
     mqtt.transmit(doc);
-}
-
-/**
- * @brief Converts a byte sequence to printable text.
- *
- * @param bytes Byte sequence to convert.
- * @return The original view when all bytes are printable ASCII; otherwise, an uppercase hexadecimal string prefixed
- * with `0x`.
- */
-std::variant<std::string, std::string_view> DeviceService::printable(std::string_view bytes)
-{
-    constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-    if (std::all_of(bytes.begin(), bytes.end(), [](const char byte) { return byte >= ' ' && byte <= '~'; }))
-    {
-        return bytes;
-    }
-    std::string hex{"0x"};
-    hex.reserve(hex.size() + (bytes.size() * 2U));
-    for (const char byte : bytes)
-    {
-        hex += map.at(static_cast<size_t>(byte) >> 4U);
-        hex += map.at(static_cast<size_t>(byte) & 0xFU);
-    }
-    return hex;
 }
 
 /**
@@ -549,11 +513,12 @@ void DeviceService::setState9(uint8_t state)
  *
  * @param payload Transmitted serial payload.
  */
-void DeviceService::setTx(std::string_view payload)
+void DeviceService::setTx(std::span<const uint8_t> payload)
 {
-    if (payload != payloadTx)
+    if (lengthTx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadTx.begin()))
     {
-        payloadTx = payload;
+        lengthTx = payload.size();
+        std::copy(payload.begin(), payload.end(), payloadTx.begin());
         pending = true;
     }
 }
@@ -562,6 +527,11 @@ void DeviceService::setTx(std::string_view payload)
  * @brief Sets the status indicator to red.
  */
 void DeviceService::statusRed() { status.setRed(); }
+
+/**
+ * @brief Sets the status indicator to white.
+ */
+void DeviceService::statusWhite() { status.setWhite(); }
 
 /**
  * @brief Updates the status indicator based on motor states, button input, and drive activity.

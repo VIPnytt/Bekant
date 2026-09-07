@@ -11,7 +11,6 @@
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <span>
-#include <variant>
 
 class DeviceService
 {
@@ -35,11 +34,12 @@ private:
     unsigned long lastMillis{0U};
 
     size_t lengthRx{0U};
+    size_t lengthTx{0U};
 
-    std::string payloadTx{};
     std::string versionLatest{};
 
     std::array<uint8_t, 0b1U << 4U> payloadRx{};
+    std::array<uint8_t, 0b1U << 4U> payloadTx{};
 
     std::pair<bool, bool> driveDown{false, false};
     std::pair<bool, bool> driveUp{false, false};
@@ -69,8 +69,6 @@ private:
 
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
-    [[nodiscard]] std::variant<std::string, std::string_view> printable(std::string_view bytes);
-
     static void onInterruptDown();
     static void onInterruptReset();
     static void onInterruptUp();
@@ -93,8 +91,9 @@ public:
     void setRx(std::span<const uint8_t> payload);
     void setState8(uint8_t state);
     void setState9(uint8_t state);
-    void setTx(std::string_view payload);
+    void setTx(std::span<const uint8_t> payload);
     void statusRed();
+    void statusWhite();
     void transmit(JsonDocument &doc);
 
     static DeviceService &getInstance();

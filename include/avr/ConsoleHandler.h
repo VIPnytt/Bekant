@@ -10,11 +10,14 @@ class ConsoleHandler
 private:
     char buffer[5U]{0};
 
-    unsigned char length{0U};
+    unsigned char commandRx{0U};
+    unsigned char lengthRx{0U};
 
-    void process();
+    unsigned char bufferRx[0b1U << 4U]{0U};
 
-    unsigned int parseDigits();
+    unsigned int bytesRx{0U};
+
+    void parse();
 
 public:
     enum class Command : unsigned char
