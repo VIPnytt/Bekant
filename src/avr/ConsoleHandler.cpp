@@ -47,8 +47,7 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == static_cast<unsigned char>(Command::POSITION) && lengthRx == 2U)
     {
-        desk.setTarget(static_cast<unsigned int>(bufferRx[1U]) |
-                       static_cast<unsigned int>(static_cast<unsigned int>(bufferRx[2U]) << 8U));
+        desk.setTarget(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
     }
     else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 0U)
     {
@@ -56,8 +55,7 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 2U)
     {
-        desk.setPresetHigh(static_cast<unsigned int>(bufferRx[1U]) |
-                           static_cast<unsigned int>(static_cast<unsigned int>(bufferRx[2U]) << 8U));
+        desk.setPresetHigh(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
     }
     else if (commandRx == static_cast<unsigned char>(Command::PRESET_LOW) && lengthRx == 0U)
     {
@@ -65,13 +63,11 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == static_cast<unsigned char>(Command::PRESET_LOW) && lengthRx == 2U)
     {
-        desk.setPresetLow(static_cast<unsigned int>(bufferRx[1U]) |
-                          static_cast<unsigned int>(static_cast<unsigned int>(bufferRx[2U]) << 8U));
+        desk.setPresetLow(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
     }
     else if (commandRx == static_cast<unsigned char>(Command::TONE) && lengthRx == 2U)
     {
-        desk.tone(static_cast<unsigned int>(bufferRx[1U]) |
-                  static_cast<unsigned int>(static_cast<unsigned int>(bufferRx[2U]) << 8U));
+        desk.tone(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
     }
 }
 
