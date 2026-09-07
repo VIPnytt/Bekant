@@ -156,8 +156,9 @@ uint16_t DeviceService::encode(float height)
 /**
  * @brief Processes device commands from a JSON request.
  *
- * Handles calibration, restart, desk height, preset, drive-button, output-enable, reset, and raw transmission
- * commands.
+ * Handles calibration, restart, desk positioning, preset updates, drive controls,
+ * output enable, reset, and tone commands. Height values are accepted only within
+ * the configured reference range.
  *
  * @param doc JSON object containing the commands to process.
  */
@@ -509,9 +510,9 @@ void DeviceService::setState9(uint8_t state)
 }
 
 /**
- * @brief Stores the most recently transmitted serial payload.
+ * @brief Updates the stored transmitted serial payload.
  *
- * @param payload Transmitted serial payload.
+ * @param payload Bytes to store as the transmitted payload.
  */
 void DeviceService::setTx(std::span<const uint8_t> payload)
 {
