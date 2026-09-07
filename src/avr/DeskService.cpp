@@ -26,8 +26,8 @@ void DeskService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
-    console.print(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
-    console.print(ConsoleHandler::Command::PRESET_LOW, presetLow);
+    console.print(ConsoleHandler::State::PRESET_HIGH, presetHigh);
+    console.print(ConsoleHandler::State::PRESET_LOW, presetLow);
     lin.begin();
     constexpr unsigned char data[21U][4U]{
         {0xFFU, 0x7U, 0xFFU, 0xFFU},
@@ -68,7 +68,7 @@ void DeskService::begin()
             }
             if (pid == 8U)
             {
-                console.write(ConsoleHandler::Command::INITIALIZE);
+                console.write(ConsoleHandler::State::INITIALIZE);
                 tone(0b1U << 8U);
                 return;
             }
@@ -149,23 +149,23 @@ bool DeskService::read()
             encoder8 = _encoder8;
             state8 = node8[2U];
             lastMillis = millis();
-            console.write(ConsoleHandler::Command::NODE8, node8[0U], node8[1U], node8[2U]);
+            console.write(ConsoleHandler::State::NODE8, node8[0U], node8[1U], node8[2U]);
         }
         else if (_encoder8 != encoder8)
         {
             encoder8 = _encoder8;
             lastMillis = millis();
-            console.write(ConsoleHandler::Command::ENCODER8, node8[0U], node8[1U]);
+            console.write(ConsoleHandler::State::ENCODER8, node8[0U], node8[1U]);
         }
         else if (state8 != node8[2U])
         {
             state8 = node8[2U];
-            console.write(ConsoleHandler::Command::STATE8, node8[2U]);
+            console.write(ConsoleHandler::State::STATE8, node8[2U]);
         }
     }
     else
     {
-        console.write(ConsoleHandler::Command::NODE8);
+        console.write(ConsoleHandler::State::NODE8);
         if (pending)
         {
             tone(0b1U << 8U);
@@ -179,23 +179,23 @@ bool DeskService::read()
             encoder9 = _encoder9;
             state9 = node9[2U];
             lastMillis = millis();
-            console.write(ConsoleHandler::Command::NODE9, node9[0U], node9[1U], node9[2U]);
+            console.write(ConsoleHandler::State::NODE9, node9[0U], node9[1U], node9[2U]);
         }
         else if (_encoder9 != encoder9)
         {
             encoder9 = _encoder9;
             lastMillis = millis();
-            console.write(ConsoleHandler::Command::ENCODER9, node9[0U], node9[1U]);
+            console.write(ConsoleHandler::State::ENCODER9, node9[0U], node9[1U]);
         }
         else if (state9 != node9[2U])
         {
             state9 = node9[2U];
-            console.write(ConsoleHandler::Command::STATE9, node9[2U]);
+            console.write(ConsoleHandler::State::STATE9, node9[2U]);
         }
     }
     else
     {
-        console.write(ConsoleHandler::Command::NODE9);
+        console.write(ConsoleHandler::State::NODE9);
         if (pending)
         {
             tone(0b1U << 8U);
@@ -458,7 +458,7 @@ void DeskService::setPresetHigh(unsigned int preset)
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
     }
-    console.print(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
+    console.print(ConsoleHandler::State::PRESET_HIGH, presetHigh);
 }
 
 /**
@@ -476,7 +476,7 @@ void DeskService::setPresetLow(unsigned int preset)
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
     }
-    console.print(ConsoleHandler::Command::PRESET_LOW, presetLow);
+    console.print(ConsoleHandler::State::PRESET_LOW, presetLow);
 }
 
 /**
@@ -491,7 +491,7 @@ void DeskService::setTarget(unsigned int position)
         encoderTarget = position;
         pending = true;
     }
-    console.print(ConsoleHandler::Command::POSITION, encoderTarget);
+    console.print(ConsoleHandler::State::POSITION, encoderTarget);
 }
 
 /**
