@@ -13,7 +13,8 @@
  * @brief Handles button state changes and processes the resulting input.
  *
  * Updates the press sequence and timing state, cancels movement when a button
- * is released, and reports state transitions over the serial interface.
+ * is released, reports state transitions over the serial interface, and
+ * processes the resulting button input.
  */
 void ButtonHandler::handle()
 {

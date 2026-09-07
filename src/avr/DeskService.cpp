@@ -12,9 +12,8 @@
 /**
  * @brief Initializes hardware, stored presets, the watchdog, and the LIN interface.
  *
- * Reports the firmware version and stored presets, performs the required LIN initialization sequence,
- * and sends a final initialization packet. Reports an initialization failure, sounds a tone, and
- * stops initialization when a required LIN node cannot be reached.
+ * Performs the LIN initialization sequence and sends the final initialization packet.
+ * Reports failure and sounds a tone if a required LIN node cannot be reached.
  */
 void DeskService::begin()
 {

@@ -49,6 +49,9 @@ private:
 
     Command command{};
 
+    /**
+     * Parses buffered console input into a command.
+     */
     void parse();
 };
 
