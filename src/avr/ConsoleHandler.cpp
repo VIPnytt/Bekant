@@ -3,6 +3,7 @@
 #include "avr/ConsoleHandler.h"
 
 #include "avr/DeskService.h"
+#include "avr/constants.h"
 
 #include <HardwareSerial.h>
 
