@@ -8,9 +8,9 @@
 #include <HardwareSerial.h>
 
 /**
- * @brief Buffers serial input and parses each completed newline-terminated command.
+ * @brief Buffers a serial command and parses it when its complete payload is received.
  *
- * Discards empty lines and prevents writes beyond the command buffer capacity.
+ * The first byte specifies the payload length and command identifier.
  */
 void ConsoleHandler::handle()
 {
@@ -33,11 +33,11 @@ void ConsoleHandler::handle()
 }
 
 /**
- * @brief Applies the buffered serial command when it is valid.
+ * @brief Applies the buffered command when its command and payload are valid.
  *
- * Numeric commands update presets, the target, or tone frequency within the
- * encoder limits. Single-character commands recalibrate or move to a stored
- * preset; unsupported or out-of-range commands are ignored.
+ * Recalibrates, updates the target or presets, or sets the tone frequency.
+ * Position targets outside the encoder limits and unsupported command or payload
+ * combinations are ignored.
  */
 void ConsoleHandler::parse()
 {

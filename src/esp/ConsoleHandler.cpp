@@ -19,7 +19,7 @@ void ConsoleHandler::begin()
 }
 
 /**
- * @brief Processes one secondary-serial byte, a pending UART error, or primary-serial input.
+ * @brief Processes available secondary-serial data, pending UART errors, or primary-serial input.
  */
 void ConsoleHandler::handle()
 {
@@ -57,9 +57,9 @@ void ConsoleHandler::handle()
 }
 
 /**
- * @brief Forwards a newline-terminated message from the primary serial interface.
+ * @brief Forwards a complete length-prefixed frame from the primary serial interface.
  *
- * Carriage returns are ignored, and messages longer than eight characters are discarded.
+ * Completed frames are transmitted through the secondary serial interface.
  */
 void ConsoleHandler::forward()
 {
@@ -83,7 +83,7 @@ void ConsoleHandler::forward()
 }
 
 /**
- * @brief Interprets the buffered console frame and updates the corresponding device state.
+ * @brief Applies the buffered console frame to the corresponding device state.
  *
  * Invalid command and payload-length combinations set the device status to red.
  */
@@ -151,12 +151,23 @@ void ConsoleHandler::parse() const
     device.statusRed();
 }
 
+/**
+ * @brief Sends a command without an associated value.
+ *
+ * @param command Command to transmit.
+ */
 void ConsoleHandler::send(Command command)
 {
     const std::array<uint8_t, 1U> payload{static_cast<uint8_t>(command)};
     write(payload);
 }
 
+/**
+ * @brief Sends a command with a 16-bit value.
+ *
+ * @param command Command to transmit.
+ * @param value Value associated with the command.
+ */
 void ConsoleHandler::send(Command command, uint16_t value)
 {
     const std::array<uint8_t, 3U> payload{
@@ -167,6 +178,11 @@ void ConsoleHandler::send(Command command, uint16_t value)
     write(payload);
 }
 
+/**
+ * @brief Transmits a framed payload through the secondary serial interface.
+ *
+ * @param payload Bytes to record and transmit.
+ */
 void ConsoleHandler::write(std::span<const uint8_t> payload)
 {
     device.setTx(payload);
