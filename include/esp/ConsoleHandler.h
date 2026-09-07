@@ -11,7 +11,7 @@ class ConsoleHandler
 public:
     enum class Command : uint8_t
     {
-        CALIBRATE,
+        CALIBRATE = 1U,
         POSITION,
         PRESET_HIGH,
         PRESET_LOW,
@@ -20,7 +20,7 @@ public:
 
     enum class State : uint8_t
     {
-        BUTTON_DOWN,
+        BUTTON_DOWN = 1U,
         BUTTON_UP,
         ENCODER8,
         ENCODER9,
