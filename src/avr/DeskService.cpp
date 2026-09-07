@@ -10,11 +10,11 @@
 #include <wiring.h>
 
 /**
- * @brief Initializes the desk service hardware, stored presets, watchdog, and LIN interface.
+ * @brief Initializes hardware, stored presets, the watchdog, and the LIN interface.
  *
- * Reports the firmware version and preset validity, performs the required LIN initialization
- * sequence, and sends a final initialization packet. On a required LIN initialization failure,
- * reports the error, sounds a tone, and stops initialization early.
+ * Reports the firmware version and stored presets, performs the required LIN initialization sequence,
+ * and sends a final initialization packet. Reports an initialization failure, sounds a tone, and
+ * stops initialization when a required LIN node cannot be reached.
  */
 void DeskService::begin()
 {
@@ -26,8 +26,8 @@ void DeskService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
-    console.send(presetHigh <= Encoder::maxLimit && presetHigh >= Encoder::minLimit ? 'h' : 'H', presetHigh);
-    console.send(presetLow <= Encoder::maxLimit && presetLow >= Encoder::minLimit ? 'l' : 'L', presetLow);
+    console.print(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
+    console.print(ConsoleHandler::Command::PRESET_LOW, presetLow);
     lin.begin();
     constexpr unsigned char data[21U][4U]{
         {0xFFU, 0x7U, 0xFFU, 0xFFU},
@@ -68,8 +68,7 @@ void DeskService::begin()
             }
             if (pid == 8U)
             {
-                Serial1.write(static_cast<int>('I'));
-                Serial1.write(static_cast<int>('\n'));
+                console.write(ConsoleHandler::Command::INITIALIZE);
                 tone(0b1U << 8U);
                 return;
             }
@@ -121,6 +120,7 @@ void DeskService::handle()
     {
         console.handle();
         button.handle();
+        Serial1.flush();
     }
 }
 
@@ -144,25 +144,28 @@ bool DeskService::read()
     if (valid8)
     {
         const unsigned int _encoder8{static_cast<unsigned int>(node8[0U]) | static_cast<unsigned int>(node8[1U]) << 8U};
-        if (_encoder8 != encoder8 || state8 != node8[2U])
+        if (_encoder8 != encoder8 && state8 != node8[2U])
         {
-            if (_encoder8 != encoder8)
-            {
-                encoder8 = _encoder8;
-                lastMillis = millis();
-            }
+            encoder8 = _encoder8;
             state8 = node8[2U];
-            Serial1.write(0x8U);
-            Serial1.write(node8[0U]);
-            Serial1.write(node8[1U]);
-            Serial1.write(node8[2U]);
-            Serial1.write(static_cast<unsigned char>('\n'));
+            lastMillis = millis();
+            console.write(ConsoleHandler::Command::NODE8, node8[0U], node8[1U], node8[2U]);
+        }
+        else if (_encoder8 != encoder8)
+        {
+            encoder8 = _encoder8;
+            lastMillis = millis();
+            console.write(ConsoleHandler::Command::ENCODER8, node8[0U], node8[1U]);
+        }
+        else if (state8 != node8[2U])
+        {
+            state8 = node8[2U];
+            console.write(ConsoleHandler::Command::STATE8, node8[2U]);
         }
     }
     else
     {
-        Serial1.write(0x8U);
-        Serial1.write(static_cast<unsigned char>('\n'));
+        console.write(ConsoleHandler::Command::NODE8);
         if (pending)
         {
             tone(0b1U << 8U);
@@ -171,25 +174,28 @@ bool DeskService::read()
     if (valid9)
     {
         const unsigned int _encoder9{static_cast<unsigned int>(node9[0U]) | static_cast<unsigned int>(node9[1U]) << 8U};
-        if (_encoder9 != encoder9 || state9 != node9[2U])
+        if (_encoder9 != encoder9 && state9 != node9[2U])
         {
-            if (_encoder9 != encoder9)
-            {
-                encoder9 = _encoder9;
-                lastMillis = millis();
-            }
+            encoder9 = _encoder9;
             state9 = node9[2U];
-            Serial1.write(0x9U);
-            Serial1.write(node9[0U]);
-            Serial1.write(node9[1U]);
-            Serial1.write(node9[2U]);
-            Serial1.write(static_cast<unsigned char>('\n'));
+            lastMillis = millis();
+            console.write(ConsoleHandler::Command::NODE9, node9[0U], node9[1U], node9[2U]);
+        }
+        else if (_encoder9 != encoder9)
+        {
+            encoder9 = _encoder9;
+            lastMillis = millis();
+            console.write(ConsoleHandler::Command::ENCODER9, node9[0U], node9[1U]);
+        }
+        else if (state9 != node9[2U])
+        {
+            state9 = node9[2U];
+            console.write(ConsoleHandler::Command::STATE9, node9[2U]);
         }
     }
     else
     {
-        Serial1.write(0x9U);
-        Serial1.write(static_cast<unsigned char>('\n'));
+        console.write(ConsoleHandler::Command::NODE9);
         if (pending)
         {
             tone(0b1U << 8U);
@@ -453,16 +459,15 @@ void DeskService::setPresetHigh(unsigned int preset)
     {
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
-        console.send('h', presetHigh);
-        return;
     }
-    console.send('H', preset);
+    console.print(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
 }
 
 /**
- * @brief Stores and reports a new lower desk preset.
+ * @brief Stores and reports the lower desk preset.
  *
- * Zero and unchanged preset values are ignored.
+ * The preset is stored when it differs from the current value and falls within
+ * the encoder limits. The resulting preset value is reported.
  *
  * @param preset Lower desk position to store.
  */
@@ -472,16 +477,14 @@ void DeskService::setPresetLow(unsigned int preset)
     {
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
-        console.send('l', presetLow);
-        return;
     }
-    console.send('L', preset);
+    console.print(ConsoleHandler::Command::PRESET_LOW, presetLow);
 }
 
 /**
- * @brief Sets a valid target position and marks movement as pending.
+ * @brief Sets the target position and marks movement as pending when accepted.
  *
- * @param position Target position to move the desk to. Zero and `0xFFFF` are ignored.
+ * @param position Target position; zero and `0xFFFF` leave the current target unchanged.
  */
 void DeskService::setTarget(unsigned int position)
 {
@@ -489,10 +492,8 @@ void DeskService::setTarget(unsigned int position)
     {
         encoderTarget = position;
         pending = true;
-        console.send('p', encoderTarget);
-        return;
     }
-    console.send('P', position);
+    console.print(ConsoleHandler::Command::POSITION, encoderTarget);
 }
 
 /**

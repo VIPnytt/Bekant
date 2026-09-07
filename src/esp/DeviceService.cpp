@@ -298,9 +298,9 @@ void DeviceService::transmit(JsonDocument &doc)
     }
     doc["reset"].set(reset);
     doc["rssi"].set(WiFi.RSSI());
-    if (payloadRx.size() != 0U)
+    if (lengthRx != 0U)
     {
-        std::visit([&doc](const auto &payload) { doc["rx"].set(payload); }, printable(payloadRx));
+        doc["rx"].set(toHex(std::span<const uint8_t>(payloadRx).subspan(0U, lengthRx)));
     }
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
@@ -500,15 +500,16 @@ void DeviceService::setPresetLow(uint16_t preset)
 void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
 
 /**
- * @brief Stores the most recently received serial payload.
+ * @brief Stores a newly received serial payload for publication.
  *
- * @param payload Received payload to store.
+ * @param payload Serial payload bytes to store.
  */
-void DeviceService::setRx(std::string_view payload)
+void DeviceService::setRx(std::span<const uint8_t> payload)
 {
-    if (payload != payloadRx)
+    if (lengthRx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadRx.begin()))
     {
-        payloadRx = payload;
+        lengthRx = payload.size();
+        std::copy(payload.begin(), payload.end(), payloadRx.begin());
         pending = true;
     }
 }
@@ -580,6 +581,25 @@ void DeviceService::statusNode() // NOLINT(readability-make-member-function-cons
     {
         status.setBlue();
     }
+}
+
+/**
+ * @brief Converts a byte span to uppercase hexadecimal text.
+ *
+ * @param payload Bytes to encode.
+ * @return std::string Uppercase hexadecimal representation of the bytes.
+ */
+std::string DeviceService::toHex(std::span<const uint8_t> payload)
+{
+    constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    std::string hex{};
+    hex.reserve(payload.size() * 2U);
+    for (const uint8_t byte : payload)
+    {
+        hex += map.at(static_cast<size_t>(byte >> 4U));
+        hex += map.at(static_cast<size_t>(byte & 0xFU));
+    }
+    return hex;
 }
 
 /**

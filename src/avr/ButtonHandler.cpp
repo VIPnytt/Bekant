@@ -2,6 +2,7 @@
 
 #include "avr/ButtonHandler.h"
 
+#include "avr/ConsoleHandler.h"
 #include "avr/DeskService.h"
 #include "avr/constants.h"
 
@@ -9,10 +10,10 @@
 #include <wiring.h>
 
 /**
- * @brief Handles button state transitions and processes the resulting input.
+ * @brief Handles button state changes and processes the resulting input.
  *
- * Updates the press sequence count, records press timing, cancels movement on
- * release, and reports transitions over the serial interface.
+ * Updates the press sequence and timing state, cancels movement when a button
+ * is released, and reports state transitions over the serial interface.
  */
 void ButtonHandler::handle()
 {
@@ -30,9 +31,8 @@ void ButtonHandler::handle()
         {
             cancel();
         }
-        Serial1.write(static_cast<int>('d'));
-        Serial1.write(static_cast<int>(stateDown ? '1' : '0'));
-        Serial1.write(static_cast<int>('\n'));
+        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::Command::BUTTON_DOWN));
+        Serial1.write(static_cast<unsigned char>(stateDown));
     }
     if (_buttonUp != stateUp)
     {
@@ -46,9 +46,8 @@ void ButtonHandler::handle()
         {
             cancel();
         }
-        Serial1.write(static_cast<int>('u'));
-        Serial1.write(static_cast<int>(stateUp ? '1' : '0'));
-        Serial1.write(static_cast<int>('\n'));
+        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::Command::BUTTON_UP));
+        Serial1.write(static_cast<unsigned char>(stateUp));
     }
     process();
 }

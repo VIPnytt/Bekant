@@ -381,7 +381,8 @@ void HomeAssistantHandler::diagnostic()
         serialRx[ComponentAbbreviations::platform].set("sensor");
         serialRx[ComponentAbbreviations::state_topic].set(stateTopic);
         serialRx[ComponentAbbreviations::unique_id].set("rx");
-        serialRx[ComponentAbbreviations::value_template].set("{{value_json.rx}}");
+        serialRx[ComponentAbbreviations::value_template].set(
+            R"({%for i in range(0,value_json.rx|length,2)%}{{value_json.rx[i:i+2]}} {%endfor%})");
     }
     {
         JsonObject serialTx{discovery[ComponentAbbreviations::components]["tx"].to<JsonObject>()};

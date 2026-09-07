@@ -37,10 +37,11 @@ void ConsoleHandler::handle()
 }
 
 /**
- * @brief Processes the buffered serial command and applies the requested action.
+ * @brief Applies the buffered serial command when it is valid.
  *
- * Supports recalibration, movement targets, high and low preset recall or updates,
- * and tone frequency commands.
+ * Numeric commands update presets, the target, or tone frequency within the
+ * encoder limits. Single-character commands recalibrate or move to a stored
+ * preset; unsupported or out-of-range commands are ignored.
  */
 void ConsoleHandler::process()
 {
@@ -64,10 +65,6 @@ void ConsoleHandler::process()
                 desk.tone(value);
                 break;
             }
-        }
-        else if (buffer[0U] == 'h' || buffer[0U] == 'l' || buffer[0U] == 'p' || buffer[0U] == 't')
-        {
-            send(static_cast<char>(buffer[0U] - ' '), value);
         }
     }
     else
@@ -107,11 +104,64 @@ unsigned int ConsoleHandler::parseDigits()
     return value;
 }
 
-void ConsoleHandler::send(char command, unsigned int value)
+/**
+ * @brief Sends a command with a 16-bit unsigned value.
+ *
+ * @param command Command to send.
+ * @param value Value to encode and send.
+ */
+void ConsoleHandler::print(Command command, unsigned int value)
 {
-    Serial1.write(static_cast<int>(command));
-    Serial1.print(value);
-    Serial1.write(static_cast<int>('\n'));
+    write(command, static_cast<unsigned char>(value & 0xFFU), static_cast<unsigned char>(value >> 8U));
+}
+
+/**
+ * @brief Sends a command without a payload over Serial1.
+ *
+ * @param command Command to send.
+ */
+void ConsoleHandler::write(Command command) { Serial1.write(static_cast<unsigned char>(command)); }
+
+/**
+ * @brief Writes a command with one payload byte to Serial1.
+ *
+ * @param command Command identifier.
+ * @param byte Payload byte.
+ */
+void ConsoleHandler::write(Command command, unsigned char byte)
+{
+    Serial1.write((1U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write(byte);
+}
+
+/**
+ * @brief Writes a command with a two-byte payload to Serial1.
+ *
+ * @param command Command identifier.
+ * @param byte1 First payload byte.
+ * @param byte2 Second payload byte.
+ */
+void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char byte2)
+{
+    Serial1.write((2U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write(byte1);
+    Serial1.write(byte2);
+}
+
+/**
+ * @brief Writes a command with a three-byte payload to Serial1.
+ *
+ * @param command Command identifier.
+ * @param byte1 First payload byte.
+ * @param byte2 Second payload byte.
+ * @param byte3 Third payload byte.
+ */
+void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char byte2, unsigned char byte3)
+{
+    Serial1.write((3U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write(byte1);
+    Serial1.write(byte2);
+    Serial1.write(byte3);
 }
 
 #endif // ARDUINO_ARCH_AVR
