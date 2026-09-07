@@ -45,7 +45,10 @@ private:
 
     unsigned char commandBuffer[0b1U << 4U]{0U};
 
-    unsigned int commandBytes{0U};
+    /**
+ * Parses buffered console input into a command.
+ */
+unsigned int commandBytes{0U};
 
     Command command{};
 

@@ -61,9 +61,15 @@ private:
     std::array<uint8_t, 0b1U << 4U> commandBuffer{0U};
     std::array<uint8_t, 0b1U << 4U> stateBuffer{0U};
 
-    Command command{};
+    /**
+ * Stores the current command.
+ */
+Command command{};
 
-    State state{};
+    /**
+ * Current console state.
+ */
+State state{};
 
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
