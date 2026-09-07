@@ -11,9 +11,17 @@ class ConsoleHandler
 public:
     enum class Command : uint8_t
     {
-        BUTTON_DOWN,
+        CALIBRATE = 1U,
+        POSITION,
+        PRESET_HIGH,
+        PRESET_LOW,
+        TONE,
+    };
+
+    enum class State : uint8_t
+    {
+        BUTTON_DOWN = 1U,
         BUTTON_UP,
-        CALIBRATE,
         ENCODER8,
         ENCODER9,
         INITIALIZE,
@@ -24,7 +32,6 @@ public:
         PRESET_LOW,
         STATE8,
         STATE9,
-        TONE,
     };
 
     /**
@@ -46,16 +53,23 @@ public:
     void send(Command command, uint16_t value);
 
 private:
-    uint8_t commandRx{0U};
-    uint8_t commandTx{0U};
+    size_t commandBytes{0U};
+    size_t commandLength{0U};
+    size_t stateBytes{0U};
+    size_t stateLength{0U};
 
-    size_t bytesRx{0U};
-    size_t bytesTx{0U};
-    size_t lengthRx{0U};
-    size_t lengthTx{0U};
+    std::array<uint8_t, 0b1U << 4U> commandBuffer{0U};
+    std::array<uint8_t, 0b1U << 4U> stateBuffer{0U};
 
-    std::array<uint8_t, 0b1U << 4U> bufferRx{0U};
-    std::array<uint8_t, 0b1U << 4U> bufferTx{0U};
+    /**
+     * Stores the current command.
+     */
+    Command command{};
+
+    /**
+     * Current console state.
+     */
+    State state{};
 
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 

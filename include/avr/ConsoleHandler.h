@@ -7,24 +7,20 @@
  */
 class ConsoleHandler
 {
-private:
-    char buffer[5U]{0};
-
-    unsigned char commandRx{0U};
-    unsigned char lengthRx{0U};
-
-    unsigned char bufferRx[0b1U << 4U]{0U};
-
-    unsigned int bytesRx{0U};
-
-    void parse();
-
 public:
     enum class Command : unsigned char
     {
-        BUTTON_DOWN,
+        CALIBRATE = 1U,
+        POSITION,
+        PRESET_HIGH,
+        PRESET_LOW,
+        TONE,
+    };
+
+    enum class State : unsigned char
+    {
+        BUTTON_DOWN = 1U,
         BUTTON_UP,
-        CALIBRATE,
         ENCODER8,
         ENCODER9,
         INITIALIZE,
@@ -35,15 +31,28 @@ public:
         PRESET_LOW,
         STATE8,
         STATE9,
-        TONE,
     };
 
     void handle();
-    void print(Command command, unsigned int value);
-    void write(Command command);
-    void write(Command command, unsigned char byte);
-    void write(Command command, unsigned char byte1, unsigned char byte2);
-    void write(Command command, unsigned char byte1, unsigned char byte2, unsigned char byte3);
+    void print(State state, unsigned int value);
+    void write(State state);
+    void write(State state, unsigned char byte);
+    void write(State state, unsigned char byte1, unsigned char byte2);
+    void write(State state, unsigned char byte1, unsigned char byte2, unsigned char byte3);
+
+private:
+    unsigned char commandLength{0U};
+
+    unsigned char commandBuffer[0b1U << 4U]{0U};
+
+    unsigned int commandBytes{0U};
+
+    Command command{};
+
+    /**
+     * Parses buffered console input into a command.
+     */
+    void parse();
 };
 
 #endif // ARDUINO_ARCH_AVR

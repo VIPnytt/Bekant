@@ -27,17 +27,17 @@ void ConsoleHandler::handle()
     if (byte != -1)
     {
         ESP_LOGV("RX", "0x%X", byte);
-        if (lengthRx == 0U)
+        if (stateLength == 0U)
         {
-            lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
-            commandRx = static_cast<uint8_t>(byte) & 0x0FU;
-            bytesRx = 0U;
+            stateLength = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
+            state = static_cast<State>(static_cast<uint8_t>(byte) & 0x0FU);
+            stateBytes = 0U;
         }
-        bufferRx.at(bytesRx++) = static_cast<uint8_t>(byte);
-        if (bytesRx == lengthRx + 1U)
+        stateBuffer.at(stateBytes++) = static_cast<uint8_t>(byte);
+        if (stateBytes == stateLength + 1U)
         {
             parse();
-            lengthRx = 0U;
+            stateLength = 0U;
         }
     }
     else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)
@@ -67,17 +67,17 @@ void ConsoleHandler::forward()
     if (byte != -1)
     {
         ESP_LOGV("TX", "0x%X", byte);
-        if (lengthTx == 0U)
+        if (commandLength == 0U)
         {
-            lengthTx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
-            commandTx = static_cast<uint8_t>(byte) & 0x0FU;
-            bytesTx = 0U;
+            commandLength = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
+            command = static_cast<Command>(static_cast<uint8_t>(byte) & 0x0FU);
+            commandBytes = 0U;
         }
-        bufferTx.at(bytesTx++) = static_cast<uint8_t>(byte);
-        if (bytesTx == lengthTx + 1U)
+        commandBuffer.at(commandBytes++) = static_cast<uint8_t>(byte);
+        if (commandBytes == commandLength + 1U)
         {
-            write(std::span{bufferTx}.subspan(0U, lengthTx + 1U));
-            lengthTx = 0U;
+            write(std::span{commandBuffer}.subspan(0U, commandLength + 1U));
+            commandLength = 0U;
         }
     }
 }
@@ -89,63 +89,63 @@ void ConsoleHandler::forward()
  */
 void ConsoleHandler::parse() const
 {
-    device.setRx(std::span{bufferRx}.subspan(0U, lengthRx + 1U));
-    if (commandRx == static_cast<uint8_t>(Command::BUTTON_DOWN) && lengthRx == 1U)
+    device.setRx(std::span{stateBuffer}.subspan(0U, stateLength + 1U));
+    if (state == State::BUTTON_DOWN && stateLength == 1U)
     {
-        device.setButtonDown(static_cast<bool>(bufferRx.at(1U)));
+        device.setButtonDown(static_cast<bool>(stateBuffer.at(1U)));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::BUTTON_UP) && lengthRx == 1U)
+    if (state == State::BUTTON_UP && stateLength == 1U)
     {
-        device.setButtonUp(static_cast<bool>(bufferRx.at(1U)));
+        device.setButtonUp(static_cast<bool>(stateBuffer.at(1U)));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::ENCODER8) && lengthRx == 2U)
+    if (state == State::ENCODER8 && stateLength == 2U)
     {
-        device.setEncoder8(static_cast<uint16_t>(bufferRx.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        device.setEncoder8(static_cast<uint16_t>(stateBuffer.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(stateBuffer.at(2U)) << 8U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::ENCODER9) && lengthRx == 2U)
+    if (state == State::ENCODER9 && stateLength == 2U)
     {
-        device.setEncoder9(static_cast<uint16_t>(bufferRx.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        device.setEncoder9(static_cast<uint16_t>(stateBuffer.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(stateBuffer.at(2U)) << 8U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::NODE8) && lengthRx == 3U)
+    if (state == State::NODE8 && stateLength == 3U)
     {
-        device.setEncoder8(static_cast<uint16_t>(bufferRx.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
-        device.setState8(bufferRx.at(3U));
+        device.setEncoder8(static_cast<uint16_t>(stateBuffer.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(stateBuffer.at(2U)) << 8U));
+        device.setState8(stateBuffer.at(3U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::NODE9) && lengthRx == 3U)
+    if (state == State::NODE9 && stateLength == 3U)
     {
-        device.setEncoder9(static_cast<uint16_t>(bufferRx.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
-        device.setState9(bufferRx.at(3U));
+        device.setEncoder9(static_cast<uint16_t>(stateBuffer.at(1U)) |
+                           static_cast<uint16_t>(static_cast<uint16_t>(stateBuffer.at(2U)) << 8U));
+        device.setState9(stateBuffer.at(3U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::PRESET_HIGH) && lengthRx == 2U)
+    if (state == State::PRESET_HIGH && stateLength == 2U)
     {
-        device.setPresetHigh(static_cast<uint16_t>(bufferRx.at(1U)) |
-                             static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        device.setPresetHigh(static_cast<uint16_t>(stateBuffer.at(1U)) |
+                             static_cast<uint16_t>(static_cast<uint16_t>(stateBuffer.at(2U)) << 8U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::PRESET_LOW) && lengthRx == 2U)
+    if (state == State::PRESET_LOW && stateLength == 2U)
     {
-        device.setPresetLow(static_cast<uint16_t>(bufferRx.at(1U)) |
-                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        device.setPresetLow(static_cast<uint16_t>(stateBuffer.at(1U)) |
+                            static_cast<uint16_t>(static_cast<uint16_t>(stateBuffer.at(2U)) << 8U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::STATE8) && lengthRx == 1U)
+    if (state == State::STATE8 && stateLength == 1U)
     {
-        device.setState8(bufferRx.at(1U));
+        device.setState8(stateBuffer.at(1U));
         return;
     }
-    if (commandRx == static_cast<uint8_t>(Command::STATE9) && lengthRx == 1U)
+    if (state == State::STATE9 && stateLength == 1U)
     {
-        device.setState9(bufferRx.at(1U));
+        device.setState9(stateBuffer.at(1U));
         return;
     }
     device.statusRed();

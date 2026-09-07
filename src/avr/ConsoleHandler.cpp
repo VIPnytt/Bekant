@@ -17,17 +17,17 @@ void ConsoleHandler::handle()
     const int byte{Serial1.read()};
     if (byte != -1)
     {
-        if (lengthRx == 0U)
+        if (commandLength == 0U)
         {
-            lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
-            commandRx = static_cast<unsigned char>(byte) & 0x0FU;
-            bytesRx = 0U;
+            commandLength = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
+            command = static_cast<Command>(static_cast<unsigned char>(byte) & 0x0FU);
+            commandBytes = 0U;
         }
-        bufferRx[bytesRx++] = static_cast<unsigned char>(byte);
-        if (bytesRx == lengthRx + 1U)
+        commandBuffer[commandBytes++] = static_cast<unsigned char>(byte);
+        if (commandBytes == commandLength + 1U)
         {
             parse();
-            lengthRx = 0U;
+            commandLength = 0U;
         }
     }
 }
@@ -41,80 +41,83 @@ void ConsoleHandler::handle()
  */
 void ConsoleHandler::parse()
 {
-    if (commandRx == static_cast<unsigned char>(Command::CALIBRATE) && lengthRx == 0U)
+    if (command == Command::CALIBRATE && commandLength == 0U)
     {
         desk.recalibrate();
     }
-    else if (commandRx == static_cast<unsigned char>(Command::POSITION) && lengthRx == 2U)
+    else if (command == Command::POSITION && commandLength == 2U)
     {
-        const uint16_t target{static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U};
+        const uint16_t target{static_cast<unsigned int>(commandBuffer[1U]) |
+                              static_cast<unsigned int>(commandBuffer[2U]) << 8U};
         if (target <= Encoder::maxLimit && target >= Encoder::minLimit)
         {
             desk.setTarget(target);
         }
     }
-    else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 0U)
+    else if (command == Command::PRESET_HIGH && commandLength == 0U)
     {
         desk.setTarget(desk.getPresetHigh());
     }
-    else if (commandRx == static_cast<unsigned char>(Command::PRESET_HIGH) && lengthRx == 2U)
+    else if (command == Command::PRESET_HIGH && commandLength == 2U)
     {
-        desk.setPresetHigh(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        desk.setPresetHigh(static_cast<unsigned int>(commandBuffer[1U]) | static_cast<unsigned int>(commandBuffer[2U])
+                                                                              << 8U);
     }
-    else if (commandRx == static_cast<unsigned char>(Command::PRESET_LOW) && lengthRx == 0U)
+    else if (command == Command::PRESET_LOW && commandLength == 0U)
     {
         desk.setTarget(desk.getPresetLow());
     }
-    else if (commandRx == static_cast<unsigned char>(Command::PRESET_LOW) && lengthRx == 2U)
+    else if (command == Command::PRESET_LOW && commandLength == 2U)
     {
-        desk.setPresetLow(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        desk.setPresetLow(static_cast<unsigned int>(commandBuffer[1U]) | static_cast<unsigned int>(commandBuffer[2U])
+                                                                             << 8U);
     }
-    else if (commandRx == static_cast<unsigned char>(Command::TONE) && lengthRx == 2U)
+    else if (command == Command::TONE && commandLength == 2U)
     {
-        desk.tone(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        desk.tone(static_cast<unsigned int>(commandBuffer[1U]) | static_cast<unsigned int>(commandBuffer[2U]) << 8U);
     }
 }
 
 /**
  * @brief Sends a command with a 16-bit unsigned value.
  *
- * @param command Command to send.
+ * @param state Command to send.
  * @param value Value to encode and send.
  */
-void ConsoleHandler::print(Command command, unsigned int value)
+void ConsoleHandler::print(State state, unsigned int value)
 {
-    write(command, static_cast<unsigned char>(value & 0xFFU), static_cast<unsigned char>(value >> 8U));
+    write(state, static_cast<unsigned char>(value & 0xFFU), static_cast<unsigned char>(value >> 8U));
 }
 
 /**
  * @brief Sends a command without a payload over Serial1.
  *
- * @param command Command to send.
+ * @param state Command to send.
  */
-void ConsoleHandler::write(Command command) { Serial1.write(static_cast<unsigned char>(command)); }
+void ConsoleHandler::write(State state) { Serial1.write(static_cast<unsigned char>(state)); }
 
 /**
  * @brief Writes a command with one payload byte to Serial1.
  *
- * @param command Command identifier.
+ * @param state Command identifier.
  * @param byte Payload byte.
  */
-void ConsoleHandler::write(Command command, unsigned char byte)
+void ConsoleHandler::write(State state, unsigned char byte)
 {
-    Serial1.write((1U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write((1U << 4U) | static_cast<unsigned char>(state));
     Serial1.write(byte);
 }
 
 /**
  * @brief Writes a command with a two-byte payload to Serial1.
  *
- * @param command Command identifier.
+ * @param state Command identifier.
  * @param byte1 First payload byte.
  * @param byte2 Second payload byte.
  */
-void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char byte2)
+void ConsoleHandler::write(State state, unsigned char byte1, unsigned char byte2)
 {
-    Serial1.write((2U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write((2U << 4U) | static_cast<unsigned char>(state));
     Serial1.write(byte1);
     Serial1.write(byte2);
 }
@@ -122,14 +125,14 @@ void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char b
 /**
  * @brief Writes a command with a three-byte payload to Serial1.
  *
- * @param command Command identifier.
+ * @param state Command identifier.
  * @param byte1 First payload byte.
  * @param byte2 Second payload byte.
  * @param byte3 Third payload byte.
  */
-void ConsoleHandler::write(Command command, unsigned char byte1, unsigned char byte2, unsigned char byte3)
+void ConsoleHandler::write(State state, unsigned char byte1, unsigned char byte2, unsigned char byte3)
 {
-    Serial1.write((3U << 4U) | static_cast<unsigned char>(command));
+    Serial1.write((3U << 4U) | static_cast<unsigned char>(state));
     Serial1.write(byte1);
     Serial1.write(byte2);
     Serial1.write(byte3);
