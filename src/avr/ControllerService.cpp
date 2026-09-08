@@ -443,7 +443,7 @@ ControllerService &ControllerService::getInstance()
     return instance;
 }
 
-ControllerService &controller{
-    ControllerService::getInstance()}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+ControllerService &controller{ControllerService::getInstance()};
 
 #endif // ARDUINO_ARCH_AVR
