@@ -8,9 +8,15 @@ private:
     bool stateDown{false};
     bool stateUp{false};
 
-    signed char count{0};
+    /**
+ * Tracks the accumulated button event count.
+ */
+signed char count{0};
 
-    unsigned long lastMillis{0U};
+    /**
+ * Handles the current button input state.
+ */
+unsigned long lastMillis{0U};
 
     void cancel();
 

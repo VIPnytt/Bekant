@@ -63,7 +63,10 @@ private:
 
     ConsoleHandler console{};
 
-    LegHandler lin{};
+    /**
+ * Handles leg movement commands and encoder communication.
+ */
+LegHandler lin{};
 
     State state{State::IDLE};
 

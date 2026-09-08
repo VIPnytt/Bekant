@@ -84,7 +84,13 @@ public:
     template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
     {
         static_assert(N <= 8U);
-        const unsigned char addressByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
+        /**
+     * Sends a LIN frame containing the specified payload.
+     *
+     * @param identifier LIN frame identifier.
+     * @param data Payload bytes to transmit.
+     */
+    const unsigned char addressByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
         serialBreak();
         Serial.write(linSyncByte);
         Serial.write(addressByte);
@@ -103,7 +109,14 @@ public:
     template <unsigned int N> [[nodiscard]] bool request(unsigned char identifier, unsigned char (&data)[N])
     {
         static_assert(N <= 8U);
-        const unsigned char idByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
+        /**
+ * Receives a LIN response for the specified identifier.
+ *
+ * @param identifier LIN frame identifier to request.
+ * @param data Buffer to populate with the received payload.
+ * @return `true` if a complete response with a valid checksum is received, `false` on timeout or checksum failure.
+ */
+const unsigned char idByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
         serialBreak();
         Serial.write(linSyncByte);
         Serial.write(idByte);

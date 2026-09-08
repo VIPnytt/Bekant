@@ -5,12 +5,12 @@
 #include <wiring.h>
 
 /**
- * @brief Initializes the desk service.
+ * @brief Initializes the controller service.
  */
 void setup() { controller.begin(); }
 
 /**
- * @brief Processes the desk service.
+ * @brief Processes the controller.
  */
 void loop() { controller.handle(); }
 
