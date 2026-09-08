@@ -17,15 +17,19 @@ private:
     void discovery();
 
     static void onConnect(bool sessionPresent);
+
     static void onDisconnect(espMqttClientTypes::DisconnectReason reason);
+
     static void onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                           const uint8_t *payload, size_t len, size_t index, size_t total);
 
 public:
     void begin();
+
     void handle();
 
     void disconnect();
+
     void transmit(JsonDocument &doc);
 };
 

@@ -15,16 +15,22 @@ private:
     JsonDocument &discovery; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void configuration();
+
     void controls();
+
     void diagnostic();
+
     void sensors();
 
 public:
     explicit HomeAssistantHandler(JsonDocument &doc) : discovery(doc) {};
 
     void availability();
+
     void components();
+
     void device();
+
     void origin();
 };
 

@@ -1,6 +1,6 @@
 #ifdef ARDUINO_ARCH_ESP32
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 
 #include "esp/constants.h"
 
@@ -15,11 +15,11 @@
  *
  * Also checks the latest available firmware release.
  */
-void DeviceService::begin()
+void DeskService::begin()
 {
     Serial.begin(115'200UL);
     vTaskDelay(0b1U << 7U);
-    ESP_LOGI("ESP32", "Bekant %.*s", static_cast<int>(version.size()), version.data());
+    ESP_LOGI("Desk", "Bekant %.*s", static_cast<int>(version.size()), version.data());
 #ifdef PIN_ADC
     pinMode(PIN_ADC, ANALOG);
 #endif // PIN_ADC
@@ -84,7 +84,7 @@ void DeviceService::begin()
  * handles console and MQTT activity, releases pending drive outputs, saves unsaved
  * state, and publishes state periodically or when an update is pending.
  */
-void DeviceService::handle()
+void DeskService::handle()
 {
     wifi.handle();
     ota.handle();
@@ -130,7 +130,7 @@ void DeviceService::handle()
  * @param encoder Encoder value to convert.
  * @return Physical desk height corresponding to the encoder value.
  */
-float DeviceService::decode(float encoder)
+float DeskService::decode(float encoder)
 {
     return ((encoder - static_cast<float>(ReferenceHeight::encoderLow)) *
             (ReferenceHeight::heightHigh - ReferenceHeight::heightLow) /
@@ -144,7 +144,7 @@ float DeviceService::decode(float encoder)
  * @param height Physical desk height.
  * @return uint16_t Encoder value mapped from the configured height range.
  */
-uint16_t DeviceService::encode(float height)
+uint16_t DeskService::encode(float height)
 {
     return static_cast<uint16_t>(
         lroundf(((height - ReferenceHeight::heightLow) *
@@ -162,7 +162,7 @@ uint16_t DeviceService::encode(float height)
  *
  * @param doc JSON object containing the commands to process.
  */
-void DeviceService::request(JsonObjectConst doc)
+void DeskService::request(JsonObjectConst doc)
 {
     if (doc["action"].is<std::string_view>())
     {
@@ -182,11 +182,11 @@ void DeviceService::request(JsonObjectConst doc)
     }
     if (doc["button"]["down"].is<bool>())
     {
-        device.setDriveDown(doc["button"]["down"].as<bool>());
+        desk.setDriveDown(doc["button"]["down"].as<bool>());
     }
     if (doc["button"]["up"].is<bool>())
     {
-        device.setDriveUp(doc["button"]["up"].as<bool>());
+        desk.setDriveUp(doc["button"]["up"].as<bool>());
     }
     if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["desk"].as<float>() >= ReferenceHeight::heightLow)
@@ -195,7 +195,7 @@ void DeviceService::request(JsonObjectConst doc)
     }
     if (doc["oe"].is<bool>())
     {
-        device.setOutputEnable(doc["oe"].as<bool>());
+        desk.setOutputEnable(doc["oe"].as<bool>());
     }
     if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
     {
@@ -217,7 +217,7 @@ void DeviceService::request(JsonObjectConst doc)
     }
     if (doc["reset"].is<bool>())
     {
-        device.setReset(doc["reset"].as<bool>());
+        desk.setReset(doc["reset"].as<bool>());
     }
     if (doc["tone"].is<uint16_t>() && doc["tone"].as<uint16_t>() != 0U)
     {
@@ -228,7 +228,7 @@ void DeviceService::request(JsonObjectConst doc)
 /**
  * @brief Disables device processing and disconnects serial and MQTT services.
  */
-void DeviceService::safeMode()
+void DeskService::safeMode()
 {
     process = false;
     Serial1.end();
@@ -238,7 +238,7 @@ void DeviceService::safeMode()
 /**
  * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
  */
-void DeviceService::save()
+void DeskService::save()
 {
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
@@ -262,7 +262,7 @@ void DeviceService::save()
  *
  * @param doc JSON document to augment with device state and telemetry before publishing.
  */
-void DeviceService::transmit(JsonDocument &doc)
+void DeskService::transmit(JsonDocument &doc)
 {
     doc["button"]["down"].set(buttonDown || driveDown.first);
     doc["button"]["up"].set(buttonUp || driveUp.first);
@@ -316,7 +316,7 @@ void DeviceService::transmit(JsonDocument &doc)
  *
  * @param state The new down-button state.
  */
-void DeviceService::setButtonDown(bool state)
+void DeskService::setButtonDown(bool state)
 {
     if (state != buttonDown)
     {
@@ -331,7 +331,7 @@ void DeviceService::setButtonDown(bool state)
  *
  * @param state Whether the up button is pressed.
  */
-void DeviceService::setButtonUp(bool state)
+void DeskService::setButtonUp(bool state)
 {
     if (state != buttonUp)
     {
@@ -346,7 +346,7 @@ void DeviceService::setButtonUp(bool state)
  *
  * @param state Whether the down-drive output should be active.
  */
-void DeviceService::setDriveDown(bool state)
+void DeskService::setDriveDown(bool state)
 {
 #ifdef PIN_TPDN
     driveDown.first = state;
@@ -360,7 +360,7 @@ void DeviceService::setDriveDown(bool state)
  *
  * @param state `true` to activate the output; `false` to deactivate it.
  */
-void DeviceService::setDriveUp(bool state)
+void DeskService::setDriveUp(bool state)
 {
 #ifdef PIN_TPUP
     driveUp.first = state;
@@ -376,7 +376,7 @@ void DeviceService::setDriveUp(bool state)
  *
  * @param position New encoder 8 position.
  */
-void DeviceService::setEncoder8(uint16_t position)
+void DeskService::setEncoder8(uint16_t position)
 {
     if (position != encoder8)
     {
@@ -394,7 +394,7 @@ void DeviceService::setEncoder8(uint16_t position)
  *
  * @param position New secondary encoder value.
  */
-void DeviceService::setEncoder9(uint16_t position)
+void DeskService::setEncoder9(uint16_t position)
 {
     if (position != encoder9)
     {
@@ -413,7 +413,7 @@ void DeviceService::setEncoder9(uint16_t position)
  *
  * @param state Whether the desk output should be enabled.
  */
-void DeviceService::setOutputEnable(bool state)
+void DeskService::setOutputEnable(bool state)
 {
 #ifdef PIN_OE
     if (state != enable)
@@ -432,7 +432,7 @@ void DeviceService::setOutputEnable(bool state)
  *
  * @param preset High preset value.
  */
-void DeviceService::setPresetHigh(uint16_t preset)
+void DeskService::setPresetHigh(uint16_t preset)
 {
     if (preset != presetHigh)
     {
@@ -447,7 +447,7 @@ void DeviceService::setPresetHigh(uint16_t preset)
  *
  * @param preset Lower preset value.
  */
-void DeviceService::setPresetLow(uint16_t preset)
+void DeskService::setPresetLow(uint16_t preset)
 {
     if (preset != presetLow)
     {
@@ -462,14 +462,14 @@ void DeviceService::setPresetLow(uint16_t preset)
  *
  * @param state Whether to assert the reset signal.
  */
-void DeviceService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
+void DeskService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
 
 /**
  * @brief Stores a newly received serial payload for publication.
  *
  * @param payload Serial payload bytes to store.
  */
-void DeviceService::setRx(std::span<const uint8_t> payload)
+void DeskService::setRx(std::span<const uint8_t> payload)
 {
     if (lengthRx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadRx.begin()))
     {
@@ -484,7 +484,7 @@ void DeviceService::setRx(std::span<const uint8_t> payload)
  *
  * @param state New drive state.
  */
-void DeviceService::setState8(uint8_t state)
+void DeskService::setState8(uint8_t state)
 {
     if (state != state8)
     {
@@ -499,7 +499,7 @@ void DeviceService::setState8(uint8_t state)
  *
  * @param state New motor state.
  */
-void DeviceService::setState9(uint8_t state)
+void DeskService::setState9(uint8_t state)
 {
     if (state != state9)
     {
@@ -514,7 +514,7 @@ void DeviceService::setState9(uint8_t state)
  *
  * @param payload Bytes to store as the transmitted payload.
  */
-void DeviceService::setTx(std::span<const uint8_t> payload)
+void DeskService::setTx(std::span<const uint8_t> payload)
 {
     if (payload.size() <= payloadTx.size() &&
         (lengthTx != payload.size() || !std::equal(payload.begin(), payload.end(), payloadTx.begin())))
@@ -528,17 +528,17 @@ void DeviceService::setTx(std::span<const uint8_t> payload)
 /**
  * @brief Sets the status indicator to red.
  */
-void DeviceService::statusRed() { status.setRed(); }
+void DeskService::statusRed() { status.setRed(); }
 
 /**
  * @brief Sets the status indicator to white.
  */
-void DeviceService::statusWhite() { status.setWhite(); }
+void DeskService::statusWhite() { status.setWhite(); }
 
 /**
  * @brief Updates the status indicator based on motor states, button input, and drive activity.
  */
-void DeviceService::statusNode() // NOLINT(readability-make-member-function-const)
+void DeskService::statusNode() // NOLINT(readability-make-member-function-const)
 {
     if ((state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U))
     {
@@ -561,7 +561,7 @@ void DeviceService::statusNode() // NOLINT(readability-make-member-function-cons
  * @param payload Bytes to encode.
  * @return std::string Uppercase hexadecimal representation of the bytes.
  */
-std::string DeviceService::toHex(std::span<const uint8_t> payload)
+std::string DeskService::toHex(std::span<const uint8_t> payload)
 {
     constexpr std::array<char, 16U> map{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     std::string hex{};
@@ -581,10 +581,10 @@ std::string DeviceService::toHex(std::span<const uint8_t> payload)
  * device state for publication when the response is valid. Client, HTTP, and
  * JSON parsing failures leave the release state unchanged.
  */
-void DeviceService::fetchRelease()
+void DeskService::fetchRelease()
 {
     const std::string userAgent{
-        std::string("Bekant/").append(version).append(" (ESP32; +https://github.com/VIPnytt/Bekant)")};
+        std::string{"Bekant/"}.append(version).append(" (ESP32; +https://github.com/VIPnytt/Bekant)")};
     esp_http_client_config_t config{
         .host{"api.github.com"},
         .port{443},
@@ -635,12 +635,12 @@ void DeviceService::fetchRelease()
         versionLatest = tag.starts_with('v') ? tag.substr(1U) : tag;
         if (versionLatest != version)
         {
-            ESP_LOGI("ESP32",
+            ESP_LOGI("Bekant",
                      "Firmware update available: %.*s -> %s",
                      static_cast<int>(version.size()),
                      version.data(),
                      versionLatest.c_str());
-            ESP_LOGI("ESP32", "Release notes: https://github.com/VIPnytt/Bekant/releases/v%s", versionLatest.c_str());
+            ESP_LOGI("Bekant", "Release notes: https://github.com/VIPnytt/Bekant/releases/v%s", versionLatest.c_str());
         }
         pending = true;
     }
@@ -652,26 +652,26 @@ void DeviceService::fetchRelease()
  * Records the physical down-drive state, updates the status indicator for an
  * active down-drive request, and marks the device state for publication.
  */
-void DeviceService::onInterruptDown()
+void DeskService::onInterruptDown()
 {
 #ifdef PIN_TPDN
-    device.driveDown.second = digitalRead(PIN_TPDN) == LOW;
-    if (device.driveDown.first)
+    desk.driveDown.second = digitalRead(PIN_TPDN) == LOW;
+    if (desk.driveDown.first)
     {
-        device.driveDown.second ? device.status.setWhite(true) : device.status.setRed();
+        desk.driveDown.second ? desk.status.setWhite(true) : desk.status.setRed();
     }
-    device.pending = true;
+    desk.pending = true;
 #endif // PIN_TPDN
 }
 
 /**
  * @brief Updates the reset state and status indicator from the reset input.
  */
-void DeviceService::onInterruptReset()
+void DeskService::onInterruptReset()
 {
-    device.reset = digitalRead(PIN_RST) == LOW;
-    device.reset ? device.status.setNone(true) : device.status.setWhite();
-    device.pending = true;
+    desk.reset = digitalRead(PIN_RST) == LOW;
+    desk.reset ? desk.status.setNone(true) : desk.status.setWhite();
+    desk.pending = true;
 }
 
 /**
@@ -680,29 +680,29 @@ void DeviceService::onInterruptReset()
  * Records the active state of the upward drive input, updates the status indicator
  * when upward driving is requested, and marks the device state for publication.
  */
-void DeviceService::onInterruptUp()
+void DeskService::onInterruptUp()
 {
 #ifdef PIN_TPUP
-    device.driveUp.second = digitalRead(PIN_TPUP) == LOW;
-    if (device.driveUp.first)
+    desk.driveUp.second = digitalRead(PIN_TPUP) == LOW;
+    if (desk.driveUp.first)
     {
-        device.driveUp.second ? device.status.setWhite(true) : device.status.setRed();
+        desk.driveUp.second ? desk.status.setWhite(true) : desk.status.setRed();
     }
-    device.pending = true;
+    desk.pending = true;
 #endif // PIN_TPUP
 }
 
 /**
  * @brief Returns the singleton device service instance.
  *
- * @return DeviceService& Reference to the shared device service instance.
+ * @return DeskService& Reference to the shared device service instance.
  */
-DeviceService &DeviceService::getInstance()
+DeskService &DeskService::getInstance()
 {
-    static DeviceService instance;
+    static DeskService instance;
     return instance;
 }
 
-DeviceService &device{DeviceService::getInstance()}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+DeskService &desk{DeskService::getInstance()}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // ARDUINO_ARCH_ESP32

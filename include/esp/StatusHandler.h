@@ -25,9 +25,13 @@ public:
     void handle();
 
     void setBlue();
+
     void setGreen();
+
     void setNone(bool force = false);
+
     void setRed();
+
     void setWhite(bool force = false);
 };
 

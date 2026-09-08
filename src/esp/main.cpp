@@ -2,19 +2,19 @@
 
 #include "esp/main.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 
 /**
  * @brief Initializes the device service.
  */
-void setup() { device.begin(); }
+void setup() { desk.begin(); }
 
 /**
  * @brief Processes the device and yields for one task tick.
  */
 void loop()
 {
-    device.handle();
+    desk.handle();
     vTaskDelay(1U);
 }
 

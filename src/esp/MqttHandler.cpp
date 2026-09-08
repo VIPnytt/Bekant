@@ -2,7 +2,7 @@
 
 #include "esp/MqttHandler.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 #include "esp/HomeAssistantHandler.h"
 #include "esp/secrets.h"
 
@@ -120,7 +120,7 @@ void MqttHandler::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 {
     ESP_LOGI("MQTT", "disconnected");
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
-    device.statusRed();
+    desk.statusRed();
 }
 
 /**
@@ -142,7 +142,7 @@ void MqttHandler::onMessage(const espMqttClientTypes::MessageProperties &propert
     JsonDocument doc{}; // NOLINT(misc-const-correctness)
     if (index == 0U && len == total && deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
     {
-        device.request(doc.as<JsonObjectConst>());
+        desk.request(doc.as<JsonObjectConst>());
     }
 }
 

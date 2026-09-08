@@ -28,15 +28,25 @@ private:
     NetworkServer server{328U};
 
     void byteReply(uint8_t byte);
+
     void emptyReply();
+
     void eepromReadPage(size_t length);
+
     void enterProgrammingMode();
+
     void flashReadPage(size_t length);
+
     void programPage();
+
     void readPage();
+
     void readSignature();
+
     void universal();
+
     void writeEepromChunk(size_t start, size_t length);
+
     void writeFlash(size_t length);
 
     [[nodiscard]] bool writeEeprom(size_t length);
@@ -45,6 +55,7 @@ private:
 
 public:
     void begin();
+
     void handle();
 };
 
