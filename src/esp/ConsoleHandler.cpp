@@ -19,7 +19,7 @@ void ConsoleHandler::begin()
 }
 
 /**
- * @brief Processes available secondary-serial data, pending UART errors, or primary-serial input.
+ * @brief Processes a complete secondary-serial frame or forwards primary-serial input.
  */
 void ConsoleHandler::handle()
 {
@@ -73,9 +73,11 @@ void ConsoleHandler::forward()
 }
 
 /**
- * @brief Applies the buffered console frame to the corresponding device state.
+ * @brief Applies the buffered frame to the corresponding device state.
  *
- * Invalid command and payload-length combinations set the device status to red.
+ * Dispatches button, error, node, and preset data based on the frame state and
+ * payload length. Invalid state and payload-length combinations set the device
+ * status to red; invalid node payload lengths set the corresponding node error.
  */
 void ConsoleHandler::parse() const
 {
@@ -175,9 +177,9 @@ void ConsoleHandler::write(std::span<const uint8_t> payload)
 }
 
 /**
- * @brief Stores the latest hardware serial error for processing.
+ * @brief Records a hardware serial receive error in the desk state.
  *
- * @param error Hardware serial error to store.
+ * @param error Hardware serial receive error to record.
  */
 void ConsoleHandler::onReceiveError(hardwareSerial_error_t error)
 {

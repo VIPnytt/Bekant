@@ -6,9 +6,10 @@
 #include "avr/constants.h"
 
 /**
- * @brief Buffers a serial command and parses it when its complete payload is received.
+ * @brief Receives a serial command and parses it when its declared payload is complete.
  *
- * The first byte specifies the payload length and command identifier.
+ * The first byte encodes the payload length and command identifier. UART overrun and
+ * framing errors are reported through the console command channel.
  */
 void ConsoleHandler::handle()
 {

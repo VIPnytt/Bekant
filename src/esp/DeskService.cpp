@@ -371,6 +371,9 @@ void DeskService::setDriveUp(bool state)
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Records an AVR error and activates the red status indicator.
+ */
 void DeskService::setErrorAvr()
 {
     avr = false;
@@ -378,6 +381,11 @@ void DeskService::setErrorAvr()
     statusRed();
 }
 
+/**
+ * @brief Updates the line communication error flags.
+ *
+ * @param flags New line communication error flags.
+ */
 void DeskService::setErrorLin(uint8_t flags)
 {
     if (flags != errorLin)
@@ -388,6 +396,9 @@ void DeskService::setErrorLin(uint8_t flags)
     statusRed();
 }
 
+/**
+ * @brief Records an error for node 8 and activates the red status indicator.
+ */
 void DeskService::setErrorNode8()
 {
     if (node8)
@@ -398,6 +409,9 @@ void DeskService::setErrorNode8()
     statusRed();
 }
 
+/**
+ * @brief Records an error for node 9 and activates the red status indicator.
+ */
 void DeskService::setErrorNode9()
 {
     if (node9)
@@ -408,6 +422,11 @@ void DeskService::setErrorNode9()
     statusRed();
 }
 
+/**
+ * @brief Records a serial receive error state and activates the red status indicator.
+ *
+ * @param flags Serial receive error flags.
+ */
 void DeskService::setErrorRx(hardwareSerial_error_t flags)
 {
     if (flags != errorRx)
@@ -418,6 +437,11 @@ void DeskService::setErrorRx(hardwareSerial_error_t flags)
     statusRed();
 }
 
+/**
+ * @brief Updates the transmit error flags and activates the red status indicator.
+ *
+ * @param flags Transmit error flags to record.
+ */
 void DeskService::setErrorTx(uint8_t flags)
 {
     if (flags != errorTx)
@@ -428,6 +452,15 @@ void DeskService::setErrorTx(uint8_t flags)
     statusRed();
 }
 
+/**
+ * @brief Updates node 8 position and motor state.
+ *
+ * Marks node 8 as available and schedules persistence or publication when its
+ * position or state changes.
+ *
+ * @param position Node 8 encoder position.
+ * @param state Node 8 motor state.
+ */
 void DeskService::setNode8(uint16_t position, uint8_t state)
 {
     if (position != encoder8 && state != state8)
@@ -461,6 +494,15 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     }
 }
 
+/**
+ * @brief Updates node 9's position and motor state.
+ *
+ * Marks node 9 as active and schedules persistence or publication when its
+ * position or state changes.
+ *
+ * @param position Node 9's encoder position.
+ * @param state Node 9's motor state.
+ */
 void DeskService::setNode9(uint16_t position, uint8_t state)
 {
     if (position != encoder9 && state != state9)
@@ -636,6 +678,11 @@ std::string DeskService::toHex(std::span<const uint8_t> payload)
     return hex;
 }
 
+/**
+ * @brief Appends active desk, node, USART, and UART errors to a JSON array.
+ *
+ * @param list JSON array to receive the error descriptions.
+ */
 void DeskService::toErrorArray(JsonArray &list)
 {
     if (!avr)
@@ -774,7 +821,9 @@ void DeskService::onInterruptDown()
 }
 
 /**
- * @brief Updates the reset state and status indicator from the reset input.
+ * @brief Updates reset state and clears communication errors when reset is asserted.
+ *
+ * @return None.
  */
 void DeskService::onInterruptReset()
 {

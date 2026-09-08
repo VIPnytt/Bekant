@@ -66,8 +66,8 @@ private:
     Command commandTx{};
 
     /**
-     * State received from the console.
-     */
+ * Stores the state received from the console.
+ */
     State stateRx{};
 
     /**
