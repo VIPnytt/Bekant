@@ -434,6 +434,7 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     {
         encoder8 = position;
         state8 = state;
+        node8 = true;
         saved = false;
         pending = true;
         statusNode();
@@ -441,6 +442,7 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     else if (position != encoder8)
     {
         encoder8 = position;
+        node8 = true;
         saved = false;
         pending = true;
         statusNode();
@@ -448,10 +450,15 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     else if (state != state8)
     {
         state8 = state;
+        node8 = true;
         pending = true;
         statusNode();
     }
-    node8 = true;
+    else if (!node8)
+    {
+        node8 = true;
+        pending = true;
+    }
 }
 
 void DeskService::setNode9(uint16_t position, uint8_t state)
@@ -460,6 +467,7 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     {
         encoder9 = position;
         state9 = state;
+        node9 = true;
         saved = false;
         pending = true;
         statusNode();
@@ -467,6 +475,7 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     else if (position != encoder9)
     {
         encoder9 = position;
+        node9 = true;
         saved = false;
         pending = true;
         statusNode();
@@ -474,10 +483,15 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     else if (state != state9)
     {
         state9 = state;
+        node9 = true;
         pending = true;
         statusNode();
     }
-    node9 = true;
+    else if (!node9)
+    {
+        node9 = true;
+        pending = true;
+    }
 }
 
 /**
@@ -636,22 +650,6 @@ void DeskService::toErrorArray(JsonArray &list)
     {
         list.add("leg node 9 error");
     }
-    if ((errorRx & (1U << static_cast<uint8_t>(hardwareSerial_error_t::UART_BREAK_ERROR))) != 0U)
-    {
-        list.add("UART break");
-    }
-    if ((errorRx & (1U << static_cast<uint8_t>(hardwareSerial_error_t::UART_BUFFER_FULL_ERROR))) != 0U)
-    {
-        list.add("UART buffer full");
-    }
-    if ((errorRx & (1U << static_cast<uint8_t>(hardwareSerial_error_t::UART_FIFO_OVF_ERROR))) != 0U)
-    {
-        list.add("UART FIFO overflow");
-    }
-    if ((errorRx & (1U << static_cast<uint16_t>(hardwareSerial_error_t::UART_FRAME_ERROR))) != 0U)
-    {
-        list.add("UART frame error");
-    }
     if ((errorLin & (0b1U << 3U)) != 0U)
     {
         list.add("USART0 data overrun");
@@ -667,6 +665,21 @@ void DeskService::toErrorArray(JsonArray &list)
     if ((errorTx & (0b1U << 4U)) != 0U)
     {
         list.add("USART1 frame error");
+    }
+    switch (errorRx)
+    {
+    case hardwareSerial_error_t::UART_BREAK_ERROR:
+        list.add("UART break");
+        break;
+    case hardwareSerial_error_t::UART_BUFFER_FULL_ERROR:
+        list.add("UART buffer full");
+        break;
+    case hardwareSerial_error_t::UART_FIFO_OVF_ERROR:
+        list.add("UART FIFO overflow");
+        break;
+    case hardwareSerial_error_t::UART_FRAME_ERROR:
+        list.add("UART frame error");
+        break;
     }
 }
 
