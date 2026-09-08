@@ -43,12 +43,9 @@ void WifiHandler::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-pa
 }
 
 /**
- * @brief Handles a Wi-Fi disconnection event.
+ * @brief Handles a Wi-Fi disconnection event by setting the desk status indicator to red.
  *
- * Records the disconnection reason and sets the device status indicator to red.
- *
- * @param event Wi-Fi event identifier.
- * @param info Information associated with the disconnection event.
+ * @param info Information containing the disconnection reason.
  */
 void WifiHandler::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused-parameters)
                                  arduino_event_info_t info)

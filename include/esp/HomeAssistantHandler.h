@@ -23,6 +23,11 @@ private:
     void sensors();
 
 public:
+    /**
+     * Initializes Home Assistant discovery data storage.
+     *
+     * @param doc JSON document used to store discovery data.
+     */
     explicit HomeAssistantHandler(JsonDocument &doc) : discovery(doc) {};
 
     void availability();

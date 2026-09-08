@@ -14,8 +14,14 @@ private:
     static void onDisconnected(arduino_event_id_t event, arduino_event_info_t info);
 
 public:
+    /**
+     * Initializes Wi-Fi handling.
+     */
     void begin();
 
+    /**
+     * Processes ongoing Wi-Fi handling.
+     */
     void handle();
 };
 

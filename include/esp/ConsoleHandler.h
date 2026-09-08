@@ -50,6 +50,7 @@ public:
     void forward();
 
     void send(Command command);
+
     void send(Command command, uint16_t value);
 
 private:
@@ -62,12 +63,12 @@ private:
     std::array<uint8_t, 0b1U << 4U> bufferTx{0U};
 
     /**
-     * Stores the current command.
+     * Command to transmit.
      */
     Command commandTx{};
 
     /**
-     * Current console state.
+     * State received from the console.
      */
     State stateRx{};
 

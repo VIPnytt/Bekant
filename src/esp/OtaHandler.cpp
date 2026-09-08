@@ -24,7 +24,7 @@ void OtaHandler::begin()
 void OtaHandler::handle() { ota.handle(); }
 
 /**
- * @brief Places the device in safe mode when an OTA update begins.
+ * @brief Places the desk in safe mode when an OTA update begins.
  */
 void OtaHandler::onStart() { desk.safeMode(); }
 
