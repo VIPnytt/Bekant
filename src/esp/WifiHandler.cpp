@@ -2,7 +2,7 @@
 
 #include "esp/WifiHandler.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 #include "esp/secrets.h"
 
 #include <WiFi.h>
@@ -43,12 +43,9 @@ void WifiHandler::onConnected(arduino_event_id_t event) // NOLINT(misc-unused-pa
 }
 
 /**
- * @brief Handles a Wi-Fi disconnection event.
+ * @brief Handles a Wi-Fi disconnection event by setting the desk status indicator to red.
  *
- * Records the disconnection reason and sets the device status indicator to red.
- *
- * @param event Wi-Fi event identifier.
- * @param info Information associated with the disconnection event.
+ * @param info Information containing the disconnection reason.
  */
 void WifiHandler::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused-parameters)
                                  arduino_event_info_t info)
@@ -57,7 +54,7 @@ void WifiHandler::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused
     ESP_LOGD("Wi-Fi",
              "disconnect reason %s",
              WiFi.disconnectReasonName(static_cast<wifi_err_reason_t>(info.wifi_sta_disconnected.reason)));
-    device.statusRed();
+    desk.statusRed();
 }
 
 #endif // ARDUINO_ARCH_ESP32

@@ -2,7 +2,7 @@
 
 #include "esp/HomeAssistantHandler.h"
 
-#include "esp/DeviceService.h" // NOLINT(misc-include-cleaner)
+#include "esp/DeskService.h" // NOLINT(misc-include-cleaner)
 #include "esp/constants.h"
 
 #include <WiFi.h>
@@ -42,7 +42,7 @@ void HomeAssistantHandler::device()
     _device[DeviceAbbreviations::manufacturer].set("IKEA");
     _device[DeviceAbbreviations::model].set("BEKANT");
     _device[DeviceAbbreviations::name].set(NAME);
-    _device[DeviceAbbreviations::sw_version].set(std::string("Bekant ").append(DeviceService::version));
+    _device[DeviceAbbreviations::sw_version].set(std::string("Bekant ").append(DeskService::version));
 }
 
 /**

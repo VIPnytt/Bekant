@@ -22,12 +22,38 @@ private:
     void fade();
 
 public:
+    /**
+     * Processes pending status LED updates.
+     */
     void handle();
 
+    /**
+     * Selects blue for the status LED.
+     */
     void setBlue();
+
+    /**
+     * Selects green for the status LED.
+     */
     void setGreen();
+
+    /**
+     * Disables the status LED.
+     *
+     * @param force Forces the status update when true.
+     */
     void setNone(bool force = false);
+
+    /**
+     * Selects red for the status LED.
+     */
     void setRed();
+
+    /**
+     * Selects white for the status LED.
+     *
+     * @param force Forces the status update when true.
+     */
     void setWhite(bool force = false);
 };
 

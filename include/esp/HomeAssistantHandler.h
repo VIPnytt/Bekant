@@ -15,16 +15,27 @@ private:
     JsonDocument &discovery; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void configuration();
+
     void controls();
+
     void diagnostic();
+
     void sensors();
 
 public:
+    /**
+     * Initializes Home Assistant discovery data storage.
+     *
+     * @param doc JSON document used to store discovery data.
+     */
     explicit HomeAssistantHandler(JsonDocument &doc) : discovery(doc) {};
 
     void availability();
+
     void components();
+
     void device();
+
     void origin();
 };
 

@@ -2,7 +2,7 @@
 
 #include "esp/IspHandler.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 #include "esp/secrets.h"
 
 #include <ESPmDNS.h>
@@ -135,7 +135,7 @@ void IspHandler::handle()
     }
     else if (server.hasClient())
     {
-        device.safeMode();
+        desk.safeMode();
         digitalWrite(PIN_RST, HIGH);
         client = server.accept();
         client.setNoDelay(true);

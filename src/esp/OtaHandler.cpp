@@ -2,7 +2,7 @@
 
 #include "esp/OtaHandler.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 #include "esp/secrets.h" // NOLINT(misc-include-cleaner)
 
 /**
@@ -24,8 +24,8 @@ void OtaHandler::begin()
 void OtaHandler::handle() { ota.handle(); }
 
 /**
- * @brief Places the device in safe mode when an OTA update begins.
+ * @brief Places the desk in safe mode when an OTA update begins.
  */
-void OtaHandler::onStart() { device.safeMode(); }
+void OtaHandler::onStart() { desk.safeMode(); }
 
 #endif // ARDUINO_ARCH_ESP32

@@ -2,19 +2,19 @@
 
 #include "esp/main.h"
 
-#include "esp/DeviceService.h"
+#include "esp/DeskService.h"
 
 /**
- * @brief Initializes the device service.
+ * @brief Initializes the desk service.
  */
-void setup() { device.begin(); }
+void setup() { desk.begin(); }
 
 /**
- * @brief Processes the device and yields for one task tick.
+ * @brief Processes the desk service and yields for one FreeRTOS task tick.
  */
 void loop()
 {
-    device.handle();
+    desk.handle();
     vTaskDelay(1U);
 }
 

@@ -12,7 +12,7 @@
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <span>
 
-class DeviceService
+class DeskService
 {
 private:
     bool buttonDown{false};
@@ -57,10 +57,15 @@ private:
     WifiHandler wifi{};
 
     void save();
+
     void setDriveDown(bool state);
+
     void setDriveUp(bool state);
+
     void setOutputEnable(bool state);
+
     void setReset(bool state);
+
     void statusNode();
 
     [[nodiscard]] float decode(float encoder);
@@ -70,35 +75,53 @@ private:
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
     static void onInterruptDown();
+
     static void onInterruptReset();
+
     static void onInterruptUp();
 
 public:
     static constexpr std::string_view version{"1.0.0"};
 
     void begin();
+
     void handle();
 
     void fetchRelease();
+
     void request(JsonObjectConst doc);
+
     void safeMode();
+
     void setButtonDown(bool state);
+
     void setButtonUp(bool state);
+
     void setEncoder8(uint16_t position);
+
     void setEncoder9(uint16_t position);
+
     void setPresetHigh(uint16_t encoder);
+
     void setPresetLow(uint16_t encoder);
+
     void setRx(std::span<const uint8_t> payload);
+
     void setState8(uint8_t state);
+
     void setState9(uint8_t state);
+
     void setTx(std::span<const uint8_t> payload);
+
     void statusRed();
+
     void statusWhite();
+
     void transmit(JsonDocument &doc);
 
-    static DeviceService &getInstance();
+    static DeskService &getInstance();
 };
 
-extern DeviceService &device; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+extern DeskService &desk; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // ARDUINO_ARCH_ESP32
