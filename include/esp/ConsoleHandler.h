@@ -50,6 +50,7 @@ public:
     void forward();
 
     void send(Command command);
+
     void send(Command command, uint16_t value);
 
 private:
@@ -62,13 +63,13 @@ private:
     std::array<uint8_t, 0b1U << 4U> bufferTx{0U};
 
     /**
- * Command to transmit.
- */
+     * Command to transmit.
+     */
     Command commandTx{};
 
     /**
- * State received from the console.
- */
+     * State received from the console.
+     */
     State stateRx{};
 
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};

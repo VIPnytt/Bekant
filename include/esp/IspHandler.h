@@ -25,105 +25,91 @@ private:
 
     NetworkClient client{};
 
+    NetworkServer server{328U};
+
     /**
- * Sends a single-byte protocol response.
- * @param byte Response byte to send.
- */
-
-/**
- * Sends an empty protocol response.
- */
-
-/**
- * Reads an EEPROM page of the specified length.
- * @param length Number of bytes to read.
- */
-
-/**
- * Enters device programming mode.
- */
-
-/**
- * Reads a flash page of the specified length.
- * @param length Number of bytes to read.
- */
-
-/**
- * Programs the currently received page.
- */
-
-/**
- * Reads a page according to the current ISP command.
- */
-
-/**
- * Sends the device signature.
- */
-
-/**
- * Processes a universal ISP command.
- */
-
-/**
- * Writes a chunk of data to EEPROM.
- * @param start Starting EEPROM address.
- * @param length Number of bytes to write.
- */
-
-/**
- * Writes data to flash memory.
- * @param length Number of bytes to write.
- */
-
-/**
- * Writes data to EEPROM.
- * @param length Number of bytes to write.
- * @return `true` if the write succeeds, `false` otherwise.
- */
-
-/**
- * Receives a byte from the connected client.
- * @return The received byte.
- */
-
-/**
- * Initializes network-based ISP handling.
- */
-
-/**
- * Processes available network activity and ISP commands.
- */
-NetworkServer server{328U};
-
+     * Sends a single-byte protocol response.
+     * @param byte Response byte to send.
+     */
     void byteReply(uint8_t byte);
 
+    /**
+     * Sends an empty protocol response.
+     */
     void emptyReply();
 
+    /**
+     * Reads an EEPROM page of the specified length.
+     * @param length Number of bytes to read.
+     */
     void eepromReadPage(size_t length);
 
+    /**
+     * Enters device programming mode.
+     */
     void enterProgrammingMode();
 
+    /**
+     * Reads a flash page of the specified length.
+     * @param length Number of bytes to read.
+     */
     void flashReadPage(size_t length);
 
+    /**
+     * Programs the currently received page.
+     */
     void programPage();
 
+    /**
+     * Reads a page according to the current ISP command.
+     */
     void readPage();
 
+    /**
+     * Sends the device signature.
+     */
     void readSignature();
 
+    /**
+     * Processes a universal ISP command.
+     */
     void universal();
 
+    /**
+     * Writes a chunk of data to EEPROM.
+     * @param start Starting EEPROM address.
+     * @param length Number of bytes to write.
+     */
     void writeEepromChunk(size_t start, size_t length);
 
+    /**
+     * Writes data to flash memory.
+     * @param length Number of bytes to write.
+     */
     void writeFlash(size_t length);
 
+    /**
+     * Writes data to EEPROM.
+     * @param length Number of bytes to write.
+     * @return `true` if the write succeeds, `false` otherwise.
+     */
     [[nodiscard]] bool writeEeprom(size_t length);
 
+    /**
+     * Receives a byte from the connected client.
+     * @return The received byte.
+     */
     uint8_t getChar();
 
 public:
+    /**
+     * Initializes network-based ISP handling.
+     */
     void begin();
 
+    /**
+     * Processes available network activity and ISP commands.
+     */
     void handle();
 };
 
