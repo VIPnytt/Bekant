@@ -132,7 +132,7 @@ int LegHandler::read(unsigned int &remainingTime)
     {
         return -1;
     }
-    const unsigned char errors{UCSR0A};
+    const unsigned char errors{UCSR0A}; // NOLINT(clang-analyzer-core.FixedAddressDereference)
     if ((errors & ((0b1U << DOR0) | (0b1U << FE0))) != 0U)
     {
         Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::LIN));

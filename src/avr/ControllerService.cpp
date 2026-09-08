@@ -72,23 +72,15 @@ bool ControllerService::read()
     if (valid8)
     {
         const unsigned int _encoder8{static_cast<unsigned int>(node8[0U]) | static_cast<unsigned int>(node8[1U]) << 8U};
-        if (_encoder8 != encoder8 && state8 != node8[2U])
+        if (_encoder8 != encoder8 || state8 != node8[2U])
         {
+            if (_encoder8 != encoder8)
+            {
+                lastMillis = millis();
+            }
             encoder8 = _encoder8;
             state8 = node8[2U];
-            lastMillis = millis();
             console.send(ConsoleHandler::State::NODE8, node8);
-        }
-        else if (_encoder8 != encoder8)
-        {
-            encoder8 = _encoder8;
-            lastMillis = millis();
-            console.send(ConsoleHandler::State::ENCODER8, encoder8);
-        }
-        else if (state8 != node8[2U])
-        {
-            state8 = node8[2U];
-            console.send(ConsoleHandler::State::STATE8, state8);
         }
     }
     else
@@ -102,23 +94,15 @@ bool ControllerService::read()
     if (valid9)
     {
         const unsigned int _encoder9{static_cast<unsigned int>(node9[0U]) | static_cast<unsigned int>(node9[1U]) << 8U};
-        if (_encoder9 != encoder9 && state9 != node9[2U])
+        if (_encoder9 != encoder9 || state9 != node9[2U])
         {
+            if (_encoder9 != encoder9)
+            {
+                lastMillis = millis();
+            }
             encoder9 = _encoder9;
             state9 = node9[2U];
-            lastMillis = millis();
             console.send(ConsoleHandler::State::NODE9, node9);
-        }
-        else if (_encoder9 != encoder9)
-        {
-            encoder9 = _encoder9;
-            lastMillis = millis();
-            console.send(ConsoleHandler::State::ENCODER9, encoder9);
-        }
-        else if (state9 != node9[2U])
-        {
-            state9 = node9[2U];
-            console.send(ConsoleHandler::State::STATE9, state9);
         }
     }
     else

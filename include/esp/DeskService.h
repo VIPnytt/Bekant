@@ -110,21 +110,17 @@ public:
 
     void setErrorLin(uint8_t flags);
 
+    void setErrorNode8();
+
+    void setErrorNode9();
+
     void setErrorRx(hardwareSerial_error_t flags);
 
     void setErrorTx(uint8_t flags);
 
-    void setNode8();
+    void setNode8(uint16_t position, uint8_t state);
 
-    void setNode8(uint8_t state);
-
-    void setNode8(uint16_t position);
-
-    void setNode9();
-
-    void setNode9(uint8_t state);
-
-    void setNode9(uint16_t position);
+    void setNode9(uint16_t position, uint8_t state);
 
     void setPresetHigh(uint16_t encoder);
 

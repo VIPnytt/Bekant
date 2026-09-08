@@ -92,16 +92,6 @@ void ConsoleHandler::parse() const
     {
         desk.setErrorTx(bufferRx.at(1U));
     }
-    else if (stateRx == State::ENCODER8 && lengthRx == 2U)
-    {
-        desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
-    }
-    else if (stateRx == State::ENCODER9 && lengthRx == 2U)
-    {
-        desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
-    }
     else if (stateRx == State::INITIALIZATION)
     {
         desk.setErrorAvr();
@@ -110,25 +100,21 @@ void ConsoleHandler::parse() const
     {
         desk.setErrorLin(bufferRx.at(1U));
     }
-    else if (stateRx == State::NODE8 && lengthRx == 0U)
+    else if (stateRx == State::NODE8)
     {
-        desk.setNode8();
+        lengthRx == 3U
+            ? desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                                  static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
+                            bufferRx.at(3U))
+            : desk.setErrorNode8();
     }
-    else if (stateRx == State::NODE8 && lengthRx == 3U)
+    else if (stateRx == State::NODE9)
     {
-        desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
-        desk.setNode8(bufferRx.at(3U));
-    }
-    else if (stateRx == State::NODE9 && lengthRx == 0U)
-    {
-        desk.setNode9();
-    }
-    else if (stateRx == State::NODE9 && lengthRx == 3U)
-    {
-        desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
-        desk.setNode9(bufferRx.at(3U));
+        lengthRx == 3U
+            ? desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                                  static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
+                            bufferRx.at(3U))
+            : desk.setErrorNode9();
     }
     else if (stateRx == State::PRESET_HIGH && lengthRx == 2U)
     {
@@ -139,14 +125,6 @@ void ConsoleHandler::parse() const
     {
         desk.setPresetLow(static_cast<uint16_t>(bufferRx.at(1U)) |
                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
-    }
-    else if (stateRx == State::STATE8 && lengthRx == 1U)
-    {
-        desk.setNode8(bufferRx.at(1U));
-    }
-    else if (stateRx == State::STATE9 && lengthRx == 1U)
-    {
-        desk.setNode9(bufferRx.at(1U));
     }
     else
     {

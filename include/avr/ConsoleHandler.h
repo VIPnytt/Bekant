@@ -30,8 +30,6 @@ public:
         BUTTON_DOWN = 1U,
         BUTTON_UP,
         CONSOLE,
-        ENCODER8,
-        ENCODER9,
         INITIALIZATION,
         LIN,
         NODE8,
@@ -39,8 +37,6 @@ public:
         POSITION,
         PRESET_HIGH,
         PRESET_LOW,
-        STATE8,
-        STATE9,
     };
 
     /**

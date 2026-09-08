@@ -388,6 +388,26 @@ void DeskService::setErrorLin(uint8_t flags)
     statusRed();
 }
 
+void DeskService::setErrorNode8()
+{
+    if (node8)
+    {
+        node8 = false;
+        pending = true;
+    }
+    statusRed();
+}
+
+void DeskService::setErrorNode9()
+{
+    if (node9)
+    {
+        node9 = false;
+        pending = true;
+    }
+    statusRed();
+}
+
 void DeskService::setErrorRx(hardwareSerial_error_t flags)
 {
     if (flags != errorRx)
@@ -408,24 +428,24 @@ void DeskService::setErrorTx(uint8_t flags)
     statusRed();
 }
 
-void DeskService::setNode8()
+void DeskService::setNode8(uint16_t position, uint8_t state)
 {
-    if (node8)
+    if (position != encoder8 && state != state8)
     {
-        node8 = false;
+        encoder8 = position;
+        state8 = state;
+        saved = false;
         pending = true;
+        statusNode();
     }
-    statusRed();
-}
-
-/**
- * @brief Updates the state of drive 8.
- *
- * @param state New drive state.
- */
-void DeskService::setNode8(uint8_t state)
-{
-    if (state != state8)
+    else if (position != encoder8)
+    {
+        encoder8 = position;
+        saved = false;
+        pending = true;
+        statusNode();
+    }
+    else if (state != state8)
     {
         state8 = state;
         pending = true;
@@ -434,64 +454,26 @@ void DeskService::setNode8(uint8_t state)
     node8 = true;
 }
 
-/**
- * @brief Updates the encoder 8 position and marks the desk state for saving and publication.
- *
- * Updates the status indicator when the position changes.
- *
- * @param position New encoder 8 position.
- */
-void DeskService::setNode8(uint16_t position)
+void DeskService::setNode9(uint16_t position, uint8_t state)
 {
-    if (position != encoder8)
+    if (position != encoder9 && state != state9)
     {
-        encoder8 = position;
+        encoder9 = position;
+        state9 = state;
         saved = false;
         pending = true;
         statusNode();
     }
-    node8 = true;
-}
-
-void DeskService::setNode9()
-{
-    if (node9)
-    {
-        node9 = false;
-        pending = true;
-    }
-    statusRed();
-}
-
-/**
- * @brief Updates the motor state for encoder 9.
- *
- * @param state New motor state.
- */
-void DeskService::setNode9(uint8_t state)
-{
-    if (state != state9)
-    {
-        state9 = state;
-        pending = true;
-        statusNode();
-    }
-    node9 = true;
-}
-
-/**
- * @brief Updates the secondary encoder value.
- *
- * Marks the device state for persistence and publication when the value changes.
- *
- * @param position New secondary encoder value.
- */
-void DeskService::setNode9(uint16_t position)
-{
-    if (position != encoder9)
+    else if (position != encoder9)
     {
         encoder9 = position;
         saved = false;
+        pending = true;
+        statusNode();
+    }
+    else if (state != state9)
+    {
+        state9 = state;
         pending = true;
         statusNode();
     }
