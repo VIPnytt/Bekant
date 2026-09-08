@@ -29,9 +29,11 @@ public:
     {
         BUTTON_DOWN = 1U,
         BUTTON_UP,
+        CONSOLE,
         ENCODER8,
         ENCODER9,
-        INITIALIZE,
+        INITIALIZATION,
+        LIN,
         NODE8,
         NODE9,
         POSITION,

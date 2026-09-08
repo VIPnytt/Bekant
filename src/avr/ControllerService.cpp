@@ -28,7 +28,7 @@ void ControllerService::begin()
     console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
     if (!lin.begin())
     {
-        console.send(ConsoleHandler::State::INITIALIZE);
+        console.send(ConsoleHandler::State::INITIALIZATION);
         tone(0b1U << 8U);
         return;
     }

@@ -40,16 +40,6 @@ void ConsoleHandler::handle()
             lengthRx = 0U;
         }
     }
-    else if (lastError != hardwareSerial_error_t::UART_NO_ERROR)
-    {
-        const uint8_t _error{static_cast<uint8_t>(lastError)};
-        lastError = hardwareSerial_error_t::UART_NO_ERROR;
-        ESP_LOGW("hardwareSerial_error_t", "%d", _error);
-        desk.statusRed();
-        JsonDocument doc{};
-        doc["hardwareSerial_error_t"].set(_error);
-        desk.transmit(doc);
-    }
     else
     {
         forward();
@@ -98,27 +88,47 @@ void ConsoleHandler::parse() const
     {
         desk.setButtonUp(static_cast<bool>(bufferRx.at(1U)));
     }
+    else if (stateRx == State::CONSOLE && lengthRx == 1U)
+    {
+        desk.setErrorTx(bufferRx.at(1U));
+    }
     else if (stateRx == State::ENCODER8 && lengthRx == 2U)
     {
-        desk.setEncoder8(static_cast<uint16_t>(bufferRx.at(1U)) |
-                         static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
     }
     else if (stateRx == State::ENCODER9 && lengthRx == 2U)
     {
-        desk.setEncoder9(static_cast<uint16_t>(bufferRx.at(1U)) |
-                         static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
+    }
+    else if (stateRx == State::INITIALIZATION)
+    {
+        desk.setErrorAvr();
+    }
+    else if (stateRx == State::LIN && lengthRx == 1U)
+    {
+        desk.setErrorLin(bufferRx.at(1U));
+    }
+    else if (stateRx == State::NODE8 && lengthRx == 0U)
+    {
+        desk.setNode8();
     }
     else if (stateRx == State::NODE8 && lengthRx == 3U)
     {
-        desk.setEncoder8(static_cast<uint16_t>(bufferRx.at(1U)) |
-                         static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
-        desk.setState8(bufferRx.at(3U));
+        desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
+        desk.setNode8(bufferRx.at(3U));
+    }
+    else if (stateRx == State::NODE9 && lengthRx == 0U)
+    {
+        desk.setNode9();
     }
     else if (stateRx == State::NODE9 && lengthRx == 3U)
     {
-        desk.setEncoder9(static_cast<uint16_t>(bufferRx.at(1U)) |
-                         static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
-        desk.setState9(bufferRx.at(3U));
+        desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)));
+        desk.setNode9(bufferRx.at(3U));
     }
     else if (stateRx == State::PRESET_HIGH && lengthRx == 2U)
     {
@@ -132,11 +142,11 @@ void ConsoleHandler::parse() const
     }
     else if (stateRx == State::STATE8 && lengthRx == 1U)
     {
-        desk.setState8(bufferRx.at(1U));
+        desk.setNode8(bufferRx.at(1U));
     }
     else if (stateRx == State::STATE9 && lengthRx == 1U)
     {
-        desk.setState9(bufferRx.at(1U));
+        desk.setNode9(bufferRx.at(1U));
     }
     else
     {
@@ -191,6 +201,10 @@ void ConsoleHandler::write(std::span<const uint8_t> payload)
  *
  * @param error Hardware serial error to store.
  */
-void ConsoleHandler::onReceiveError(hardwareSerial_error_t error) { lastError = error; }
+void ConsoleHandler::onReceiveError(hardwareSerial_error_t error)
+{
+    ESP_LOGW("hardwareSerial_error_t", "%u", static_cast<unsigned int>(error));
+    desk.setErrorRx(error);
+}
 
 #endif // ARDUINO_ARCH_ESP32

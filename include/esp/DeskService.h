@@ -15,14 +15,19 @@
 class DeskService
 {
 private:
+    bool avr{true};
     bool buttonDown{false};
     bool buttonUp{false};
     bool enable{true};
+    bool node8{true};
+    bool node9{true};
     bool pending{true};
     bool process{true};
     bool reset{false};
     bool saved{true};
 
+    uint8_t errorLin{0U};
+    uint8_t errorTx{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
 
@@ -35,6 +40,8 @@ private:
 
     size_t lengthRx{0U};
     size_t lengthTx{0U};
+
+    hardwareSerial_error_t errorRx{hardwareSerial_error_t::UART_NO_ERROR};
 
     std::string versionLatest{};
 
@@ -68,6 +75,8 @@ private:
 
     void statusNode();
 
+    void toErrorArray(JsonArray &list);
+
     [[nodiscard]] float decode(float encoder);
 
     [[nodiscard]] uint16_t encode(float height);
@@ -97,19 +106,31 @@ public:
 
     void setButtonUp(bool state);
 
-    void setEncoder8(uint16_t position);
+    void setErrorAvr();
 
-    void setEncoder9(uint16_t position);
+    void setErrorLin(uint8_t flags);
+
+    void setErrorRx(hardwareSerial_error_t flags);
+
+    void setErrorTx(uint8_t flags);
+
+    void setNode8();
+
+    void setNode8(uint8_t state);
+
+    void setNode8(uint16_t position);
+
+    void setNode9();
+
+    void setNode9(uint8_t state);
+
+    void setNode9(uint16_t position);
 
     void setPresetHigh(uint16_t encoder);
 
     void setPresetLow(uint16_t encoder);
 
     void setRx(std::span<const uint8_t> payload);
-
-    void setState8(uint8_t state);
-
-    void setState9(uint8_t state);
 
     void setTx(std::span<const uint8_t> payload);
 

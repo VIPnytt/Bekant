@@ -28,7 +28,7 @@ private:
 
     [[nodiscard]] unsigned char calcParity(unsigned char identifier);
 
-    [[nodiscard]] int readWithTimeout(unsigned int &remainingTime);
+    [[nodiscard]] int read(unsigned int &remainingTime);
 
     /**
      * Calculates the complemented checksum for a sequence of bytes.
@@ -90,12 +90,12 @@ public:
     template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
     {
         static_assert(N <= 8U);
-        const unsigned char addressByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
+        const unsigned char idByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
         serialBreak();
         Serial.write(linSyncByte);
-        Serial.write(addressByte);
+        Serial.write(idByte);
         Serial.write(data, N);
-        Serial.write(calcChecksum(data, identifier == linDiagnosticRequestId ? 0U : addressByte));
+        Serial.write(calcChecksum(data, identifier == linDiagnosticRequestId ? 0U : idByte));
         Serial.flush();
     }
 
@@ -119,7 +119,7 @@ public:
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
         do // NOLINT(cppcoreguidelines-avoid-do-while)
         {
-            receivedByte = readWithTimeout(remainingTime);
+            receivedByte = read(remainingTime);
         } while (receivedByte != -1 && receivedByte != static_cast<int>(linSyncByte));
         if (receivedByte == -1)
         {
@@ -127,7 +127,7 @@ public:
         }
         do // NOLINT(cppcoreguidelines-avoid-do-while)
         {
-            receivedByte = readWithTimeout(remainingTime);
+            receivedByte = read(remainingTime);
         } while (receivedByte != -1 && receivedByte != idByte);
         if (receivedByte == -1)
         {
@@ -135,14 +135,14 @@ public:
         }
         for (unsigned char &dataByte : data)
         {
-            receivedByte = readWithTimeout(remainingTime);
+            receivedByte = read(remainingTime);
             if (receivedByte == -1)
             {
                 return false;
             }
             dataByte = static_cast<unsigned char>(receivedByte);
         }
-        receivedByte = readWithTimeout(remainingTime);
+        receivedByte = read(remainingTime);
         return receivedByte != -1 &&
                calcChecksum(data, identifier == linDiagnosticResponseId ? 0U : idByte) == receivedByte;
     }

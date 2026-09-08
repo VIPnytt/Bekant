@@ -22,9 +22,11 @@ public:
     {
         BUTTON_DOWN = 1U,
         BUTTON_UP,
+        CONSOLE,
         ENCODER8,
         ENCODER9,
-        INITIALIZE,
+        INITIALIZATION,
+        LIN,
         NODE8,
         NODE9,
         POSITION,
@@ -71,8 +73,6 @@ private:
      * State received from the console.
      */
     State stateRx{};
-
-    static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
 
     /**
      * Parses a received console payload.

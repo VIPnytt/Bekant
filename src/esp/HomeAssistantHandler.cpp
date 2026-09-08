@@ -308,6 +308,16 @@ void HomeAssistantHandler::diagnostic()
         calibrate[ComponentAbbreviations::unique_id].set("calibrate");
     }
     {
+        JsonObject errors{discovery[ComponentAbbreviations::components]["error"].to<JsonObject>()};
+        errors[ComponentAbbreviations::entity_category].set(entityCategory);
+        errors[ComponentAbbreviations::icon].set("mdi:alert-outline");
+        errors[ComponentAbbreviations::name].set("Errors");
+        errors[ComponentAbbreviations::platform].set("sensor");
+        errors[ComponentAbbreviations::state_topic].set(stateTopic);
+        errors[ComponentAbbreviations::unique_id].set("error");
+        errors[ComponentAbbreviations::value_template].set("{{value_json.errors|join(', ')}}");
+    }
+    {
         JsonObject firmware{discovery[ComponentAbbreviations::components]["firmware"].to<JsonObject>()};
         firmware[ComponentAbbreviations::enabled_by_default].set(false);
         firmware[ComponentAbbreviations::entity_category].set(entityCategory);

@@ -12,9 +12,14 @@
  */
 void ConsoleHandler::handle()
 {
-    const int byte{Serial1.read()};
-    if (byte != -1)
+    if (Serial1.available() != 0)
     {
+        const unsigned char errors{UCSR1A};
+        if ((errors & ((0b1U << DOR1) | (0b1U << FE1))) != 0U)
+        {
+            send(State::CONSOLE, errors);
+        }
+        const int byte{Serial1.read()};
         if (lengthRx == 0U)
         {
             lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);

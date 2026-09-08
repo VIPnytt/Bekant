@@ -269,6 +269,8 @@ void DeskService::transmit(JsonDocument &doc)
     doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
+    JsonArray errors{doc["errors"].to<JsonArray>()};
+    toErrorArray(errors);
     const float leg8{decode(static_cast<float>(encoder8))};
     const float leg9{decode(static_cast<float>(encoder9))};
     doc["legs"][0U].set(leg8);
@@ -369,6 +371,69 @@ void DeskService::setDriveUp(bool state)
 #endif // PIN_TPUP
 }
 
+void DeskService::setErrorAvr()
+{
+    avr = false;
+    pending = true;
+    statusRed();
+}
+
+void DeskService::setErrorLin(uint8_t flags)
+{
+    if (flags != errorLin)
+    {
+        errorLin = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+void DeskService::setErrorRx(hardwareSerial_error_t flags)
+{
+    if (flags != errorRx)
+    {
+        errorRx = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+void DeskService::setErrorTx(uint8_t flags)
+{
+    if (flags != errorTx)
+    {
+        errorTx = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+void DeskService::setNode8()
+{
+    if (node8)
+    {
+        node8 = false;
+        pending = true;
+    }
+    statusRed();
+}
+
+/**
+ * @brief Updates the state of drive 8.
+ *
+ * @param state New drive state.
+ */
+void DeskService::setNode8(uint8_t state)
+{
+    if (state != state8)
+    {
+        state8 = state;
+        pending = true;
+        statusNode();
+    }
+    node8 = true;
+}
+
 /**
  * @brief Updates the encoder 8 position and marks the desk state for saving and publication.
  *
@@ -376,7 +441,7 @@ void DeskService::setDriveUp(bool state)
  *
  * @param position New encoder 8 position.
  */
-void DeskService::setEncoder8(uint16_t position)
+void DeskService::setNode8(uint16_t position)
 {
     if (position != encoder8)
     {
@@ -385,6 +450,33 @@ void DeskService::setEncoder8(uint16_t position)
         pending = true;
         statusNode();
     }
+    node8 = true;
+}
+
+void DeskService::setNode9()
+{
+    if (node9)
+    {
+        node9 = false;
+        pending = true;
+    }
+    statusRed();
+}
+
+/**
+ * @brief Updates the motor state for encoder 9.
+ *
+ * @param state New motor state.
+ */
+void DeskService::setNode9(uint8_t state)
+{
+    if (state != state9)
+    {
+        state9 = state;
+        pending = true;
+        statusNode();
+    }
+    node9 = true;
 }
 
 /**
@@ -394,7 +486,7 @@ void DeskService::setEncoder8(uint16_t position)
  *
  * @param position New secondary encoder value.
  */
-void DeskService::setEncoder9(uint16_t position)
+void DeskService::setNode9(uint16_t position)
 {
     if (position != encoder9)
     {
@@ -403,6 +495,7 @@ void DeskService::setEncoder9(uint16_t position)
         pending = true;
         statusNode();
     }
+    node9 = true;
 }
 
 /**
@@ -480,36 +573,6 @@ void DeskService::setRx(std::span<const uint8_t> payload)
 }
 
 /**
- * @brief Updates the state of drive 8.
- *
- * @param state New drive state.
- */
-void DeskService::setState8(uint8_t state)
-{
-    if (state != state8)
-    {
-        state8 = state;
-        pending = true;
-        statusNode();
-    }
-}
-
-/**
- * @brief Updates the motor state for encoder 9.
- *
- * @param state New motor state.
- */
-void DeskService::setState9(uint8_t state)
-{
-    if (state != state9)
-    {
-        state9 = state;
-        pending = true;
-        statusNode();
-    }
-}
-
-/**
  * @brief Updates the stored transmitted serial payload.
  *
  * @param payload Bytes to store as the transmitted payload.
@@ -575,6 +638,54 @@ std::string DeskService::toHex(std::span<const uint8_t> payload)
         hex += map.at(static_cast<size_t>(byte & 0xFU));
     }
     return hex;
+}
+
+void DeskService::toErrorArray(JsonArray &list)
+{
+    if (!avr)
+    {
+        list.add("desk initialization error");
+    }
+    if (!node8)
+    {
+        list.add("leg node 8 error");
+    }
+    if (!node9)
+    {
+        list.add("leg node 9 error");
+    }
+    if ((errorRx & (1U << static_cast<uint8_t>(hardwareSerial_error_t::UART_BREAK_ERROR))) != 0U)
+    {
+        list.add("UART break");
+    }
+    if ((errorRx & (1U << static_cast<uint8_t>(hardwareSerial_error_t::UART_BUFFER_FULL_ERROR))) != 0U)
+    {
+        list.add("UART buffer full");
+    }
+    if ((errorRx & (1U << static_cast<uint8_t>(hardwareSerial_error_t::UART_FIFO_OVF_ERROR))) != 0U)
+    {
+        list.add("UART FIFO overflow");
+    }
+    if ((errorRx & (1U << static_cast<uint16_t>(hardwareSerial_error_t::UART_FRAME_ERROR))) != 0U)
+    {
+        list.add("UART frame error");
+    }
+    if ((errorLin & (0b1U << 3U)) != 0U)
+    {
+        list.add("USART0 data overrun");
+    }
+    if ((errorLin & (0b1U << 4U)) != 0U)
+    {
+        list.add("USART0 frame error");
+    }
+    if ((errorTx & (0b1U << 3U)) != 0U)
+    {
+        list.add("USART1 data overrun");
+    }
+    if ((errorTx & (0b1U << 4U)) != 0U)
+    {
+        list.add("USART1 frame error");
+    }
 }
 
 /**
@@ -673,7 +784,22 @@ void DeskService::onInterruptDown()
 void DeskService::onInterruptReset()
 {
     desk.reset = digitalRead(PIN_RST) == LOW;
-    desk.reset ? desk.status.setNone(true) : desk.status.setWhite();
+    if (desk.reset)
+    {
+        desk.avr = true;
+        desk.node8 = true;
+        desk.node9 = true;
+        desk.errorLin = 0U;
+        desk.errorRx = hardwareSerial_error_t::UART_NO_ERROR;
+        desk.errorTx = 0U;
+        desk.lengthRx = 0U;
+        desk.lengthTx = 0U;
+        desk.status.setNone(true);
+    }
+    else
+    {
+        desk.status.setWhite();
+    }
     desk.pending = true;
 }
 

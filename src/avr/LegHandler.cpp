@@ -2,6 +2,7 @@
 
 #include "avr/LegHandler.h"
 
+#include "avr/ConsoleHandler.h"
 #include "avr/constants.h"
 
 #include <wiring.h>
@@ -118,7 +119,7 @@ unsigned char LegHandler::calcParity(unsigned char identifier)
  * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
  * @return int The received byte, or -1 if no byte is available before the timeout.
  */
-int LegHandler::readWithTimeout(unsigned int &remainingTime)
+int LegHandler::read(unsigned int &remainingTime)
 {
     constexpr unsigned int interval{static_cast<unsigned int>(1'000'000UL / baudRate)};
     while (remainingTime != 0U && Serial.available() == 0)
@@ -126,6 +127,16 @@ int LegHandler::readWithTimeout(unsigned int &remainingTime)
         const unsigned int delayTime{remainingTime >= interval ? interval : remainingTime};
         delayMicroseconds(delayTime);
         remainingTime -= delayTime;
+    }
+    if (Serial.available() == 0)
+    {
+        return -1;
+    }
+    const unsigned char errors{UCSR0A};
+    if ((errors & ((0b1U << DOR0) | (0b1U << FE0))) != 0U)
+    {
+        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::LIN));
+        Serial1.write(errors);
     }
     return Serial.read();
 }
