@@ -2,12 +2,17 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
+#include <HardwareSerial.h>
+
 /**
  * Handles buffered console input.
  */
 class ConsoleHandler
 {
 public:
+    /**
+     * Identifies protocol message commands exchanged with the console.
+     */
     enum class Command : unsigned char
     {
         CALIBRATE = 1U,
@@ -17,6 +22,9 @@ public:
         TONE,
     };
 
+    /**
+     * Identifies protocol message states exchanged with the console.
+     */
     enum class State : unsigned char
     {
         BUTTON_DOWN = 1U,
@@ -33,21 +41,52 @@ public:
         STATE9,
     };
 
+    /**
+     * Processes buffered console input.
+     */
     void handle();
-    void print(State state, unsigned int value);
-    void write(State state);
-    void write(State state, unsigned char byte);
-    void write(State state, unsigned char byte1, unsigned char byte2);
-    void write(State state, unsigned char byte1, unsigned char byte2, unsigned char byte3);
+
+    /**
+     * Sends a protocol state without a payload.
+     * @param state State to send.
+     */
+    void send(State state);
+
+    /**
+     * Sends a protocol state with an 8-bit payload.
+     * @param state State to send.
+     * @param byte 8-bit payload.
+     */
+    void send(State state, unsigned char byte);
+
+    /**
+     * Sends a protocol state with a 16-bit payload.
+     * @param state State to send.
+     * @param value 16-bit payload.
+     */
+    void send(State state, unsigned int value);
+
+    /**
+     * Sends a protocol state with a fixed-size byte payload.
+     * @param state State to send.
+     * @param data Byte payload to send.
+     * @tparam N Number of bytes in the payload; must be fewer than 16.
+     */
+    template <unsigned int N> void send(State state, const unsigned char (&data)[N])
+    {
+        static_assert(N < (0b1U << 4U));
+        Serial1.write((N << 4U) | static_cast<unsigned char>(state));
+        Serial1.write(data, N);
+    }
 
 private:
-    unsigned char commandLength{0U};
+    unsigned char lengthRx{0U};
 
-    unsigned char commandBuffer[0b1U << 4U]{0U};
+    unsigned char bufferRx[0b1U << 4U]{};
 
-    unsigned int commandBytes{0U};
+    unsigned int bytesRx{0U};
 
-    Command command{};
+    Command commandRx{};
 
     /**
      * Parses buffered console input into a command.

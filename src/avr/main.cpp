@@ -1,17 +1,17 @@
 #ifdef ARDUINO_ARCH_AVR
 
-#include "avr/DeskService.h"
+#include "avr/ControllerService.h"
 
 #include <wiring.h>
 
 /**
- * @brief Initializes the desk service.
+ * @brief Initializes the controller service.
  */
-void setup() { desk.begin(); }
+void setup() { controller.begin(); }
 
 /**
- * @brief Processes the desk service.
+ * @brief Processes the controller.
  */
-void loop() { desk.handle(); }
+void loop() { controller.handle(); }
 
 #endif // ARDUINO_ARCH_AVR

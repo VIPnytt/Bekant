@@ -3,7 +3,7 @@
 #include "avr/ButtonHandler.h"
 
 #include "avr/ConsoleHandler.h"
-#include "avr/DeskService.h"
+#include "avr/ControllerService.h"
 #include "avr/constants.h"
 
 #include <HardwareSerial.h>
@@ -65,7 +65,7 @@ void ButtonHandler::process()
     if (stateDown && stateUp && millis() - lastMillis > 0b1U << 13U)
     {
         count = 0;
-        desk.recalibrate();
+        controller.recalibrate();
     }
     else if (stateDown && !stateUp && millis() - lastMillis > 0b1U << 9U)
     {
@@ -80,24 +80,24 @@ void ButtonHandler::process()
     else if (count == -2 && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
-        desk.tone(0b1U << 12U);
-        desk.setPresetLow(desk.getEncoderMax());
+        controller.setPresetLow(controller.getEncoderMax());
+        controller.tone(0b1U << 12U);
     }
     else if (count == -1 && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
-        desk.setTarget(desk.getPresetLow());
+        controller.setTarget(controller.getPresetLow());
     }
     else if (count == 1 && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
-        desk.setTarget(desk.getPresetHigh());
+        controller.setTarget(controller.getPresetHigh());
     }
     else if (count == 2 && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
-        desk.tone(0b1U << 12U);
-        desk.setPresetHigh(desk.getEncoderMin());
+        controller.setPresetHigh(controller.getEncoderMin());
+        controller.tone(0b1U << 12U);
     }
     else if (count != 0 && millis() - lastMillis > 0b1U << 8U)
     {
@@ -110,9 +110,9 @@ void ButtonHandler::process()
  */
 void ButtonHandler::incrementDown()
 {
-    const unsigned int maxCurrent{desk.getEncoderMax()};
-    desk.setTarget(maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
-                                                                      : Encoder::minLimit);
+    const unsigned int maxCurrent{controller.getEncoderMax()};
+    controller.setTarget(maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
+                                                                            : Encoder::minLimit);
 }
 
 /**
@@ -120,9 +120,9 @@ void ButtonHandler::incrementDown()
  */
 void ButtonHandler::incrementUp()
 {
-    const unsigned int minCurrent{desk.getEncoderMin()};
-    desk.setTarget(minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
-                                                                      : Encoder::maxLimit);
+    const unsigned int minCurrent{controller.getEncoderMin()};
+    controller.setTarget(minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
+                                                                            : Encoder::maxLimit);
 }
 
 /**
@@ -130,12 +130,12 @@ void ButtonHandler::incrementUp()
  */
 void ButtonHandler::cancel()
 {
-    const DeskService::State state{desk.getState()};
-    if (state == DeskService::State::DOWN)
+    const ControllerService::State state{controller.getState()};
+    if (state == ControllerService::State::DOWN)
     {
         incrementDown();
     }
-    else if (state == DeskService::State::UP)
+    else if (state == ControllerService::State::UP)
     {
         incrementUp();
     }

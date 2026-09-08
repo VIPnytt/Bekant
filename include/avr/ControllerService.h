@@ -4,9 +4,9 @@
 
 #include "avr/ButtonHandler.h"
 #include "avr/ConsoleHandler.h"
-#include "avr/LinHandler.h"
+#include "avr/LegHandler.h"
 
-class DeskService
+class ControllerService
 {
 public:
     enum class State : unsigned char
@@ -23,11 +23,17 @@ public:
     };
 
     void begin();
+
     void handle();
+
     void recalibrate();
+
     void setPresetHigh(unsigned int preset);
+
     void setPresetLow(unsigned int preset);
+
     void setTarget(unsigned int position);
+
     void tone(unsigned int frequency);
 
     [[nodiscard]] unsigned int getEncoderMax() const;
@@ -37,21 +43,9 @@ public:
 
     [[nodiscard]] State getState() const;
 
-    static DeskService &getInstance();
+    static ControllerService &getInstance();
 
 private:
-    enum class Command : unsigned char
-    {
-        FINISH = 0x84U,
-        LOWER = 0x85U,
-        RAISE = 0x86U,
-        OK = 0x87U,
-        CALIBRATE_END = 0xBCU,
-        CALIBRATE_BEGIN = 0xBDU,
-        PRE_MOVE = 0xC4U,
-        IDLE = 0xFCU,
-    };
-
     bool pending{false};
 
     unsigned char state8{0U};
@@ -69,7 +63,10 @@ private:
 
     ConsoleHandler console{};
 
-    LinHandler lin{};
+    /**
+     * Handles leg movement commands and encoder communication.
+     */
+    LegHandler lin{};
 
     State state{State::IDLE};
 
@@ -120,15 +117,7 @@ private:
      *
      * @param command Command to send.
      */
-    void sendCommand(Command command);
-
-    /**
-     * Sends a desk command with a target encoder position.
-     *
-     * @param command Command to send.
-     * @param position Encoder position associated with the command.
-     */
-    void sendCommand(Command command, unsigned int position);
+    void sendCommand(LegHandler::Command command);
 
     /**
      * Determines whether the desk service is idle.
@@ -136,20 +125,9 @@ private:
      * @return `true` if the service is idle, `false` otherwise.
      */
     [[nodiscard]] bool isIdle() const;
-
-    /**
-     * Sends a four-byte packet.
-     *
-     * @param byte1 First packet byte.
-     * @param byte2 Second packet byte.
-     * @param byte3 Third packet byte.
-     * @param byte4 Fourth packet byte.
-     * @return `true` if a response byte is received, `false` otherwise.
-     */
-    bool sendPacket(unsigned char byte1, unsigned char byte2, unsigned char byte3, unsigned char byte4);
 };
 
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
-extern DeskService &desk;
+extern ControllerService &controller;
 
 #endif // ARDUINO_ARCH_AVR
