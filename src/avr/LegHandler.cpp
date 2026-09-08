@@ -2,7 +2,6 @@
 
 #include "avr/LegHandler.h"
 
-#include "avr/ConsoleHandler.h"
 #include "avr/constants.h"
 
 #include <wiring.h>
@@ -101,11 +100,13 @@ bool LegHandler::begin()
  */
 unsigned char LegHandler::calcParity(unsigned char identifier)
 {
-    const unsigned int parity0{(identifier & 1U) ^ ((identifier >> 1U) & 1U) ^ ((identifier >> 2U) & 1U) ^
-                               ((identifier >> 4U) & 1U)};
-    const unsigned int parity1{~(((identifier >> 1U) & 1U) ^ ((identifier >> 3U) & 1U) ^ ((identifier >> 4U) & 1U) ^
-                                 ((identifier >> 5U) & 1U)) &
-                               1U};
+    const unsigned int parity0{
+        static_cast<unsigned int>(identifier & 1U) ^ (static_cast<unsigned int>(identifier >> 1U) & 1U) ^
+        (static_cast<unsigned int>(identifier >> 2U) & 1U) ^ (static_cast<unsigned int>(identifier >> 4U) & 1U)};
+    const unsigned int parity1{
+        ~((static_cast<unsigned int>(identifier >> 1U) & 1U) ^ (static_cast<unsigned int>(identifier >> 3U) & 1U) ^
+          (static_cast<unsigned int>(identifier >> 4U) & 1U) ^ (static_cast<unsigned int>(identifier >> 5U) & 1U)) &
+        1U};
     return static_cast<unsigned char>((parity0 | (parity1 << 1U)) << 6U);
 }
 

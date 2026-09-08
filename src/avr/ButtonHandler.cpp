@@ -112,7 +112,7 @@ void ButtonHandler::incrementDown()
 {
     const unsigned int maxCurrent{controller.getEncoderMax()};
     controller.setTarget(maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
-                                                                      : Encoder::minLimit);
+                                                                            : Encoder::minLimit);
 }
 
 /**
@@ -122,7 +122,7 @@ void ButtonHandler::incrementUp()
 {
     const unsigned int minCurrent{controller.getEncoderMin()};
     controller.setTarget(minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
-                                                                      : Encoder::maxLimit);
+                                                                            : Encoder::maxLimit);
 }
 
 /**
