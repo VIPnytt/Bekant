@@ -81,16 +81,16 @@ public:
      */
     void sendCommand(Command command, unsigned int position);
 
-    template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
-    {
-        static_assert(N <= 8U);
-        /**
+    /**
      * Sends a LIN frame containing the specified payload.
      *
      * @param identifier LIN frame identifier.
      * @param data Payload bytes to transmit.
      */
-    const unsigned char addressByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
+    template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
+    {
+        static_assert(N <= 8U);
+        const unsigned char addressByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
         serialBreak();
         Serial.write(linSyncByte);
         Serial.write(addressByte);
@@ -100,23 +100,17 @@ public:
     }
 
     /**
-     * Requests a LIN frame and stores its payload in the provided buffer.
+     * Receives a LIN response for the specified identifier.
      *
      * @param identifier LIN frame identifier to request.
-     * @param data Buffer to receive the frame payload.
-     * @return `true` if a complete frame with a valid checksum is received, `false` on timeout or checksum failure.
+     * @param data Buffer to populate with the received payload.
+     * @return `true` if a complete response with a valid checksum is received, `false` on timeout or checksum
+     * failure.
      */
     template <unsigned int N> [[nodiscard]] bool request(unsigned char identifier, unsigned char (&data)[N])
     {
         static_assert(N <= 8U);
-        /**
- * Receives a LIN response for the specified identifier.
- *
- * @param identifier LIN frame identifier to request.
- * @param data Buffer to populate with the received payload.
- * @return `true` if a complete response with a valid checksum is received, `false` on timeout or checksum failure.
- */
-const unsigned char idByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
+        const unsigned char idByte{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
         serialBreak();
         Serial.write(linSyncByte);
         Serial.write(idByte);

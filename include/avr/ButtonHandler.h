@@ -5,18 +5,22 @@
 class ButtonHandler
 {
 private:
+    /**
+     * Handles the current button-down input state.
+     */
+
     bool stateDown{false};
+    /**
+     * Handles the current button-up input state.
+     */
     bool stateUp{false};
 
     /**
- * Tracks the accumulated button event count.
- */
-signed char count{0};
+     * Tracks the accumulated button event count.
+     */
+    signed char count{0};
 
-    /**
- * Handles the current button input state.
- */
-unsigned long lastMillis{0U};
+    unsigned long lastMillis{0U};
 
     void cancel();
 
