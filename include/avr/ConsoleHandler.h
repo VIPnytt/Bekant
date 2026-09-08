@@ -2,6 +2,8 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
+#include <HardwareSerial.h>
+
 /**
  * Handles buffered console input.
  */
@@ -34,20 +36,28 @@ public:
     };
 
     void handle();
-    void print(State state, unsigned int value);
-    void write(State state);
-    void write(State state, unsigned char byte);
-    void write(State state, unsigned char byte1, unsigned char byte2);
-    void write(State state, unsigned char byte1, unsigned char byte2, unsigned char byte3);
+
+    void send(State state);
+
+    void send(State state, unsigned char byte);
+
+    void send(State state, unsigned int value);
+
+    template <unsigned int N> void send(State state, const unsigned char (&data)[N])
+    {
+        static_assert(N < (0b1U << 4U));
+        Serial1.write((N << 4U) | static_cast<unsigned char>(state));
+        Serial1.write(data, N);
+    }
 
 private:
-    unsigned char commandLength{0U};
+    unsigned char lengthRx{0U};
 
-    unsigned char commandBuffer[0b1U << 4U]{0U};
+    unsigned char bufferRx[0b1U << 4U]{};
 
-    unsigned int commandBytes{0U};
+    unsigned int bytesRx{0U};
 
-    Command command{};
+    Command commandRx{};
 
     /**
      * Parses buffered console input into a command.

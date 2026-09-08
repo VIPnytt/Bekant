@@ -8,14 +8,17 @@ private:
     bool stateDown{false};
     bool stateUp{false};
 
-    char count{0};
+    signed char count{0};
 
     unsigned long lastMillis{0U};
 
-    void process();
-    void incrementDown();
-    void incrementUp();
     void cancel();
+
+    void incrementDown();
+
+    void incrementUp();
+
+    void process();
 
 public:
     void handle();
