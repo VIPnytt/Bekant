@@ -81,6 +81,12 @@ public:
      */
     void sendCommand(Command command, unsigned int position);
 
+    /**
+     * Sends a LIN frame containing the specified payload.
+     *
+     * @param identifier LIN frame identifier.
+     * @param data Payload bytes to transmit.
+     */
     template <unsigned int N> void send(unsigned char identifier, const unsigned char (&data)[N])
     {
         static_assert(N <= 8U);
@@ -94,11 +100,12 @@ public:
     }
 
     /**
-     * Requests a LIN frame and stores its payload in the provided buffer.
+     * Receives a LIN response for the specified identifier.
      *
      * @param identifier LIN frame identifier to request.
-     * @param data Buffer to receive the frame payload.
-     * @return `true` if a complete frame with a valid checksum is received, `false` on timeout or checksum failure.
+     * @param data Buffer to populate with the received payload.
+     * @return `true` if a complete response with a valid checksum is received, `false` on timeout or checksum
+     * failure.
      */
     template <unsigned int N> [[nodiscard]] bool request(unsigned char identifier, unsigned char (&data)[N])
     {

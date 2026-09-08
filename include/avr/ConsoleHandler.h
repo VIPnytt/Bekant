@@ -10,6 +10,9 @@
 class ConsoleHandler
 {
 public:
+    /**
+     * Identifies protocol message commands exchanged with the console.
+     */
     enum class Command : unsigned char
     {
         CALIBRATE = 1U,
@@ -19,6 +22,9 @@ public:
         TONE,
     };
 
+    /**
+     * Identifies protocol message states exchanged with the console.
+     */
     enum class State : unsigned char
     {
         BUTTON_DOWN = 1U,
@@ -35,14 +41,37 @@ public:
         STATE9,
     };
 
+    /**
+     * Processes buffered console input.
+     */
     void handle();
 
+    /**
+     * Sends a protocol state without a payload.
+     * @param state State to send.
+     */
     void send(State state);
 
+    /**
+     * Sends a protocol state with an 8-bit payload.
+     * @param state State to send.
+     * @param byte 8-bit payload.
+     */
     void send(State state, unsigned char byte);
 
+    /**
+     * Sends a protocol state with a 16-bit payload.
+     * @param state State to send.
+     * @param value 16-bit payload.
+     */
     void send(State state, unsigned int value);
 
+    /**
+     * Sends a protocol state with a fixed-size byte payload.
+     * @param state State to send.
+     * @param data Byte payload to send.
+     * @tparam N Number of bytes in the payload; must be fewer than 16.
+     */
     template <unsigned int N> void send(State state, const unsigned char (&data)[N])
     {
         static_assert(N < (0b1U << 4U));

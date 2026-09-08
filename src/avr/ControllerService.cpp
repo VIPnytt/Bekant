@@ -10,10 +10,9 @@
 #include <wiring.h>
 
 /**
- * @brief Initializes hardware, stored presets, the watchdog, and the LIN interface.
+ * @brief Initializes communication, hardware pins, presets, the watchdog, and the LIN interface.
  *
- * Performs the LIN initialization sequence and sends the final initialization packet.
- * Reports failure and sounds a tone if a required LIN node cannot be reached.
+ * Reports a LIN initialization failure and sounds a tone when initialization does not succeed.
  */
 void ControllerService::begin()
 {
@@ -37,8 +36,7 @@ void ControllerService::begin()
 }
 
 /**
- * @brief Reads encoder data, advances the state machine on successful communication, and handles user input outside
- * recalibration states.
+ * @brief Reads encoder data, advances the controller state, and handles user input outside recalibration states.
  */
 void ControllerService::handle()
 {
@@ -193,8 +191,7 @@ bool ControllerService::isIdle() const
 }
 
 /**
- * @brief Begins movement preparation when a target is pending and the desk is idle; otherwise maintains the idle
- * command.
+ * @brief Starts movement preparation when a target is pending and both nodes are idle; otherwise keeps the nodes idle.
  */
 void ControllerService::handleStateIdle()
 {
@@ -207,9 +204,9 @@ void ControllerService::handleStateIdle()
 }
 
 /**
- * @brief Determines the movement direction and prepares the desk to move toward the target.
+ * @brief Prepares movement toward the requested target.
  *
- * Adjusts the target within the configured limits when necessary, sends the pre-movement
+ * Adjusts the target by the configured offset when necessary, sends the pre-movement
  * command, or clears the pending request when the target is already within range.
  */
 void ControllerService::handleStatePrepare()
@@ -300,7 +297,7 @@ void ControllerService::handleStateRecalOngoing()
 }
 
 /**
- * @brief Sends a movement command with the target constrained to a safe range.
+ * @brief Sends a movement command using a target constrained by encoder positions and safety limits.
  *
  * @param command Movement command to send.
  */
@@ -350,7 +347,7 @@ void ControllerService::recalibrate()
 }
 
 /**
- * @brief Stores a new upper desk-height preset.
+ * @brief Updates and persists the upper desk-height preset when it is within the encoder limits.
  *
  * @param preset Upper desk-height preset to store.
  */
@@ -433,9 +430,9 @@ unsigned int ControllerService::getPresetLow() const { return presetLow; }
 ControllerService::State ControllerService::getState() const { return state; }
 
 /**
- * @brief Provides access to the singleton DeskService instance.
+ * @brief Provides access to the shared ControllerService instance.
  *
- * @return DeskService& Reference to the shared DeskService instance.
+ * @return ControllerService& Reference to the singleton instance.
  */
 ControllerService &ControllerService::getInstance()
 {

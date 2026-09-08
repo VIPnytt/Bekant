@@ -7,7 +7,9 @@
 #include <wiring.h>
 
 /**
- * @brief Initializes the LIN pin and serial interface.
+ * @brief Initializes the LIN interface and configures the connected device.
+ *
+ * @return true if initialization and device detection succeed, false otherwise.
  */
 bool LegHandler::begin()
 {
@@ -129,11 +131,9 @@ int LegHandler::readWithTimeout(unsigned int &remainingTime)
 }
 
 /**
- * @brief Sends a LIN break, synchronization byte, protected identifier, and response byte.
+ * @brief Transmits a LIN frame for the specified identifier.
  *
- * @param identifier Identifier whose low six bits are used to construct the protected identifier.
- *                   Identifier 0x3C receives a response of 0xFF; other identifiers receive the
- *                   bitwise inverse of the protected identifier.
+ * @param identifier LIN identifier; its lower six bits are used to form the protected identifier.
  */
 void LegHandler::send(unsigned char identifier)
 {
