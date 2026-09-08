@@ -10,7 +10,12 @@ class HomeAssistantHandler
 {
 private:
     static constexpr std::string_view commandTopic{"bekant/" HOSTNAME "/set"};
-    static constexpr std::string_view stateTopic{"bekant/" HOSTNAME "/state"};
+    /**
+ * Initializes Home Assistant discovery data storage.
+ *
+ * @param doc JSON document used to store discovery data.
+ */
+static constexpr std::string_view stateTopic{"bekant/" HOSTNAME "/state"};
 
     JsonDocument &discovery; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
 

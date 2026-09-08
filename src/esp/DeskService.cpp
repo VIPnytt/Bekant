@@ -78,11 +78,11 @@ void DeskService::begin()
 }
 
 /**
- * @brief Advances service processing and publishes updated device state.
+ * @brief Advances service processing and publishes updated desk state.
  *
- * Processes connectivity, OTA, ISP, and status services. When processing is enabled,
- * handles console and MQTT activity, releases pending drive outputs, saves unsaved
- * state, and publishes state periodically or when an update is pending.
+ * Processes connectivity and status services, handles console and MQTT activity when enabled,
+ * releases completed drive outputs, persists unsaved state, and publishes pending or periodic
+ * state updates.
  */
 void DeskService::handle()
 {
@@ -154,11 +154,11 @@ uint16_t DeskService::encode(float height)
 }
 
 /**
- * @brief Processes device commands from a JSON request.
+ * @brief Processes commands from a JSON request.
  *
- * Handles calibration, restart, desk positioning, preset updates, drive controls,
- * output enable, reset, and tone commands. Height values are accepted only within
- * the configured reference range.
+ * Handles calibration, restart, desk positioning, preset updates, drive control,
+ * output enable, reset, and tone commands. Position and preset heights outside
+ * the configured reference range are ignored.
  *
  * @param doc JSON object containing the commands to process.
  */
@@ -370,9 +370,9 @@ void DeskService::setDriveUp(bool state)
 }
 
 /**
- * @brief Updates encoder 8 and marks the device state for persistence and publication.
+ * @brief Updates the encoder 8 position and marks the desk state for saving and publication.
  *
- * Updates the status indicator when the encoder value changes.
+ * Updates the status indicator when the position changes.
  *
  * @param position New encoder 8 position.
  */
@@ -536,7 +536,10 @@ void DeskService::statusRed() { status.setRed(); }
 void DeskService::statusWhite() { status.setWhite(); }
 
 /**
- * @brief Updates the status indicator based on motor states, button input, and drive activity.
+ * @brief Selects the status indicator color from motor, button, and drive activity.
+ *
+ * @details Uses white for idle motor states, green for exclusive manual button activity
+ * without drive output activity, and blue for all other states.
  */
 void DeskService::statusNode() // NOLINT(readability-make-member-function-const)
 {
@@ -575,11 +578,11 @@ std::string DeskService::toHex(std::span<const uint8_t> payload)
 }
 
 /**
- * @brief Checks GitHub for the latest firmware release.
+ * @brief Retrieves the latest firmware release version from GitHub.
  *
- * Stores the latest release version without its leading `v` and marks the
- * device state for publication when the response is valid. Client, HTTP, and
- * JSON parsing failures leave the release state unchanged.
+ * Stores the release tag without a leading `v` and marks the state for
+ * publication when the response is valid. Network, HTTP, or JSON parsing
+ * failures leave the current release version unchanged.
  */
 void DeskService::fetchRelease()
 {

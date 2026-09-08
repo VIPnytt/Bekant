@@ -4,6 +4,13 @@
 
 #include <NetworkEvents.h>
 
+/**
+ * Initializes Wi-Fi handling.
+ */
+ 
+/**
+ * Processes ongoing Wi-Fi handling.
+ */
 class WifiHandler
 {
 private:

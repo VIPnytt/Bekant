@@ -112,7 +112,7 @@ void MqttHandler::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameter
 }
 
 /**
- * @brief Handles MQTT disconnection events by setting the device status to red.
+ * @brief Handles MQTT disconnection events and marks the desk status red.
  *
  * @param reason Reason for the MQTT disconnection.
  */

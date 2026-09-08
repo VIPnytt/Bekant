@@ -62,13 +62,13 @@ private:
     std::array<uint8_t, 0b1U << 4U> bufferTx{0U};
 
     /**
-     * Stores the current command.
-     */
+ * Command to transmit.
+ */
     Command commandTx{};
 
     /**
-     * Current console state.
-     */
+ * State received from the console.
+ */
     State stateRx{};
 
     static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
