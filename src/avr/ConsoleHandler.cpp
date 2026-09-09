@@ -15,7 +15,7 @@ void ConsoleHandler::handle()
     if (Serial1.available() != 0)
     {
         const unsigned char errors{UCSR1A}; // NOLINT(clang-analyzer-core.FixedAddressDereference)
-        if ((errors & ((0b1U << DOR1) | (0b1U << FE1))) != 0U)
+        if ((errors & ((0b1U << UPE1) | (0b1U << DOR1) | (0b1U << FE1))) != 0U)
         {
             send(State::CONSOLE, errors);
         }
