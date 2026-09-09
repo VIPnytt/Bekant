@@ -69,10 +69,10 @@ void DeskService::begin()
     attachInterrupt(PIN_TPUP, onInterruptUp, CHANGE);
 #endif // PIN_TPUP
     digitalWrite(PIN_RST, HIGH);
+    console.begin();
     wifi.begin();
     ota.begin();
     isp.begin();
-    console.begin();
     mqtt.begin();
     fetchRelease();
 }
@@ -371,10 +371,33 @@ void DeskService::setDriveUp(bool state)
 #endif // PIN_TPUP
 }
 
-void DeskService::setErrorAvr()
+void DeskService::setError8(uint8_t flags)
 {
-    avr = false;
-    pending = true;
+    if (flags != error8)
+    {
+        error8 = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+void DeskService::setError9(uint8_t flags)
+{
+    if (flags != error9)
+    {
+        error9 = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+void DeskService::setErrorInit(uint8_t flags)
+{
+    if (flags != errorInit)
+    {
+        errorInit = flags;
+        pending = true;
+    }
     statusRed();
 }
 
@@ -383,26 +406,6 @@ void DeskService::setErrorLin(uint8_t flags)
     if (flags != errorLin)
     {
         errorLin = flags;
-        pending = true;
-    }
-    statusRed();
-}
-
-void DeskService::setErrorNode8()
-{
-    if (node8)
-    {
-        node8 = false;
-        pending = true;
-    }
-    statusRed();
-}
-
-void DeskService::setErrorNode9()
-{
-    if (node9)
-    {
-        node9 = false;
         pending = true;
     }
     statusRed();
@@ -434,7 +437,7 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     {
         encoder8 = position;
         state8 = state;
-        node8 = true;
+        error8 = 0U;
         saved = false;
         pending = true;
         statusNode();
@@ -442,7 +445,7 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     else if (position != encoder8)
     {
         encoder8 = position;
-        node8 = true;
+        error8 = 0U;
         saved = false;
         pending = true;
         statusNode();
@@ -450,13 +453,13 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     else if (state != state8)
     {
         state8 = state;
-        node8 = true;
+        error8 = 0U;
         pending = true;
         statusNode();
     }
-    else if (!node8)
+    else if (error8 != 0U)
     {
-        node8 = true;
+        error8 = 0U;
         pending = true;
     }
 }
@@ -467,7 +470,7 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     {
         encoder9 = position;
         state9 = state;
-        node9 = true;
+        error9 = 0U;
         saved = false;
         pending = true;
         statusNode();
@@ -475,7 +478,7 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     else if (position != encoder9)
     {
         encoder9 = position;
-        node9 = true;
+        error9 = 0U;
         saved = false;
         pending = true;
         statusNode();
@@ -483,13 +486,13 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     else if (state != state9)
     {
         state9 = state;
-        node9 = true;
+        error9 = 0U;
         pending = true;
         statusNode();
     }
-    else if (!node9)
+    else if (error9 != 0U)
     {
-        node9 = true;
+        error9 = 0U;
         pending = true;
     }
 }
@@ -638,47 +641,67 @@ std::string DeskService::toHex(std::span<const uint8_t> payload)
 
 void DeskService::toErrorArray(JsonArray &list)
 {
-    if (!avr)
+    if ((errorInit & 0b1U) != 0U)
     {
-        list.add("desk initialization error");
+        list.add("probe A: no response");
     }
-    if (!node8)
+    if ((errorInit & (0b1U << 1U)) != 0U)
     {
-        list.add("leg node 8 error");
+        list.add("probe A: checksum mismatch");
     }
-    if (!node9)
+    if ((errorInit & (0b1U << 2U)) != 0U)
     {
-        list.add("leg node 9 error");
+        list.add("probe B: no response");
+    }
+    if ((errorInit & (0b1U << 3U)) != 0U)
+    {
+        list.add("probe B: checksum mismatch");
+    }
+    if ((error8 & 0b1U) != 0U)
+    {
+        list.add("node 8: no response");
+    }
+    if ((error8 & (0b1U << 1U)) != 0U)
+    {
+        list.add("node 8: checksum mismatch");
+    }
+    if ((error9 & 0b1U) != 0U)
+    {
+        list.add("node 9: no response");
+    }
+    if ((error9 & (0b1U << 1U)) != 0U)
+    {
+        list.add("node 9: checksum mismatch");
     }
     if ((errorLin & (0b1U << 3U)) != 0U)
     {
-        list.add("USART0 data overrun");
+        list.add("USART0: data overrun");
     }
     if ((errorLin & (0b1U << 4U)) != 0U)
     {
-        list.add("USART0 frame error");
+        list.add("USART0: frame error");
     }
     if ((errorTx & (0b1U << 3U)) != 0U)
     {
-        list.add("USART1 data overrun");
+        list.add("USART1: data overrun");
     }
     if ((errorTx & (0b1U << 4U)) != 0U)
     {
-        list.add("USART1 frame error");
+        list.add("USART1: frame error");
     }
     switch (errorRx)
     {
     case hardwareSerial_error_t::UART_BREAK_ERROR:
-        list.add("UART break");
+        list.add("UART: break");
         break;
     case hardwareSerial_error_t::UART_BUFFER_FULL_ERROR:
-        list.add("UART buffer full");
+        list.add("UART: buffer full");
         break;
     case hardwareSerial_error_t::UART_FIFO_OVF_ERROR:
-        list.add("UART FIFO overflow");
+        list.add("UART: FIFO overflow");
         break;
     case hardwareSerial_error_t::UART_FRAME_ERROR:
-        list.add("UART frame error");
+        list.add("UART: frame error");
         break;
     }
 }
@@ -781,9 +804,9 @@ void DeskService::onInterruptReset()
     desk.reset = digitalRead(PIN_RST) == LOW;
     if (desk.reset)
     {
-        desk.avr = true;
-        desk.node8 = true;
-        desk.node9 = true;
+        desk.error8 = 0U;
+        desk.error9 = 0U;
+        desk.errorInit = 0U;
         desk.errorLin = 0U;
         desk.errorRx = hardwareSerial_error_t::UART_NO_ERROR;
         desk.errorTx = 0U;

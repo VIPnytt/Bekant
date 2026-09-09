@@ -12,7 +12,7 @@
  *
  * @return true if initialization and device detection succeed, false otherwise.
  */
-bool LegHandler::begin()
+unsigned char LegHandler::begin()
 {
     pinMode(Pin::lin, OUTPUT);
     Serial.begin(baudRate);
@@ -24,22 +24,26 @@ bool LegHandler::begin()
     for (const unsigned char (&data)[2U] : initial)
     {
         const unsigned char packet[8U]{0xFFU, data[0U], data[1U], 0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        send(linDiagnosticRequestId, packet);
+        sendDiagnosticRequest(packet);
     }
     const unsigned char packet[8U]{0xD0U, 0x2U, 0x7U, 0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-    sendRequest(packet);
+    sendDiagnosticRequest(packet);
+    requestDiscardResponse();
     unsigned char pid{0U};
     for (; pid < 8U; ++pid)
     {
         const unsigned char probeA[8U]{pid, 0x2U, 0x7U, 0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        if (sendRequest(probeA))
+        sendDiagnosticRequest(probeA);
+        unsigned char response[sizeof(probeA)]{};
+        const int checksum{receiveResponse(getPid(linDiagnosticResponseId), response)};
+        if (checksum != -1 && getChecksum(response) == checksum)
         {
             break;
         }
-    }
-    if (pid == 8U)
-    {
-        return false;
+        if (pid == 7U)
+        {
+            return static_cast<unsigned char>(checksum == -1 ? 0b1U : 0b1U << 1U);
+        }
     }
     constexpr unsigned char preProbe[6U][2U]{
         {0x6U, 0x9U},
@@ -52,19 +56,24 @@ bool LegHandler::begin()
     for (const unsigned char (&data)[2U] : preProbe)
     {
         const unsigned char packet[8U]{pid, data[0U], data[1U], 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        sendRequest(packet);
+        sendDiagnosticRequest(packet);
+        requestDiscardResponse();
     }
     for (; pid < 8U; ++pid)
     {
         const unsigned char probeB[8U]{pid, 0x2U, 0x0U, 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        if (sendRequest(probeB))
+        // unsigned char response[sizeof(probeB)]{};
+        sendDiagnosticRequest(probeB);
+        unsigned char response[sizeof(probeB)]{};
+        const int checksum{receiveResponse(getPid(linDiagnosticResponseId), response)};
+        if (checksum != -1 && getChecksum(response) == checksum)
         {
             break;
         }
-    }
-    if (pid == 8U)
-    {
-        return false;
+        if (pid == 7U)
+        {
+            return static_cast<unsigned char>(checksum == -1 ? 0b1U << 2U : 0b1U << 3U);
+        }
     }
     constexpr unsigned char preBroadcast[6U][2U]{
         {0x6U, 0x9U},
@@ -77,40 +86,38 @@ bool LegHandler::begin()
     for (const unsigned char (&data)[2U] : preBroadcast)
     {
         const unsigned char packet[8U]{pid, data[0U], data[1U], 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        sendRequest(packet);
+        sendDiagnosticRequest(packet);
+        requestDiscardResponse();
     }
     for (; pid < 8U; ++pid)
     {
         const unsigned char broadcast[8U]{pid, 0x2U, 0x1U, 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        sendRequest(broadcast);
+        sendDiagnosticRequest(broadcast);
+        requestDiscardResponse();
     }
     constexpr unsigned char postBroadcast[2U]{0x1U, 0x2U};
     for (const unsigned char &data : postBroadcast)
     {
         const unsigned char packet[8U]{0xD0U, data, 0x7U, 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        send(linDiagnosticRequestId, packet);
+        sendDiagnosticRequest(packet);
     }
     constexpr unsigned char final[3U]{0xF6U, 0xFFU, 0xBFU};
-    send(0x12U, final);
-    return true;
+    sendResponse(getPid(0x12U), final);
+    return 0U;
 }
 
-/**
- * @brief Calculates the LIN protected identifier parity bits.
- *
- * @param identifier Six-bit LIN identifier.
- * @return Parity bits positioned in bits 6 and 7.
- */
-unsigned char LegHandler::calcParity(unsigned char identifier)
+unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 {
-    const unsigned int parity0{
-        static_cast<unsigned int>(identifier & 1U) ^ (static_cast<unsigned int>(identifier >> 1U) & 1U) ^
-        (static_cast<unsigned int>(identifier >> 2U) & 1U) ^ (static_cast<unsigned int>(identifier >> 4U) & 1U)};
-    const unsigned int parity1{
-        ~((static_cast<unsigned int>(identifier >> 1U) & 1U) ^ (static_cast<unsigned int>(identifier >> 3U) & 1U) ^
-          (static_cast<unsigned int>(identifier >> 4U) & 1U) ^ (static_cast<unsigned int>(identifier >> 5U) & 1U)) &
-        1U};
-    return static_cast<unsigned char>((parity0 | (parity1 << 1U)) << 6U);
+    const int checksum{receiveResponse(pid, node)};
+    if (checksum == -1)
+    {
+        return 0b1U;
+    }
+    if (getChecksum(node, pid) == checksum)
+    {
+        return 0U;
+    }
+    return 0b1U << 1U;
 }
 
 /**
@@ -141,19 +148,17 @@ int LegHandler::read(unsigned int &remainingTime)
     return Serial.read();
 }
 
-/**
- * @brief Transmits a LIN frame for the specified identifier.
- *
- * @param identifier LIN identifier; its lower six bits are used to form the protected identifier.
- */
-void LegHandler::send(unsigned char identifier)
+void LegHandler::requestDiscardResponse()
 {
-    const unsigned char address{static_cast<unsigned char>((identifier & 0x3FU) | calcParity(identifier))};
     serialBreak();
     Serial.write(linSyncByte);
-    Serial.write(address);
-    Serial.write(identifier == linDiagnosticRequestId ? 0xFFU : static_cast<unsigned char>(~address));
+    Serial.write(getPid(linDiagnosticResponseId));
     Serial.flush();
+    unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
+    while (remainingTime != 0U)
+    {
+        static_cast<void>(read(remainingTime));
+    }
 }
 
 /**
@@ -162,19 +167,28 @@ void LegHandler::send(unsigned char identifier)
  * @param command Command code to transmit.
  * @param position Position value included in the command payload.
  */
-void LegHandler::sendCommand(LegHandler::Command command, unsigned int position)
+void LegHandler::sendCommand(Command command, unsigned int position)
 {
     for (unsigned char idx{0U}; idx < 6U; ++idx)
     {
-        send(0x10U);
+        sendResponse(getPid(0x10U));
     }
-    send(0x1U);
+    sendResponse(getPid(0x1U));
     const unsigned char packet[3U]{
         static_cast<unsigned char>(position & 0xFFU),
         static_cast<unsigned char>(position >> 8U),
         static_cast<unsigned char>(command),
     };
-    send(0x12U, packet);
+    sendResponse(getPid(0x12U), packet);
+}
+
+void LegHandler::sendResponse(unsigned char pid)
+{
+    serialBreak();
+    Serial.write(linSyncByte);
+    Serial.write(pid);
+    Serial.write(static_cast<unsigned char>(~pid));
+    Serial.flush();
 }
 
 /**

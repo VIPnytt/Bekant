@@ -95,7 +95,7 @@ void ConsoleHandler::send(State state) { Serial1.write(static_cast<unsigned char
  */
 void ConsoleHandler::send(State state, unsigned char byte)
 {
-    Serial1.write((1U << 4U) | static_cast<unsigned char>(state));
+    Serial1.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
     Serial1.write(byte);
 }
 

@@ -15,17 +15,17 @@
 class DeskService
 {
 private:
-    bool avr{true};
     bool buttonDown{false};
     bool buttonUp{false};
     bool enable{true};
-    bool node8{true};
-    bool node9{true};
     bool pending{true};
     bool process{true};
     bool reset{false};
     bool saved{true};
 
+    uint8_t error8{0U};
+    uint8_t error9{0U};
+    uint8_t errorInit{0U};
     uint8_t errorLin{0U};
     uint8_t errorTx{0U};
     uint8_t state8{0U};
@@ -106,13 +106,13 @@ public:
 
     void setButtonUp(bool state);
 
-    void setErrorAvr();
+    void setError8(uint8_t flags);
+
+    void setError9(uint8_t flags);
+
+    void setErrorInit(uint8_t flags);
 
     void setErrorLin(uint8_t flags);
-
-    void setErrorNode8();
-
-    void setErrorNode9();
 
     void setErrorRx(hardwareSerial_error_t flags);
 

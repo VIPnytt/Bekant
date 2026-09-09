@@ -26,9 +26,10 @@ void ControllerService::begin()
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
     console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
-    if (!lin.begin())
+    const unsigned char init{lin.begin()};
+    if (init != 0U)
     {
-        console.send(ConsoleHandler::State::INITIALIZATION);
+        console.send(ConsoleHandler::State::INITIALIZATION, init);
         tone(0b1U << 8U);
         return;
     }
@@ -64,57 +65,52 @@ void ControllerService::handle()
 bool ControllerService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
-    lin.send(0x11U, empty);
-    unsigned char node8[3U]{};
-    unsigned char node9[3U]{};
-    const bool valid8{lin.request(0x8U, node8)};
-    const bool valid9{lin.request(0x9U, node9)};
-    if (valid8)
+    lin.sendResponse(lin.getPid(0x11U), empty);
+    unsigned char node[3U]{};
+    const unsigned char error8{lin.getLeg(LegHandler::getPid(0x8U), node)};
+    if (error8 == 0U)
     {
-        const unsigned int _encoder8{static_cast<unsigned int>(node8[0U]) | static_cast<unsigned int>(node8[1U]) << 8U};
-        if (_encoder8 != encoder8 || state8 != node8[2U])
+        const unsigned int _encoder8{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
+        if (_encoder8 != encoder8 || state8 != node[2U])
         {
             if (_encoder8 != encoder8)
             {
                 lastMillis = millis();
             }
             encoder8 = _encoder8;
-            state8 = node8[2U];
-            console.send(ConsoleHandler::State::NODE8, node8);
+            state8 = node[2U];
+            console.send(ConsoleHandler::State::NODE8, node);
         }
     }
     else
     {
-        console.send(ConsoleHandler::State::NODE8);
-        if (pending)
-        {
-            tone(0b1U << 8U);
-        }
+        console.send(ConsoleHandler::State::NODE8, error8);
     }
-    if (valid9)
+    const unsigned char error9{lin.getLeg(LegHandler::getPid(0x9U), node)};
+    if (error9 == 0U)
     {
-        const unsigned int _encoder9{static_cast<unsigned int>(node9[0U]) | static_cast<unsigned int>(node9[1U]) << 8U};
-        if (_encoder9 != encoder9 || state9 != node9[2U])
+        const unsigned int _encoder9{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
+        if (_encoder9 != encoder9 || state9 != node[2U])
         {
             if (_encoder9 != encoder9)
             {
                 lastMillis = millis();
             }
             encoder9 = _encoder9;
-            state9 = node9[2U];
-            console.send(ConsoleHandler::State::NODE9, node9);
+            state9 = node[2U];
+            console.send(ConsoleHandler::State::NODE9, node);
         }
     }
     else
     {
-        console.send(ConsoleHandler::State::NODE9);
+        console.send(ConsoleHandler::State::NODE9, error9);
+    }
+    if (error8 != 0U || error9 != 0U)
+    {
         if (pending)
         {
             tone(0b1U << 8U);
         }
-    }
-    if (!valid8 || !valid9)
-    {
         return false;
     }
     wdt_reset();

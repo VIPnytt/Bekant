@@ -15,6 +15,7 @@ void ConsoleHandler::begin()
     pinMode(PIN_MISO, INPUT);
     pinMode(PIN_SCK, OUTPUT);
     Serial1.onReceiveError(&onReceiveError);
+    Serial1.setRxBufferSize(0b1U << 9U);
     Serial1.begin(115'200UL, SerialConfig::SERIAL_8N1, PIN_MISO, PIN_SCK);
 }
 
@@ -92,29 +93,33 @@ void ConsoleHandler::parse() const
     {
         desk.setErrorTx(bufferRx.at(1U));
     }
-    else if (stateRx == State::INITIALIZATION)
+    else if (stateRx == State::INITIALIZATION && lengthRx == 1U)
     {
-        desk.setErrorAvr();
+        desk.setErrorInit(bufferRx.at(1U));
     }
     else if (stateRx == State::LIN && lengthRx == 1U)
     {
         desk.setErrorLin(bufferRx.at(1U));
     }
-    else if (stateRx == State::NODE8)
+    else if (stateRx == State::NODE8 && lengthRx == 1U)
     {
-        lengthRx == 3U
-            ? desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                                  static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
-                            bufferRx.at(3U))
-            : desk.setErrorNode8();
+        desk.setError8(bufferRx.at(1U));
     }
-    else if (stateRx == State::NODE9)
+    else if (stateRx == State::NODE8 && lengthRx == 3U)
     {
-        lengthRx == 3U
-            ? desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                                  static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
-                            bufferRx.at(3U))
-            : desk.setErrorNode9();
+        desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
+                      bufferRx.at(3U));
+    }
+    else if (stateRx == State::NODE9 && lengthRx == 1U)
+    {
+        desk.setError9(bufferRx.at(1U));
+    }
+    else if (stateRx == State::NODE9 && lengthRx == 3U)
+    {
+        desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
+                      bufferRx.at(3U));
     }
     else if (stateRx == State::PRESET_HIGH && lengthRx == 2U)
     {
