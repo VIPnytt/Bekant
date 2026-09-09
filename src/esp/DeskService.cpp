@@ -125,32 +125,35 @@ void DeskService::handle()
 }
 
 /**
- * @brief Converts an encoder value to the corresponding physical desk height.
- *
- * @param encoder Encoder value to convert.
- * @return Physical desk height corresponding to the encoder value.
+ * @brief Disables device processing and disconnects serial and MQTT services.
  */
-float DeskService::decode(float encoder)
+void DeskService::safeMode()
 {
-    return ((encoder - static_cast<float>(ReferenceHeight::encoderLow)) *
-            (ReferenceHeight::heightHigh - ReferenceHeight::heightLow) /
-            static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow)) +
-           ReferenceHeight::heightLow;
+    process = false;
+    Serial1.end();
+    mqtt.disconnect();
 }
 
 /**
- * @brief Converts a physical desk height to its corresponding encoder value.
- *
- * @param height Physical desk height.
- * @return uint16_t Encoder value mapped from the configured height range.
+ * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
  */
-uint16_t DeskService::encode(float height)
+void DeskService::save()
 {
-    return static_cast<uint16_t>(
-        lroundf(((height - ReferenceHeight::heightLow) *
-                 static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
-                 (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
-                static_cast<float>(ReferenceHeight::encoderLow)));
+    nvs_handle_t handle{};
+    if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        saved = true;
+        nvs_set_u16(handle, "8", encoder8);
+        nvs_set_u16(handle, "9", encoder9);
+        nvs_set_u16(handle, "h", presetHigh);
+        nvs_set_u16(handle, "l", presetLow);
+        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
+        if (nvs_commit(handle) != ESP_OK)
+        {
+            saved = false;
+        }
+        nvs_close(handle);
+    }
 }
 
 /**
@@ -226,38 +229,6 @@ void DeskService::request(JsonObjectConst doc)
 }
 
 /**
- * @brief Disables device processing and disconnects serial and MQTT services.
- */
-void DeskService::safeMode()
-{
-    process = false;
-    Serial1.end();
-    mqtt.disconnect();
-}
-
-/**
- * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
- */
-void DeskService::save()
-{
-    nvs_handle_t handle{};
-    if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
-    {
-        saved = true;
-        nvs_set_u16(handle, "8", encoder8);
-        nvs_set_u16(handle, "9", encoder9);
-        nvs_set_u16(handle, "h", presetHigh);
-        nvs_set_u16(handle, "l", presetLow);
-        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
-        if (nvs_commit(handle) != ESP_OK)
-        {
-            saved = false;
-        }
-        nvs_close(handle);
-    }
-}
-
-/**
  * @brief Publishes the current device state and telemetry.
  *
  * @param doc JSON document to augment with device state and telemetry before publishing.
@@ -270,7 +241,8 @@ void DeskService::transmit(JsonDocument &doc)
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
     JsonArray errors{doc["errors"].to<JsonArray>()};
-    toErrorArray(errors);
+    getErrors(errors);
+    console.getErrors(errors);
     const float leg8{decode(static_cast<float>(encoder8))};
     const float leg9{decode(static_cast<float>(encoder9))};
     doc["legs"][0U].set(leg8);
@@ -311,6 +283,71 @@ void DeskService::transmit(JsonDocument &doc)
         static_cast<float>(Voltage::resistanceGnd) / 1'000.0F);
 #endif // PIN_ADC
     mqtt.transmit(doc);
+}
+
+/**
+ * @brief Converts an encoder value to the corresponding physical desk height.
+ *
+ * @param encoder Encoder value to convert.
+ * @return Physical desk height corresponding to the encoder value.
+ */
+float DeskService::decode(float encoder)
+{
+    return ((encoder - static_cast<float>(ReferenceHeight::encoderLow)) *
+            (ReferenceHeight::heightHigh - ReferenceHeight::heightLow) /
+            static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow)) +
+           ReferenceHeight::heightLow;
+}
+
+/**
+ * @brief Converts a physical desk height to its corresponding encoder value.
+ *
+ * @param height Physical desk height.
+ * @return uint16_t Encoder value mapped from the configured height range.
+ */
+uint16_t DeskService::encode(float height)
+{
+    return static_cast<uint16_t>(
+        lroundf(((height - ReferenceHeight::heightLow) *
+                 static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
+                 (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
+                static_cast<float>(ReferenceHeight::encoderLow)));
+}
+
+void DeskService::getErrors(JsonArray &list)
+{
+    if ((errorInit & 0b1U) != 0U)
+    {
+        list.add("probe A: no response");
+    }
+    if ((errorInit & (0b1U << 1U)) != 0U)
+    {
+        list.add("probe A: checksum mismatch");
+    }
+    if ((errorInit & (0b1U << 2U)) != 0U)
+    {
+        list.add("probe B: no response");
+    }
+    if ((errorInit & (0b1U << 3U)) != 0U)
+    {
+        list.add("probe B: checksum mismatch");
+    }
+    if ((error8 & 0b1U) != 0U)
+    {
+        list.add("node 8: no response");
+    }
+    if ((error8 & (0b1U << 1U)) != 0U)
+    {
+        list.add("node 8: checksum mismatch");
+    }
+    if ((error9 & 0b1U) != 0U)
+    {
+        list.add("node 9: no response");
+    }
+    if ((error9 & (0b1U << 1U)) != 0U)
+    {
+        list.add("node 9: checksum mismatch");
+    }
 }
 
 /**
@@ -396,36 +433,6 @@ void DeskService::setErrorInit(uint8_t flags)
     if (flags != errorInit)
     {
         errorInit = flags;
-        pending = true;
-    }
-    statusRed();
-}
-
-void DeskService::setErrorLin(uint8_t flags)
-{
-    if (flags != errorLin)
-    {
-        errorLin = flags;
-        pending = true;
-    }
-    statusRed();
-}
-
-void DeskService::setErrorRx(hardwareSerial_error_t flags)
-{
-    if (flags != errorRx)
-    {
-        errorRx = flags;
-        pending = true;
-    }
-    statusRed();
-}
-
-void DeskService::setErrorTx(uint8_t flags)
-{
-    if (flags != errorTx)
-    {
-        errorTx = flags;
         pending = true;
     }
     statusRed();
@@ -518,6 +525,8 @@ void DeskService::setOutputEnable(bool state)
     }
 #endif // PIN_OE
 }
+
+void DeskService::setPending() { pending = true; }
 
 /**
  * @brief Sets the high preset value and marks the device state for persistence and publication.
@@ -639,73 +648,6 @@ std::string DeskService::toHex(std::span<const uint8_t> payload)
     return hex;
 }
 
-void DeskService::toErrorArray(JsonArray &list)
-{
-    if ((errorInit & 0b1U) != 0U)
-    {
-        list.add("probe A: no response");
-    }
-    if ((errorInit & (0b1U << 1U)) != 0U)
-    {
-        list.add("probe A: checksum mismatch");
-    }
-    if ((errorInit & (0b1U << 2U)) != 0U)
-    {
-        list.add("probe B: no response");
-    }
-    if ((errorInit & (0b1U << 3U)) != 0U)
-    {
-        list.add("probe B: checksum mismatch");
-    }
-    if ((error8 & 0b1U) != 0U)
-    {
-        list.add("node 8: no response");
-    }
-    if ((error8 & (0b1U << 1U)) != 0U)
-    {
-        list.add("node 8: checksum mismatch");
-    }
-    if ((error9 & 0b1U) != 0U)
-    {
-        list.add("node 9: no response");
-    }
-    if ((error9 & (0b1U << 1U)) != 0U)
-    {
-        list.add("node 9: checksum mismatch");
-    }
-    if ((errorLin & (0b1U << 3U)) != 0U)
-    {
-        list.add("USART0: data overrun");
-    }
-    if ((errorLin & (0b1U << 4U)) != 0U)
-    {
-        list.add("USART0: frame error");
-    }
-    if ((errorTx & (0b1U << 3U)) != 0U)
-    {
-        list.add("USART1: data overrun");
-    }
-    if ((errorTx & (0b1U << 4U)) != 0U)
-    {
-        list.add("USART1: frame error");
-    }
-    switch (errorRx)
-    {
-    case hardwareSerial_error_t::UART_BREAK_ERROR:
-        list.add("UART: break");
-        break;
-    case hardwareSerial_error_t::UART_BUFFER_FULL_ERROR:
-        list.add("UART: buffer full");
-        break;
-    case hardwareSerial_error_t::UART_FIFO_OVF_ERROR:
-        list.add("UART: FIFO overflow");
-        break;
-    case hardwareSerial_error_t::UART_FRAME_ERROR:
-        list.add("UART: frame error");
-        break;
-    }
-}
-
 /**
  * @brief Retrieves the latest firmware release version from GitHub.
  *
@@ -807,11 +749,9 @@ void DeskService::onInterruptReset()
         desk.error8 = 0U;
         desk.error9 = 0U;
         desk.errorInit = 0U;
-        desk.errorLin = 0U;
-        desk.errorRx = hardwareSerial_error_t::UART_NO_ERROR;
-        desk.errorTx = 0U;
         desk.lengthRx = 0U;
         desk.lengthTx = 0U;
+        desk.console.reset();
         desk.status.setNone(true);
     }
     else

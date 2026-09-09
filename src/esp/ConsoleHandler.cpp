@@ -73,12 +73,58 @@ void ConsoleHandler::forward()
     }
 }
 
+void ConsoleHandler::getErrors(JsonArray &errors)
+{
+    if ((errorLin & (0b1U << 2U)) != 0U)
+    {
+        errors.add("USART0: parity error");
+    }
+    if ((errorLin & (0b1U << 3U)) != 0U)
+    {
+        errors.add("USART0: data overrun");
+    }
+    if ((errorLin & (0b1U << 4U)) != 0U)
+    {
+        errors.add("USART0: frame error");
+    }
+    if ((errorTx & (0b1U << 2U)) != 0U)
+    {
+        errors.add("USART1: parity error");
+    }
+    if ((errorTx & (0b1U << 3U)) != 0U)
+    {
+        errors.add("USART1: data overrun");
+    }
+    if ((errorTx & (0b1U << 4U)) != 0U)
+    {
+        errors.add("USART1: frame error");
+    }
+    switch (errorRx)
+    {
+    case hardwareSerial_error_t::UART_BREAK_ERROR:
+        errors.add("UART: break");
+        break;
+    case hardwareSerial_error_t::UART_BUFFER_FULL_ERROR:
+        errors.add("UART: buffer full");
+        break;
+    case hardwareSerial_error_t::UART_FIFO_OVF_ERROR:
+        errors.add("UART: FIFO overflow");
+        break;
+    case hardwareSerial_error_t::UART_FRAME_ERROR:
+        errors.add("UART: frame error");
+        break;
+    case hardwareSerial_error_t::UART_PARITY_ERROR:
+        errors.add("UART: pairity error");
+        break;
+    }
+}
+
 /**
  * @brief Applies the buffered console frame to the corresponding device state.
  *
  * Invalid command and payload-length combinations set the device status to red.
  */
-void ConsoleHandler::parse() const
+void ConsoleHandler::parse()
 {
     desk.setRx(std::span{bufferRx}.subspan(0U, lengthRx + 1U));
     if (stateRx == State::BUTTON_DOWN && lengthRx == 1U)
@@ -91,7 +137,7 @@ void ConsoleHandler::parse() const
     }
     else if (stateRx == State::CONSOLE && lengthRx == 1U)
     {
-        desk.setErrorTx(bufferRx.at(1U));
+        setErrorTx(bufferRx.at(1U));
     }
     else if (stateRx == State::INITIALIZATION && lengthRx == 1U)
     {
@@ -99,7 +145,7 @@ void ConsoleHandler::parse() const
     }
     else if (stateRx == State::LIN && lengthRx == 1U)
     {
-        desk.setErrorLin(bufferRx.at(1U));
+        setErrorLin(bufferRx.at(1U));
     }
     else if (stateRx == State::NODE8 && lengthRx == 1U)
     {
@@ -137,6 +183,13 @@ void ConsoleHandler::parse() const
     }
 }
 
+void ConsoleHandler::reset()
+{
+    errorLin = 0U;
+    errorRx = hardwareSerial_error_t::UART_NO_ERROR;
+    errorTx = 0U;
+}
+
 /**
  * @brief Sends a command without an associated value.
  *
@@ -164,6 +217,26 @@ void ConsoleHandler::send(Command command, uint16_t value)
     write(payload);
 }
 
+void ConsoleHandler::setErrorLin(uint8_t flags)
+{
+    if (flags != errorLin)
+    {
+        errorLin = flags;
+        desk.setPending();
+    }
+    desk.statusRed();
+}
+
+void ConsoleHandler::setErrorTx(uint8_t flags)
+{
+    if (flags != errorTx)
+    {
+        errorTx = flags;
+        desk.setPending();
+    }
+    desk.statusRed();
+}
+
 /**
  * @brief Transmits a framed payload through the secondary serial interface.
  *
@@ -187,7 +260,12 @@ void ConsoleHandler::write(std::span<const uint8_t> payload)
 void ConsoleHandler::onReceiveError(hardwareSerial_error_t error)
 {
     ESP_LOGW("hardwareSerial_error_t", "%u", static_cast<unsigned int>(error));
-    desk.setErrorRx(error);
+    if (error != errorRx)
+    {
+        errorRx = error;
+        desk.setPending();
+    }
+    desk.statusRed();
 }
 
 #endif // ARDUINO_ARCH_ESP32

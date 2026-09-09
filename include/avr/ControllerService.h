@@ -66,7 +66,7 @@ private:
     /**
      * Handles leg movement commands and encoder communication.
      */
-    LegHandler lin{};
+    LegHandler leg{};
 
     State state{State::IDLE};
 

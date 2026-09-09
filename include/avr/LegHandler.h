@@ -25,7 +25,9 @@ private:
     static constexpr unsigned char linSyncByte{0x55U};
 
     void requestDiscardResponse();
+
     void sendResponse(unsigned char pid);
+
     void serialBreak();
 
     [[nodiscard]] int read(unsigned int &remainingTime);

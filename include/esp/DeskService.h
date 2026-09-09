@@ -26,8 +26,6 @@ private:
     uint8_t error8{0U};
     uint8_t error9{0U};
     uint8_t errorInit{0U};
-    uint8_t errorLin{0U};
-    uint8_t errorTx{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
 
@@ -75,7 +73,7 @@ private:
 
     void statusNode();
 
-    void toErrorArray(JsonArray &list);
+    void getErrors(JsonArray &list);
 
     [[nodiscard]] float decode(float encoder);
 
@@ -112,15 +110,11 @@ public:
 
     void setErrorInit(uint8_t flags);
 
-    void setErrorLin(uint8_t flags);
-
-    void setErrorRx(hardwareSerial_error_t flags);
-
-    void setErrorTx(uint8_t flags);
-
     void setNode8(uint16_t position, uint8_t state);
 
     void setNode9(uint16_t position, uint8_t state);
+
+    void setPending();
 
     void setPresetHigh(uint16_t encoder);
 

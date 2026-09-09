@@ -26,7 +26,7 @@ void ControllerService::begin()
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
     console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
-    const unsigned char init{lin.begin()};
+    const unsigned char init{leg.begin()};
     if (init != 0U)
     {
         console.send(ConsoleHandler::State::INITIALIZATION, init);
@@ -65,9 +65,9 @@ void ControllerService::handle()
 bool ControllerService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
-    lin.sendResponse(lin.getPid(0x11U), empty);
+    leg.sendResponse(LegHandler::getPid(0x11U), empty);
     unsigned char node[3U]{};
-    const unsigned char error8{lin.getLeg(LegHandler::getPid(0x8U), node)};
+    const unsigned char error8{leg.getLeg(LegHandler::getPid(0x8U), node)};
     if (error8 == 0U)
     {
         const unsigned int _encoder8{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
@@ -86,7 +86,7 @@ bool ControllerService::read()
     {
         console.send(ConsoleHandler::State::NODE8, error8);
     }
-    const unsigned char error9{lin.getLeg(LegHandler::getPid(0x9U), node)};
+    const unsigned char error9{leg.getLeg(LegHandler::getPid(0x9U), node)};
     if (error9 == 0U)
     {
         const unsigned int _encoder9{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
@@ -155,7 +155,7 @@ void ControllerService::process()
         break;
     case State::RECAL_DONE:
         state = State::IDLE;
-        lin.sendCommand(LegHandler::Command::CALIBRATE_END, 99U);
+        leg.sendCommand(LegHandler::Command::CALIBRATE_END, 99U);
         break;
     }
 }
@@ -273,7 +273,7 @@ void ControllerService::handleStateRecalOngoing()
         state = State::RECAL_DONE;
         return;
     }
-    lin.sendCommand(LegHandler::Command::CALIBRATE_BEGIN, 0U);
+    leg.sendCommand(LegHandler::Command::CALIBRATE_BEGIN, 0U);
 }
 
 /**
@@ -289,7 +289,7 @@ void ControllerService::sendCommand(LegHandler::Command command)
                                                                                     : Encoder::maxLimit};
     const unsigned int minTarget{maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
                                                                                     : Encoder::minLimit};
-    lin.sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
+    leg.sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
 }
 
 /**
