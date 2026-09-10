@@ -48,8 +48,8 @@ public:
 private:
     bool pending{false};
 
-    unsigned char error8{false};
-    unsigned char error9{false};
+    unsigned char error8{0U};
+    unsigned char error9{0U};
     unsigned char state8{0U};
     unsigned char state9{0U};
 

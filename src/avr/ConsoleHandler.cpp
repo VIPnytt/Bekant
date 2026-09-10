@@ -15,7 +15,8 @@ void ConsoleHandler::handle()
 {
     if (Serial1.available() != 0)
     {
-        const unsigned char _errors{static_cast<unsigned char>((UCSR1A >> 2U) & 0b111U)};
+        // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
+        const unsigned char _errors{static_cast<unsigned char>(static_cast<unsigned char>(UCSR1A >> 2U) & 0b111U)};
         if (_errors != 0U && _errors != errors)
         {
             errors = _errors;
