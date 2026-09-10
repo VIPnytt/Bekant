@@ -30,7 +30,7 @@ void ButtonHandler::handle()
         }
         else
         {
-            cancel();
+            stop();
         }
         Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::BUTTON_DOWN));
         Serial1.write(static_cast<unsigned char>(stateDown));
@@ -45,7 +45,7 @@ void ButtonHandler::handle()
         }
         else
         {
-            cancel();
+            stop();
         }
         Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::BUTTON_UP));
         Serial1.write(static_cast<unsigned char>(stateUp));
@@ -77,29 +77,29 @@ void ButtonHandler::process()
         count = 0;
         incrementUp();
     }
-    else if (count == -2 && millis() - lastMillis > 0b1U << 8U)
-    {
-        count = 0;
-        controller.setPresetLow(controller.getEncoderMax());
-        controller.tone(0b1U << 12U);
-    }
-    else if (count == -1 && millis() - lastMillis > 0b1U << 8U)
-    {
-        count = 0;
-        controller.setTarget(controller.getPresetLow());
-    }
-    else if (count == 1 && millis() - lastMillis > 0b1U << 8U)
+    else if (count == 1 && !stateUp && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
         controller.setTarget(controller.getPresetHigh());
     }
-    else if (count == 2 && millis() - lastMillis > 0b1U << 8U)
+    else if (count == -1 && !stateDown && millis() - lastMillis > 0b1U << 8U)
+    {
+        count = 0;
+        controller.setTarget(controller.getPresetLow());
+    }
+    else if (count == 2 && !stateUp && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
         controller.setPresetHigh(controller.getEncoderMin());
         controller.tone(0b1U << 12U);
     }
-    else if (count != 0 && millis() - lastMillis > 0b1U << 8U)
+    else if (count == -2 && !stateDown && millis() - lastMillis > 0b1U << 8U)
+    {
+        count = 0;
+        controller.setPresetLow(controller.getEncoderMax());
+        controller.tone(0b1U << 12U);
+    }
+    else if (count != 0 && !stateDown && !stateUp && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
     }
@@ -126,18 +126,23 @@ void ButtonHandler::incrementUp()
 }
 
 /**
- * @brief Resumes movement in the direction indicated by the desk state.
+ * @brief Finalizes manual movement when a button is released.
+ *
+ * While the controller is moving, sets a final bounded target in the active
+ * direction and clears the accumulated button sequence.
  */
-void ButtonHandler::cancel()
+void ButtonHandler::stop()
 {
     const ControllerService::State state{controller.getState()};
     if (state == ControllerService::State::DOWN)
     {
         incrementDown();
+        count = 0;
     }
     else if (state == ControllerService::State::UP)
     {
         incrementUp();
+        count = 0;
     }
 }
 

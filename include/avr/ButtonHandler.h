@@ -22,13 +22,16 @@ private:
 
     unsigned long lastMillis{0U};
 
-    void cancel();
-
     void incrementDown();
 
     void incrementUp();
 
     void process();
+
+    /**
+     * Finalizes manual movement when a button is released.
+     */
+    void stop();
 
 public:
     void handle();
