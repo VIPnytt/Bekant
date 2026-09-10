@@ -24,6 +24,8 @@ private:
     static constexpr unsigned char linDiagnosticResponseId{0x3DU};
     static constexpr unsigned char linSyncByte{0x55U};
 
+    unsigned char errors{0U};
+
     void requestDiscardResponse();
 
     void sendResponse(unsigned char pid);

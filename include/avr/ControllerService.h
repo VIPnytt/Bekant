@@ -46,10 +46,10 @@ public:
     static ControllerService &getInstance();
 
 private:
-    bool error8{false};
-    bool error9{false};
     bool pending{false};
 
+    unsigned char error8{0U};
+    unsigned char error9{0U};
     unsigned char state8{0U};
     unsigned char state9{0U};
 
@@ -73,9 +73,9 @@ private:
     State state{State::IDLE};
 
     /**
-     * Reads incoming desk communication data.
+     * Polls both desk nodes for encoder and state data.
      *
-     * @return `true` if data is received, `false` otherwise.
+     * @return `true` if both node requests succeed, `false` otherwise.
      */
     [[nodiscard]] bool read();
 

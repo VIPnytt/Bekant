@@ -321,22 +321,6 @@ uint16_t DeskService::encode(float height)
  */
 void DeskService::getErrors(JsonArray &list)
 {
-    if ((errorInit & 0b1U) != 0U)
-    {
-        list.add("probe A: no response");
-    }
-    if ((errorInit & (0b1U << 1U)) != 0U)
-    {
-        list.add("probe A: checksum mismatch");
-    }
-    if ((errorInit & (0b1U << 2U)) != 0U)
-    {
-        list.add("probe B: no response");
-    }
-    if ((errorInit & (0b1U << 3U)) != 0U)
-    {
-        list.add("probe B: checksum mismatch");
-    }
     if ((error8 & 0b1U) != 0U)
     {
         list.add("node 8: no response");
@@ -352,6 +336,22 @@ void DeskService::getErrors(JsonArray &list)
     if ((error9 & (0b1U << 1U)) != 0U)
     {
         list.add("node 9: checksum mismatch");
+    }
+    if ((errorInit & 0b1U) != 0U)
+    {
+        list.add("probe A: no response");
+    }
+    if ((errorInit & (0b1U << 1U)) != 0U)
+    {
+        list.add("probe A: checksum mismatch");
+    }
+    if ((errorInit & (0b1U << 2U)) != 0U)
+    {
+        list.add("probe B: no response");
+    }
+    if ((errorInit & (0b1U << 3U)) != 0U)
+    {
+        list.add("probe B: checksum mismatch");
     }
 }
 

@@ -63,7 +63,6 @@ unsigned char LegHandler::begin()
     for (; pid < 8U; ++pid)
     {
         const unsigned char probeB[8U]{pid, 0x2U, 0x0U, 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        // unsigned char response[sizeof(probeB)]{};
         sendDiagnosticRequest(probeB);
         unsigned char response[sizeof(probeB)]{};
         const int checksum{receiveResponse(getPid(linDiagnosticResponseId), response)};
@@ -131,7 +130,8 @@ unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 /**
  * @brief Reads a serial byte within the available time budget.
  *
- * Reports parity, data-overrun, and frame errors to the console before returning the byte.
+ * Reports a nonzero parity, data-overrun, or frame-error combination to the console before returning the byte unless
+ * it matches the last reported combination.
  *
  * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
  * @return int The received byte, or -1 if no byte is available before the timeout.
@@ -149,9 +149,11 @@ int LegHandler::read(unsigned int &remainingTime)
     {
         return -1;
     }
-    const unsigned char errors{UCSR0A}; // NOLINT(clang-analyzer-core.FixedAddressDereference)
-    if ((errors & ((0b1U << UPE0) | (0b1U << DOR0) | (0b1U << FE0))) != 0U)
+    // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
+    const unsigned char _errors{static_cast<unsigned char>(static_cast<unsigned char>(UCSR0A >> 2U) & 0b111U)};
+    if (_errors != 0U && _errors != errors)
     {
+        errors = _errors;
         Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::LIN));
         Serial1.write(errors);
     }

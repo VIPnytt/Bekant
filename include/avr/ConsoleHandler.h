@@ -78,6 +78,7 @@ public:
     }
 
 private:
+    unsigned char errors{0U};
     unsigned char lengthRx{0U};
 
     unsigned char bufferRx[0b1U << 4U]{};
