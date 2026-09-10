@@ -83,7 +83,7 @@ bool ControllerService::read()
             console.send(ConsoleHandler::State::NODE8, node);
         }
     }
-    else
+    else if (_error8 != error8)
     {
         error8 = _error8;
         console.send(ConsoleHandler::State::NODE8, error8);
@@ -104,7 +104,7 @@ bool ControllerService::read()
             console.send(ConsoleHandler::State::NODE9, node);
         }
     }
-    else
+    else if (_error9 != error9)
     {
         error9 = _error9;
         console.send(ConsoleHandler::State::NODE9, error9);
