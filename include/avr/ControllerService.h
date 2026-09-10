@@ -73,9 +73,9 @@ private:
     State state{State::IDLE};
 
     /**
-     * Reads incoming desk communication data.
+     * Polls both desk nodes for encoder and state data.
      *
-     * @return `true` if data is received, `false` otherwise.
+     * @return `true` if both node requests succeed, `false` otherwise.
      */
     [[nodiscard]] bool read();
 

@@ -58,7 +58,8 @@ void ControllerService::handle()
  *
  * Reports encoder communication failures and sounds an alert when movement is
  * pending and either request fails. Resets the watchdog after both requests
- * succeed.
+ * succeed. Node data and communication errors are forwarded only when they
+ * change, including when a node recovers from an error.
  *
  * @return true if both encoder requests succeed, false otherwise.
  */
