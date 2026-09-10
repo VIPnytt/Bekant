@@ -22,13 +22,13 @@ private:
 
     unsigned long lastMillis{0U};
 
-    void cancel();
-
     void incrementDown();
 
     void incrementUp();
 
     void process();
+
+    void stop();
 
 public:
     void handle();
