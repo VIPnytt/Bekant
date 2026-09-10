@@ -46,10 +46,10 @@ public:
     static ControllerService &getInstance();
 
 private:
-    bool error8{false};
-    bool error9{false};
     bool pending{false};
 
+    unsigned char error8{false};
+    unsigned char error9{false};
     unsigned char state8{0U};
     unsigned char state9{0U};
 

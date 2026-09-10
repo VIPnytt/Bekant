@@ -15,7 +15,6 @@ void ConsoleHandler::begin()
     pinMode(PIN_MISO, INPUT);
     pinMode(PIN_SCK, OUTPUT);
     Serial1.onReceiveError(&onReceiveError);
-    Serial1.setRxBufferSize(0b1U << 9U);
     Serial1.begin(115'200UL, SerialConfig::SERIAL_8N1, PIN_MISO, PIN_SCK);
 }
 
@@ -31,7 +30,7 @@ void ConsoleHandler::handle()
         if (lengthRx == 0U)
         {
             lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
-            stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0xFU);
+            stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0b1111U);
             bytesRx = 0U;
         }
         bufferRx.at(bytesRx++) = static_cast<uint8_t>(byte);
@@ -80,27 +79,27 @@ void ConsoleHandler::forward()
  */
 void ConsoleHandler::getErrors(JsonArray &errors)
 {
-    if ((errorLin & (0b1U << 2U)) != 0U)
+    if ((errorLin & 0b1U) != 0U)
     {
         errors.add("USART0: parity error");
     }
-    if ((errorLin & (0b1U << 3U)) != 0U)
+    if ((errorLin & (0b1U << 1U)) != 0U)
     {
         errors.add("USART0: data overrun");
     }
-    if ((errorLin & (0b1U << 4U)) != 0U)
+    if ((errorLin & (0b1U << 2U)) != 0U)
     {
         errors.add("USART0: frame error");
     }
-    if ((errorTx & (0b1U << 2U)) != 0U)
+    if ((errorTx & 0b1U) != 0U)
     {
         errors.add("USART1: parity error");
     }
-    if ((errorTx & (0b1U << 3U)) != 0U)
+    if ((errorTx & (0b1U << 1U)) != 0U)
     {
         errors.add("USART1: data overrun");
     }
-    if ((errorTx & (0b1U << 4U)) != 0U)
+    if ((errorTx & (0b1U << 2U)) != 0U)
     {
         errors.add("USART1: frame error");
     }

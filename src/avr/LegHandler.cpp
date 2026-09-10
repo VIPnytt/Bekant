@@ -63,7 +63,6 @@ unsigned char LegHandler::begin()
     for (; pid < 8U; ++pid)
     {
         const unsigned char probeB[8U]{pid, 0x2U, 0x0U, 0x0U, 0xFFU, 0xFFU, 0xFFU, 0xFFU};
-        // unsigned char response[sizeof(probeB)]{};
         sendDiagnosticRequest(probeB);
         unsigned char response[sizeof(probeB)]{};
         const int checksum{receiveResponse(getPid(linDiagnosticResponseId), response)};
@@ -149,9 +148,10 @@ int LegHandler::read(unsigned int &remainingTime)
     {
         return -1;
     }
-    const unsigned char errors{UCSR0A}; // NOLINT(clang-analyzer-core.FixedAddressDereference)
-    if ((errors & ((0b1U << UPE0) | (0b1U << DOR0) | (0b1U << FE0))) != 0U)
+    const unsigned char _errors{static_cast<unsigned char>((UCSR0A >> 2U) & 0b111U)};
+    if (_errors != 0U && _errors != errors)
     {
+        errors = _errors;
         Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::LIN));
         Serial1.write(errors);
     }

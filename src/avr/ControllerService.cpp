@@ -67,11 +67,11 @@ bool ControllerService::read()
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
     leg.sendResponse(LegHandler::getPid(0x11U), empty);
     unsigned char node[3U]{};
-    const unsigned char status8{leg.getLeg(LegHandler::getPid(0x8U), node)};
-    if (status8 == 0U)
+    const unsigned char _error8{leg.getLeg(LegHandler::getPid(0x8U), node)};
+    if (_error8 == 0U)
     {
         const unsigned int _encoder8{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
-        if (_encoder8 != encoder8 || state8 != node[2U] || error8)
+        if (_encoder8 != encoder8 || node[2U] != state8 || _error8 != error8)
         {
             if (_encoder8 != encoder8)
             {
@@ -79,20 +79,20 @@ bool ControllerService::read()
             }
             encoder8 = _encoder8;
             state8 = node[2U];
-            error8 = false;
+            error8 = 0U;
             console.send(ConsoleHandler::State::NODE8, node);
         }
     }
     else
     {
-        error8 = true;
-        console.send(ConsoleHandler::State::NODE8, status8);
+        error8 = _error8;
+        console.send(ConsoleHandler::State::NODE8, error8);
     }
-    const unsigned char status9{leg.getLeg(LegHandler::getPid(0x9U), node)};
-    if (status9 == 0U)
+    const unsigned char _error9{leg.getLeg(LegHandler::getPid(0x9U), node)};
+    if (_error9 == 0U)
     {
         const unsigned int _encoder9{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
-        if (_encoder9 != encoder9 || state9 != node[2U] || error9)
+        if (_encoder9 != encoder9 || node[2U] != state9 || _error9 != error9)
         {
             if (_encoder9 != encoder9)
             {
@@ -100,16 +100,16 @@ bool ControllerService::read()
             }
             encoder9 = _encoder9;
             state9 = node[2U];
-            error9 = false;
+            error9 = 0U;
             console.send(ConsoleHandler::State::NODE9, node);
         }
     }
     else
     {
-        error9 = true;
-        console.send(ConsoleHandler::State::NODE9, status9);
+        error9 = _error9;
+        console.send(ConsoleHandler::State::NODE9, error9);
     }
-    if (status8 != 0U || status9 != 0U)
+    if (_error8 != 0U || _error9 != 0U)
     {
         if (pending)
         {
