@@ -314,6 +314,11 @@ uint16_t DeskService::encode(float height)
                 static_cast<float>(ReferenceHeight::encoderLow)));
 }
 
+/**
+ * @brief Appends descriptions of recorded leg initialization and communication errors.
+ *
+ * @param list JSON array to append to.
+ */
 void DeskService::getErrors(JsonArray &list)
 {
     if ((errorInit & 0b1U) != 0U)
@@ -408,6 +413,11 @@ void DeskService::setDriveUp(bool state)
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Records node 8 communication errors and signals an error state.
+ *
+ * @param flags Error bitmask with bit 0 for no response and bit 1 for a checksum mismatch.
+ */
 void DeskService::setError8(uint8_t flags)
 {
     if (flags != error8)
@@ -418,6 +428,11 @@ void DeskService::setError8(uint8_t flags)
     statusRed();
 }
 
+/**
+ * @brief Records node 9 communication errors and signals an error state.
+ *
+ * @param flags Error bitmask with bit 0 for no response and bit 1 for a checksum mismatch.
+ */
 void DeskService::setError9(uint8_t flags)
 {
     if (flags != error9)
@@ -428,6 +443,12 @@ void DeskService::setError9(uint8_t flags)
     statusRed();
 }
 
+/**
+ * @brief Records leg initialization errors and signals an error state.
+ *
+ * @param flags Error bitmask with response and checksum failures in bits 0 and 1 for probe A and bits 2 and 3 for
+ * probe B.
+ */
 void DeskService::setErrorInit(uint8_t flags)
 {
     if (flags != errorInit)
@@ -438,6 +459,14 @@ void DeskService::setErrorInit(uint8_t flags)
     statusRed();
 }
 
+/**
+ * @brief Updates node 8 data and clears its communication error.
+ *
+ * Changes are marked for publication, and position changes are also marked for persistence.
+ *
+ * @param position Encoder position reported by the node.
+ * @param state State reported by the node.
+ */
 void DeskService::setNode8(uint16_t position, uint8_t state)
 {
     if (position != encoder8 && state != state8)
@@ -471,6 +500,14 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     }
 }
 
+/**
+ * @brief Updates node 9 data and clears its communication error.
+ *
+ * Changes are marked for publication, and position changes are also marked for persistence.
+ *
+ * @param position Encoder position reported by the node.
+ * @param state State reported by the node.
+ */
 void DeskService::setNode9(uint16_t position, uint8_t state)
 {
     if (position != encoder9 && state != state9)
@@ -526,6 +563,9 @@ void DeskService::setOutputEnable(bool state)
 #endif // PIN_OE
 }
 
+/**
+ * @brief Requests device-state publication on the next service cycle.
+ */
 void DeskService::setPending() { pending = true; }
 
 /**
@@ -740,6 +780,9 @@ void DeskService::onInterruptDown()
 
 /**
  * @brief Updates the reset state and status indicator from the reset input.
+ *
+ * Clears recorded communication errors and removes captured serial payloads from subsequent publications while reset
+ * is asserted.
  */
 void DeskService::onInterruptReset()
 {

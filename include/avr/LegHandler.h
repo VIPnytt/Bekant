@@ -33,6 +33,12 @@ private:
     [[nodiscard]] int read(unsigned int &remainingTime);
 
 public:
+    /**
+     * Builds a LIN protected identifier from a frame identifier.
+     *
+     * @param identifier Frame identifier; only the lower six bits are used.
+     * @return The identifier with its parity bits in the upper two bits.
+     */
     [[nodiscard]] static constexpr unsigned char getPid(unsigned char identifier)
     {
         identifier &= 0x3FU;
@@ -91,12 +97,11 @@ public:
     }
 
     /**
-     * Receives a LIN response for the specified identifier.
+     * Requests a LIN response and reads its payload and checksum.
      *
-     * @param identifier LIN frame identifier to request.
+     * @param pid Protected identifier to transmit in the response header.
      * @param data Buffer to populate with the received payload.
-     * @return `true` if a complete response with a valid checksum is received, `false` on timeout or checksum
-     * failure.
+     * @return The received checksum byte, or `-1` if the response is incomplete.
      */
     template <unsigned int N> int receiveResponse(unsigned char pid, unsigned char (&data)[N])
     {
@@ -135,6 +140,11 @@ public:
         return read(remainingTime);
     }
 
+    /**
+     * Sends a LIN diagnostic request with a classic checksum.
+     *
+     * @param data Diagnostic payload to transmit.
+     */
     template <unsigned int N> void sendDiagnosticRequest(const unsigned char (&data)[N])
     {
         static_assert(N <= 8U);
@@ -146,6 +156,12 @@ public:
         Serial.flush();
     }
 
+    /**
+     * Sends a LIN response with an enhanced checksum.
+     *
+     * @param pid Protected identifier to transmit.
+     * @param data Response payload to transmit.
+     */
     template <unsigned int N> void sendResponse(unsigned char pid, const unsigned char (&data)[N])
     {
         static_assert(N <= 8U);

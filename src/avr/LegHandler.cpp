@@ -10,7 +10,8 @@
 /**
  * @brief Initializes the LIN interface and configures the connected device.
  *
- * @return true if initialization and device detection succeed, false otherwise.
+ * @return `0` on success; bits 0 and 1 report no response and checksum mismatch for probe A, and bits 2 and 3
+ * report the same conditions for probe B.
  */
 unsigned char LegHandler::begin()
 {
@@ -106,6 +107,13 @@ unsigned char LegHandler::begin()
     return 0U;
 }
 
+/**
+ * @brief Requests a desk-leg status frame and validates its checksum.
+ *
+ * @param pid Protected identifier of the leg status frame.
+ * @param node Buffer for the two-byte encoder position and one-byte state.
+ * @return `0` for a valid response, bit 0 for an incomplete response, or bit 1 for a checksum mismatch.
+ */
 unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 {
     const int checksum{receiveResponse(pid, node)};
@@ -122,6 +130,8 @@ unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 
 /**
  * @brief Reads a serial byte within the available time budget.
+ *
+ * Reports parity, data-overrun, and frame errors to the console before returning the byte.
  *
  * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
  * @return int The received byte, or -1 if no byte is available before the timeout.
@@ -148,6 +158,9 @@ int LegHandler::read(unsigned int &remainingTime)
     return Serial.read();
 }
 
+/**
+ * @brief Requests and discards a diagnostic response within one frame time budget.
+ */
 void LegHandler::requestDiscardResponse()
 {
     serialBreak();
@@ -182,6 +195,11 @@ void LegHandler::sendCommand(Command command, unsigned int position)
     sendResponse(getPid(0x12U), packet);
 }
 
+/**
+ * @brief Sends a LIN response header followed by the complemented protected identifier.
+ *
+ * @param pid Protected identifier to transmit.
+ */
 void LegHandler::sendResponse(unsigned char pid)
 {
     serialBreak();

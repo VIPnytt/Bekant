@@ -20,7 +20,7 @@ void ConsoleHandler::begin()
 }
 
 /**
- * @brief Processes available secondary-serial data, pending UART errors, or primary-serial input.
+ * @brief Processes a secondary-serial byte or forwards primary-serial input when none is available.
  */
 void ConsoleHandler::handle()
 {
@@ -73,6 +73,11 @@ void ConsoleHandler::forward()
     }
 }
 
+/**
+ * @brief Appends descriptions of recorded serial communication errors.
+ *
+ * @param errors JSON array to append to.
+ */
 void ConsoleHandler::getErrors(JsonArray &errors)
 {
     if ((errorLin & (0b1U << 2U)) != 0U)
@@ -185,6 +190,9 @@ void ConsoleHandler::parse()
     }
 }
 
+/**
+ * @brief Clears all recorded serial communication errors.
+ */
 void ConsoleHandler::reset()
 {
     errorLin = 0U;
@@ -219,6 +227,11 @@ void ConsoleHandler::send(Command command, uint16_t value)
     write(payload);
 }
 
+/**
+ * @brief Records LIN USART error flags and signals an error state.
+ *
+ * @param flags AVR USART status flags.
+ */
 void ConsoleHandler::setErrorLin(uint8_t flags)
 {
     if (flags != errorLin)
@@ -229,6 +242,11 @@ void ConsoleHandler::setErrorLin(uint8_t flags)
     desk.statusRed();
 }
 
+/**
+ * @brief Records console USART error flags and signals an error state.
+ *
+ * @param flags AVR USART status flags.
+ */
 void ConsoleHandler::setErrorTx(uint8_t flags)
 {
     if (flags != errorTx)
@@ -255,7 +273,7 @@ void ConsoleHandler::write(std::span<const uint8_t> payload)
 }
 
 /**
- * @brief Stores the latest hardware serial error for processing.
+ * @brief Records the latest hardware serial receive error and signals an error state.
  *
  * @param error Hardware serial error to store.
  */
