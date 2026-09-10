@@ -31,6 +31,7 @@ public:
         POSITION,
         PRESET_HIGH,
         PRESET_LOW,
+        VERSION,
     };
 
     /**

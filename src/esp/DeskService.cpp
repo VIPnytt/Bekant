@@ -321,6 +321,10 @@ uint16_t DeskService::encode(float height)
  */
 void DeskService::getErrors(JsonArray &list)
 {
+    if (versionAvr != fingerprint(version))
+    {
+        list.add("AVR: version mismatch");
+    }
     if ((error8 & 0b1U) != 0U)
     {
         list.add("node 8: no response");
@@ -633,6 +637,19 @@ void DeskService::setTx(std::span<const uint8_t> payload)
         lengthTx = payload.size();
         std::copy(payload.begin(), payload.end(), payloadTx.begin());
         pending = true;
+    }
+}
+
+void DeskService::setVersion(uint8_t hash)
+{
+    if (hash != versionAvr)
+    {
+        versionAvr = hash;
+        pending = true;
+    }
+    if (versionAvr != fingerprint(version))
+    {
+        statusRed();
     }
 }
 

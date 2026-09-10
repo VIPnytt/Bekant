@@ -24,6 +24,7 @@ void ControllerService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
+    console.send(ConsoleHandler::State::VERSION, fingerprint(version));
     console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
     console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
     const unsigned char init{leg.begin()};

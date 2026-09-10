@@ -15,6 +15,17 @@
 class DeskService
 {
 private:
+    [[nodiscard]] constexpr uint8_t fingerprint(std::string_view characters)
+    {
+        uint8_t hash{0U};
+        for (const char character : characters)
+        {
+            hash ^= static_cast<uint8_t>(character);
+            hash = static_cast<uint8_t>((hash << 3U) | (hash >> 5U));
+        }
+        return hash;
+    }
+
     bool buttonDown{false};
     bool buttonUp{false};
     bool enable{true};
@@ -28,6 +39,7 @@ private:
     uint8_t errorInit{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
+    uint8_t versionAvr{0U};
 
     uint16_t encoder8{0U};
     uint16_t encoder9{0U};
@@ -61,6 +73,8 @@ private:
 
     WifiHandler wifi{};
 
+    void getErrors(JsonArray &list);
+
     void save();
 
     void setDriveDown(bool state);
@@ -72,8 +86,6 @@ private:
     void setReset(bool state);
 
     void statusNode();
-
-    void getErrors(JsonArray &list);
 
     [[nodiscard]] float decode(float encoder);
 
@@ -92,9 +104,9 @@ public:
 
     void begin();
 
-    void handle();
-
     void fetchRelease();
+
+    void handle();
 
     void request(JsonObjectConst doc);
 
@@ -123,6 +135,8 @@ public:
     void setRx(std::span<const uint8_t> payload);
 
     void setTx(std::span<const uint8_t> payload);
+
+    void setVersion(uint8_t hash);
 
     void statusRed();
 

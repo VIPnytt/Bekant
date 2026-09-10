@@ -183,6 +183,10 @@ void ConsoleHandler::parse()
         desk.setPresetLow(static_cast<uint16_t>(bufferRx.at(1U)) |
                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
     }
+    else if (stateRx == State::VERSION && lengthRx == 1U)
+    {
+        desk.setVersion(bufferRx.at(1U));
+    }
     else
     {
         desk.statusRed();
