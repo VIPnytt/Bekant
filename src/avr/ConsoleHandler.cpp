@@ -8,7 +8,8 @@
 /**
  * @brief Buffers a serial command and parses it when its complete payload is received.
  *
- * The first byte specifies the payload length and command identifier.
+ * The first byte specifies the payload length and command identifier. USART receive errors are reported before the
+ * byte is consumed.
  */
 void ConsoleHandler::handle()
 {
