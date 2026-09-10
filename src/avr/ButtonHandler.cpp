@@ -126,7 +126,10 @@ void ButtonHandler::incrementUp()
 }
 
 /**
- * @brief Resumes movement in the direction indicated by the desk state.
+ * @brief Finalizes manual movement when a button is released.
+ *
+ * While the controller is moving, sets a final bounded target in the active
+ * direction and clears the accumulated button sequence.
  */
 void ButtonHandler::stop()
 {

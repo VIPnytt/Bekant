@@ -28,6 +28,9 @@ private:
 
     void process();
 
+    /**
+     * Finalizes manual movement when a button is released.
+     */
     void stop();
 
 public:
