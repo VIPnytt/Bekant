@@ -130,7 +130,8 @@ unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 /**
  * @brief Reads a serial byte within the available time budget.
  *
- * Reports parity, data-overrun, and frame errors to the console before returning the byte.
+ * Reports a nonzero parity, data-overrun, or frame-error combination to the console before returning the byte unless
+ * it matches the last reported combination.
  *
  * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
  * @return int The received byte, or -1 if no byte is available before the timeout.
