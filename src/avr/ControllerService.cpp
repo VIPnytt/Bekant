@@ -12,6 +12,7 @@
 /**
  * @brief Initializes communication, hardware pins, presets, the watchdog, and the LIN interface.
  *
+ * Sends the firmware fingerprint and stored presets to the ESP32.
  * Reports a LIN initialization failure and sounds a tone when initialization does not succeed.
  */
 void ControllerService::begin()
