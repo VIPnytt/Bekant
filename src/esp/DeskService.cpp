@@ -69,10 +69,10 @@ void DeskService::begin()
     attachInterrupt(PIN_TPUP, onInterruptUp, CHANGE);
 #endif // PIN_TPUP
     digitalWrite(PIN_RST, HIGH);
+    console.begin();
     wifi.begin();
     ota.begin();
     isp.begin();
-    console.begin();
     mqtt.begin();
     fetchRelease();
 }
@@ -125,32 +125,35 @@ void DeskService::handle()
 }
 
 /**
- * @brief Converts an encoder value to the corresponding physical desk height.
- *
- * @param encoder Encoder value to convert.
- * @return Physical desk height corresponding to the encoder value.
+ * @brief Disables device processing and disconnects serial and MQTT services.
  */
-float DeskService::decode(float encoder)
+void DeskService::safeMode()
 {
-    return ((encoder - static_cast<float>(ReferenceHeight::encoderLow)) *
-            (ReferenceHeight::heightHigh - ReferenceHeight::heightLow) /
-            static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow)) +
-           ReferenceHeight::heightLow;
+    process = false;
+    Serial1.end();
+    mqtt.disconnect();
 }
 
 /**
- * @brief Converts a physical desk height to its corresponding encoder value.
- *
- * @param height Physical desk height.
- * @return uint16_t Encoder value mapped from the configured height range.
+ * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
  */
-uint16_t DeskService::encode(float height)
+void DeskService::save()
 {
-    return static_cast<uint16_t>(
-        lroundf(((height - ReferenceHeight::heightLow) *
-                 static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
-                 (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
-                static_cast<float>(ReferenceHeight::encoderLow)));
+    nvs_handle_t handle{};
+    if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        saved = true;
+        nvs_set_u16(handle, "8", encoder8);
+        nvs_set_u16(handle, "9", encoder9);
+        nvs_set_u16(handle, "h", presetHigh);
+        nvs_set_u16(handle, "l", presetLow);
+        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
+        if (nvs_commit(handle) != ESP_OK)
+        {
+            saved = false;
+        }
+        nvs_close(handle);
+    }
 }
 
 /**
@@ -226,38 +229,6 @@ void DeskService::request(JsonObjectConst doc)
 }
 
 /**
- * @brief Disables device processing and disconnects serial and MQTT services.
- */
-void DeskService::safeMode()
-{
-    process = false;
-    Serial1.end();
-    mqtt.disconnect();
-}
-
-/**
- * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
- */
-void DeskService::save()
-{
-    nvs_handle_t handle{};
-    if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
-    {
-        saved = true;
-        nvs_set_u16(handle, "8", encoder8);
-        nvs_set_u16(handle, "9", encoder9);
-        nvs_set_u16(handle, "h", presetHigh);
-        nvs_set_u16(handle, "l", presetLow);
-        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
-        if (nvs_commit(handle) != ESP_OK)
-        {
-            saved = false;
-        }
-        nvs_close(handle);
-    }
-}
-
-/**
  * @brief Publishes the current device state and telemetry.
  *
  * @param doc JSON document to augment with device state and telemetry before publishing.
@@ -269,6 +240,9 @@ void DeskService::transmit(JsonDocument &doc)
     doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
+    JsonArray errors{doc["errors"].to<JsonArray>()};
+    getErrors(errors);
+    console.getErrors(errors);
     const float leg8{decode(static_cast<float>(encoder8))};
     const float leg9{decode(static_cast<float>(encoder9))};
     doc["legs"][0U].set(leg8);
@@ -309,6 +283,76 @@ void DeskService::transmit(JsonDocument &doc)
         static_cast<float>(Voltage::resistanceGnd) / 1'000.0F);
 #endif // PIN_ADC
     mqtt.transmit(doc);
+}
+
+/**
+ * @brief Converts an encoder value to the corresponding physical desk height.
+ *
+ * @param encoder Encoder value to convert.
+ * @return Physical desk height corresponding to the encoder value.
+ */
+float DeskService::decode(float encoder)
+{
+    return ((encoder - static_cast<float>(ReferenceHeight::encoderLow)) *
+            (ReferenceHeight::heightHigh - ReferenceHeight::heightLow) /
+            static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow)) +
+           ReferenceHeight::heightLow;
+}
+
+/**
+ * @brief Converts a physical desk height to its corresponding encoder value.
+ *
+ * @param height Physical desk height.
+ * @return uint16_t Encoder value mapped from the configured height range.
+ */
+uint16_t DeskService::encode(float height)
+{
+    return static_cast<uint16_t>(
+        lroundf(((height - ReferenceHeight::heightLow) *
+                 static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
+                 (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
+                static_cast<float>(ReferenceHeight::encoderLow)));
+}
+
+/**
+ * @brief Appends descriptions of recorded leg initialization and communication errors.
+ *
+ * @param list JSON array to append to.
+ */
+void DeskService::getErrors(JsonArray &list)
+{
+    if ((errorInit & 0b1U) != 0U)
+    {
+        list.add("probe A: no response");
+    }
+    if ((errorInit & (0b1U << 1U)) != 0U)
+    {
+        list.add("probe A: checksum mismatch");
+    }
+    if ((errorInit & (0b1U << 2U)) != 0U)
+    {
+        list.add("probe B: no response");
+    }
+    if ((errorInit & (0b1U << 3U)) != 0U)
+    {
+        list.add("probe B: checksum mismatch");
+    }
+    if ((error8 & 0b1U) != 0U)
+    {
+        list.add("node 8: no response");
+    }
+    if ((error8 & (0b1U << 1U)) != 0U)
+    {
+        list.add("node 8: checksum mismatch");
+    }
+    if ((error9 & 0b1U) != 0U)
+    {
+        list.add("node 9: no response");
+    }
+    if ((error9 & (0b1U << 1U)) != 0U)
+    {
+        list.add("node 9: checksum mismatch");
+    }
 }
 
 /**
@@ -370,38 +414,130 @@ void DeskService::setDriveUp(bool state)
 }
 
 /**
- * @brief Updates the encoder 8 position and marks the desk state for saving and publication.
+ * @brief Records node 8 communication errors and signals an error state.
  *
- * Updates the status indicator when the position changes.
- *
- * @param position New encoder 8 position.
+ * @param flags Error bitmask with bit 0 for no response and bit 1 for a checksum mismatch.
  */
-void DeskService::setEncoder8(uint16_t position)
+void DeskService::setError8(uint8_t flags)
 {
-    if (position != encoder8)
+    if (flags != error8)
+    {
+        error8 = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+/**
+ * @brief Records node 9 communication errors and signals an error state.
+ *
+ * @param flags Error bitmask with bit 0 for no response and bit 1 for a checksum mismatch.
+ */
+void DeskService::setError9(uint8_t flags)
+{
+    if (flags != error9)
+    {
+        error9 = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+/**
+ * @brief Records leg initialization errors and signals an error state.
+ *
+ * @param flags Error bitmask with response and checksum failures in bits 0 and 1 for probe A and bits 2 and 3 for
+ * probe B.
+ */
+void DeskService::setErrorInit(uint8_t flags)
+{
+    if (flags != errorInit)
+    {
+        errorInit = flags;
+        pending = true;
+    }
+    statusRed();
+}
+
+/**
+ * @brief Updates node 8 data and clears its communication error.
+ *
+ * Changes are marked for publication, and position changes are also marked for persistence.
+ *
+ * @param position Encoder position reported by the node.
+ * @param state State reported by the node.
+ */
+void DeskService::setNode8(uint16_t position, uint8_t state)
+{
+    if (position != encoder8 && state != state8)
     {
         encoder8 = position;
+        state8 = state;
+        error8 = 0U;
         saved = false;
         pending = true;
         statusNode();
     }
-}
-
-/**
- * @brief Updates the secondary encoder value.
- *
- * Marks the device state for persistence and publication when the value changes.
- *
- * @param position New secondary encoder value.
- */
-void DeskService::setEncoder9(uint16_t position)
-{
-    if (position != encoder9)
+    else if (position != encoder8)
     {
-        encoder9 = position;
+        encoder8 = position;
+        error8 = 0U;
         saved = false;
         pending = true;
         statusNode();
+    }
+    else if (state != state8)
+    {
+        state8 = state;
+        error8 = 0U;
+        pending = true;
+        statusNode();
+    }
+    else if (error8 != 0U)
+    {
+        error8 = 0U;
+        pending = true;
+    }
+}
+
+/**
+ * @brief Updates node 9 data and clears its communication error.
+ *
+ * Changes are marked for publication, and position changes are also marked for persistence.
+ *
+ * @param position Encoder position reported by the node.
+ * @param state State reported by the node.
+ */
+void DeskService::setNode9(uint16_t position, uint8_t state)
+{
+    if (position != encoder9 && state != state9)
+    {
+        encoder9 = position;
+        state9 = state;
+        error9 = 0U;
+        saved = false;
+        pending = true;
+        statusNode();
+    }
+    else if (position != encoder9)
+    {
+        encoder9 = position;
+        error9 = 0U;
+        saved = false;
+        pending = true;
+        statusNode();
+    }
+    else if (state != state9)
+    {
+        state9 = state;
+        error9 = 0U;
+        pending = true;
+        statusNode();
+    }
+    else if (error9 != 0U)
+    {
+        error9 = 0U;
+        pending = true;
     }
 }
 
@@ -426,6 +562,11 @@ void DeskService::setOutputEnable(bool state)
     }
 #endif // PIN_OE
 }
+
+/**
+ * @brief Requests device-state publication on the next service cycle.
+ */
+void DeskService::setPending() { pending = true; }
 
 /**
  * @brief Sets the high preset value and marks the device state for persistence and publication.
@@ -476,36 +617,6 @@ void DeskService::setRx(std::span<const uint8_t> payload)
         lengthRx = payload.size();
         std::copy(payload.begin(), payload.end(), payloadRx.begin());
         pending = true;
-    }
-}
-
-/**
- * @brief Updates the state of drive 8.
- *
- * @param state New drive state.
- */
-void DeskService::setState8(uint8_t state)
-{
-    if (state != state8)
-    {
-        state8 = state;
-        pending = true;
-        statusNode();
-    }
-}
-
-/**
- * @brief Updates the motor state for encoder 9.
- *
- * @param state New motor state.
- */
-void DeskService::setState9(uint8_t state)
-{
-    if (state != state9)
-    {
-        state9 = state;
-        pending = true;
-        statusNode();
     }
 }
 
@@ -669,11 +780,27 @@ void DeskService::onInterruptDown()
 
 /**
  * @brief Updates the reset state and status indicator from the reset input.
+ *
+ * Clears recorded communication errors and removes captured serial payloads from subsequent publications while reset
+ * is asserted.
  */
 void DeskService::onInterruptReset()
 {
     desk.reset = digitalRead(PIN_RST) == LOW;
-    desk.reset ? desk.status.setNone(true) : desk.status.setWhite();
+    if (desk.reset)
+    {
+        desk.error8 = 0U;
+        desk.error9 = 0U;
+        desk.errorInit = 0U;
+        desk.lengthRx = 0U;
+        desk.lengthTx = 0U;
+        desk.console.reset();
+        desk.status.setNone(true);
+    }
+    else
+    {
+        desk.status.setWhite();
+    }
     desk.pending = true;
 }
 

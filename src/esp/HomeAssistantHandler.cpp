@@ -250,7 +250,7 @@ void HomeAssistantHandler::configuration()
  * @brief Configures diagnostic entities for Home Assistant discovery.
  *
  * Adds diagnostic controls and sensors for calibration, encoder data, firmware
- * versions, positional offset, serial activity, temperature, Wi-Fi signal
+ * versions, communication errors, positional offset, serial activity, temperature, Wi-Fi signal
  * strength, and optionally button inputs and power-supply voltage. Diagnostic
  * entities are categorized and selected hardware-specific entities are disabled
  * by default.
@@ -306,6 +306,16 @@ void HomeAssistantHandler::diagnostic()
         calibrate[ComponentAbbreviations::payload_press].set("calibrate");
         calibrate[ComponentAbbreviations::platform].set("button");
         calibrate[ComponentAbbreviations::unique_id].set("calibrate");
+    }
+    {
+        JsonObject errors{discovery[ComponentAbbreviations::components]["error"].to<JsonObject>()};
+        errors[ComponentAbbreviations::entity_category].set(entityCategory);
+        errors[ComponentAbbreviations::icon].set("mdi:alert-outline");
+        errors[ComponentAbbreviations::name].set("Errors");
+        errors[ComponentAbbreviations::platform].set("sensor");
+        errors[ComponentAbbreviations::state_topic].set(stateTopic);
+        errors[ComponentAbbreviations::unique_id].set("error");
+        errors[ComponentAbbreviations::value_template].set("{{value_json.errors|join(', ')}}");
     }
     {
         JsonObject firmware{discovery[ComponentAbbreviations::components]["firmware"].to<JsonObject>()};

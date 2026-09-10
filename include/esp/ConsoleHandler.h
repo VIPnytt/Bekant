@@ -2,6 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
+#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
 #include <HardwareSerial.h>
 #include <span>
 #include <string>
@@ -22,22 +23,22 @@ public:
     {
         BUTTON_DOWN = 1U,
         BUTTON_UP,
-        ENCODER8,
-        ENCODER9,
-        INITIALIZE,
+        CONSOLE,
+        INITIALIZATION,
+        LIN,
         NODE8,
         NODE9,
         POSITION,
         PRESET_HIGH,
         PRESET_LOW,
-        STATE8,
-        STATE9,
     };
 
     /**
      * Initializes console handling.
      */
     void begin();
+
+    void getErrors(JsonArray &errors);
 
     /**
      * Processes available console input.
@@ -49,11 +50,16 @@ public:
      */
     void forward();
 
+    void reset();
+
     void send(Command command);
 
     void send(Command command, uint16_t value);
 
 private:
+    uint8_t errorLin{0U};
+    uint8_t errorTx{0U};
+
     size_t bytesRx{0U};
     size_t bytesTx{0U};
     size_t lengthRx{0U};
@@ -72,12 +78,16 @@ private:
      */
     State stateRx{};
 
-    static inline hardwareSerial_error_t lastError{hardwareSerial_error_t::UART_NO_ERROR};
+    static inline hardwareSerial_error_t errorRx{hardwareSerial_error_t::UART_NO_ERROR};
 
     /**
      * Parses a received console payload.
      */
-    void parse() const;
+    void parse();
+
+    void setErrorLin(uint8_t flags);
+
+    void setErrorTx(uint8_t flags);
 
     void write(std::span<const uint8_t> payload);
 

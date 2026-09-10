@@ -23,6 +23,9 @@ private:
     bool reset{false};
     bool saved{true};
 
+    uint8_t error8{0U};
+    uint8_t error9{0U};
+    uint8_t errorInit{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
 
@@ -35,6 +38,8 @@ private:
 
     size_t lengthRx{0U};
     size_t lengthTx{0U};
+
+    hardwareSerial_error_t errorRx{hardwareSerial_error_t::UART_NO_ERROR};
 
     std::string versionLatest{};
 
@@ -68,6 +73,8 @@ private:
 
     void statusNode();
 
+    void getErrors(JsonArray &list);
+
     [[nodiscard]] float decode(float encoder);
 
     [[nodiscard]] uint16_t encode(float height);
@@ -97,19 +104,23 @@ public:
 
     void setButtonUp(bool state);
 
-    void setEncoder8(uint16_t position);
+    void setError8(uint8_t flags);
 
-    void setEncoder9(uint16_t position);
+    void setError9(uint8_t flags);
+
+    void setErrorInit(uint8_t flags);
+
+    void setNode8(uint16_t position, uint8_t state);
+
+    void setNode9(uint16_t position, uint8_t state);
+
+    void setPending();
 
     void setPresetHigh(uint16_t encoder);
 
     void setPresetLow(uint16_t encoder);
 
     void setRx(std::span<const uint8_t> payload);
-
-    void setState8(uint8_t state);
-
-    void setState9(uint8_t state);
 
     void setTx(std::span<const uint8_t> payload);
 

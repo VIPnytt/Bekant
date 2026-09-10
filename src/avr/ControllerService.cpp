@@ -26,9 +26,10 @@ void ControllerService::begin()
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
     console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
-    if (!lin.begin())
+    const unsigned char init{leg.begin()};
+    if (init != 0U)
     {
-        console.send(ConsoleHandler::State::INITIALIZE);
+        console.send(ConsoleHandler::State::INITIALIZATION, init);
         tone(0b1U << 8U);
         return;
     }
@@ -64,73 +65,56 @@ void ControllerService::handle()
 bool ControllerService::read()
 {
     constexpr unsigned char empty[3U]{0U, 0U, 0U};
-    lin.send(0x11U, empty);
-    unsigned char node8[3U]{};
-    unsigned char node9[3U]{};
-    const bool valid8{lin.request(0x8U, node8)};
-    const bool valid9{lin.request(0x9U, node9)};
-    if (valid8)
+    leg.sendResponse(LegHandler::getPid(0x11U), empty);
+    unsigned char node[3U]{};
+    const unsigned char status8{leg.getLeg(LegHandler::getPid(0x8U), node)};
+    if (status8 == 0U)
     {
-        const unsigned int _encoder8{static_cast<unsigned int>(node8[0U]) | static_cast<unsigned int>(node8[1U]) << 8U};
-        if (_encoder8 != encoder8 && state8 != node8[2U])
+        const unsigned int _encoder8{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
+        if (_encoder8 != encoder8 || state8 != node[2U] || error8)
         {
+            if (_encoder8 != encoder8)
+            {
+                lastMillis = millis();
+            }
             encoder8 = _encoder8;
-            state8 = node8[2U];
-            lastMillis = millis();
-            console.send(ConsoleHandler::State::NODE8, node8);
-        }
-        else if (_encoder8 != encoder8)
-        {
-            encoder8 = _encoder8;
-            lastMillis = millis();
-            console.send(ConsoleHandler::State::ENCODER8, encoder8);
-        }
-        else if (state8 != node8[2U])
-        {
-            state8 = node8[2U];
-            console.send(ConsoleHandler::State::STATE8, state8);
+            state8 = node[2U];
+            error8 = false;
+            console.send(ConsoleHandler::State::NODE8, node);
         }
     }
     else
     {
-        console.send(ConsoleHandler::State::NODE8);
-        if (pending)
-        {
-            tone(0b1U << 8U);
-        }
+        error8 = true;
+        console.send(ConsoleHandler::State::NODE8, status8);
     }
-    if (valid9)
+    const unsigned char status9{leg.getLeg(LegHandler::getPid(0x9U), node)};
+    if (status9 == 0U)
     {
-        const unsigned int _encoder9{static_cast<unsigned int>(node9[0U]) | static_cast<unsigned int>(node9[1U]) << 8U};
-        if (_encoder9 != encoder9 && state9 != node9[2U])
+        const unsigned int _encoder9{static_cast<unsigned int>(node[0U]) | static_cast<unsigned int>(node[1U]) << 8U};
+        if (_encoder9 != encoder9 || state9 != node[2U] || error9)
         {
+            if (_encoder9 != encoder9)
+            {
+                lastMillis = millis();
+            }
             encoder9 = _encoder9;
-            state9 = node9[2U];
-            lastMillis = millis();
-            console.send(ConsoleHandler::State::NODE9, node9);
-        }
-        else if (_encoder9 != encoder9)
-        {
-            encoder9 = _encoder9;
-            lastMillis = millis();
-            console.send(ConsoleHandler::State::ENCODER9, encoder9);
-        }
-        else if (state9 != node9[2U])
-        {
-            state9 = node9[2U];
-            console.send(ConsoleHandler::State::STATE9, state9);
+            state9 = node[2U];
+            error9 = false;
+            console.send(ConsoleHandler::State::NODE9, node);
         }
     }
     else
     {
-        console.send(ConsoleHandler::State::NODE9);
+        error9 = true;
+        console.send(ConsoleHandler::State::NODE9, status9);
+    }
+    if (status8 != 0U || status9 != 0U)
+    {
         if (pending)
         {
             tone(0b1U << 8U);
         }
-    }
-    if (!valid8 || !valid9)
-    {
         return false;
     }
     wdt_reset();
@@ -175,7 +159,7 @@ void ControllerService::process()
         break;
     case State::RECAL_DONE:
         state = State::IDLE;
-        lin.sendCommand(LegHandler::Command::CALIBRATE_END, 99U);
+        leg.sendCommand(LegHandler::Command::CALIBRATE_END, 99U);
         break;
     }
 }
@@ -293,7 +277,7 @@ void ControllerService::handleStateRecalOngoing()
         state = State::RECAL_DONE;
         return;
     }
-    lin.sendCommand(LegHandler::Command::CALIBRATE_BEGIN, 0U);
+    leg.sendCommand(LegHandler::Command::CALIBRATE_BEGIN, 0U);
 }
 
 /**
@@ -309,7 +293,7 @@ void ControllerService::sendCommand(LegHandler::Command command)
                                                                                     : Encoder::maxLimit};
     const unsigned int minTarget{maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
                                                                                     : Encoder::minLimit};
-    lin.sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
+    leg.sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
 }
 
 /**

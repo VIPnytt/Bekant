@@ -8,13 +8,19 @@
 /**
  * @brief Buffers a serial command and parses it when its complete payload is received.
  *
- * The first byte specifies the payload length and command identifier.
+ * The first byte specifies the payload length and command identifier. USART receive errors are reported before the
+ * byte is consumed.
  */
 void ConsoleHandler::handle()
 {
-    const int byte{Serial1.read()};
-    if (byte != -1)
+    if (Serial1.available() != 0)
     {
+        const unsigned char errors{UCSR1A}; // NOLINT(clang-analyzer-core.FixedAddressDereference)
+        if ((errors & ((0b1U << UPE1) | (0b1U << DOR1) | (0b1U << FE1))) != 0U)
+        {
+            send(State::CONSOLE, errors);
+        }
+        const int byte{Serial1.read()};
         if (lengthRx == 0U)
         {
             lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
@@ -90,7 +96,7 @@ void ConsoleHandler::send(State state) { Serial1.write(static_cast<unsigned char
  */
 void ConsoleHandler::send(State state, unsigned char byte)
 {
-    Serial1.write((1U << 4U) | static_cast<unsigned char>(state));
+    Serial1.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
     Serial1.write(byte);
 }
 
