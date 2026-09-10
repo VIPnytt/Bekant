@@ -101,6 +101,8 @@ void ConsoleHandler::getErrors(JsonArray &errors)
     }
     switch (errorRx)
     {
+    case hardwareSerial_error_t::UART_NO_ERROR:
+        break;
     case hardwareSerial_error_t::UART_BREAK_ERROR:
         errors.add("UART: break");
         break;
@@ -114,7 +116,7 @@ void ConsoleHandler::getErrors(JsonArray &errors)
         errors.add("UART: frame error");
         break;
     case hardwareSerial_error_t::UART_PARITY_ERROR:
-        errors.add("UART: pairity error");
+        errors.add("UART: parity error");
         break;
     }
 }
