@@ -48,13 +48,14 @@ public:
 private:
     static constexpr char version[5U]{'1', '.', '0', '.', '0'};
 
-    template <const char N> [[nodiscard]] constexpr unsigned char fingerprint(const char (&characters)[N])
+    template <unsigned int N> [[nodiscard]] constexpr unsigned char fingerprint(const char (&characters)[N])
     {
         unsigned char hash{0U};
         for (const char character : characters)
         {
             hash ^= static_cast<unsigned char>(character);
-            hash = static_cast<unsigned char>((hash << 3U) | (hash >> 5U));
+            hash = static_cast<unsigned char>(static_cast<unsigned char>(hash << 3U) |
+                                              static_cast<unsigned char>(hash >> 5U));
         }
         return hash;
     }

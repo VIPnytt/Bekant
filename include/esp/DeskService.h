@@ -17,7 +17,7 @@ class DeskService
 private:
     [[nodiscard]] constexpr uint8_t fingerprint(std::string_view characters)
     {
-        uint8_t hash{0U};
+        uint8_t hash{0U}; // NOLINT(misc-const-correctness)
         for (const char character : characters)
         {
             hash ^= static_cast<uint8_t>(character);
