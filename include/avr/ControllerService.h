@@ -46,6 +46,26 @@ public:
     static ControllerService &getInstance();
 
 private:
+    static constexpr char version[5U]{'1', '.', '0', '.', '0'};
+
+    /**
+     * Computes the fingerprint sent to identify the AVR firmware version.
+     *
+     * @param characters Version characters to fingerprint.
+     * @return The 8-bit firmware fingerprint.
+     */
+    template <unsigned int N> [[nodiscard]] constexpr unsigned char fingerprint(const char (&characters)[N])
+    {
+        unsigned char hash{0U};
+        for (const char character : characters)
+        {
+            hash ^= static_cast<unsigned char>(character);
+            hash = static_cast<unsigned char>(static_cast<unsigned char>(hash << 3U) |
+                                              static_cast<unsigned char>(hash >> 5U));
+        }
+        return hash;
+    }
+
     bool pending{false};
 
     unsigned char error8{0U};

@@ -315,12 +315,16 @@ uint16_t DeskService::encode(float height)
 }
 
 /**
- * @brief Appends descriptions of recorded leg initialization and communication errors.
+ * @brief Appends descriptions of a firmware mismatch and recorded leg initialization and communication errors.
  *
  * @param list JSON array to append to.
  */
 void DeskService::getErrors(JsonArray &list)
 {
+    if (versionAvr != fingerprint(version))
+    {
+        list.add("AVR: version mismatch");
+    }
     if ((error8 & 0b1U) != 0U)
     {
         list.add("node 8: no response");
@@ -633,6 +637,27 @@ void DeskService::setTx(std::span<const uint8_t> payload)
         lengthTx = payload.size();
         std::copy(payload.begin(), payload.end(), payloadTx.begin());
         pending = true;
+    }
+}
+
+/**
+ * @brief Records the AVR firmware fingerprint and signals a version mismatch.
+ *
+ * Marks the device state for publication when the fingerprint changes and sets the status
+ * indicator to red when the AVR and ESP32 firmware fingerprints differ.
+ *
+ * @param hash AVR firmware fingerprint.
+ */
+void DeskService::setVersion(uint8_t hash)
+{
+    if (hash != versionAvr)
+    {
+        versionAvr = hash;
+        pending = true;
+    }
+    if (versionAvr != fingerprint(version))
+    {
+        statusRed();
     }
 }
 
