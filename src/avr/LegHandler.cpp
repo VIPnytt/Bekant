@@ -8,6 +8,12 @@
 #include <wiring.h>
 #endif // __AVR_ATtiny841__
 
+#ifdef __AVR_ATtiny841__
+#define lin Serial
+#elif defined(__AVR_ATtiny1624__)
+#define lin Serial1
+#endif // __AVR_ATtiny841__
+
 /**
  * @brief Initializes the LIN interface and configures the connected device.
  *
@@ -17,7 +23,7 @@
 unsigned char LegHandler::begin()
 {
     pinMode(pin, OUTPUT);
-    lin->begin(baudRate);
+    lin.begin(baudRate);
     constexpr unsigned char initial[3U][2U]{
         {0x7U, 0xFFU},
         {0x7U, 0xFFU},
@@ -140,13 +146,13 @@ unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 int LegHandler::read(unsigned int &remainingTime)
 {
     constexpr unsigned int interval{static_cast<unsigned int>(1'000'000UL / baudRate)};
-    while (remainingTime != 0U && lin->available() == 0)
+    while (remainingTime != 0U && lin.available() == 0)
     {
         const unsigned int delayTime{remainingTime >= interval ? interval : remainingTime};
         delayMicroseconds(delayTime);
         remainingTime -= delayTime;
     }
-    if (lin->available() == 0)
+    if (lin.available() == 0)
     {
         return -1;
     }
@@ -154,10 +160,13 @@ int LegHandler::read(unsigned int &remainingTime)
     // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
     const unsigned char _errors{static_cast<unsigned char>(static_cast<unsigned char>(UCSR0A >> 2U) & 0b111U)};
 #elif defined(__AVR_ATtiny1624__)
-    // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
     const unsigned char _errors{static_cast<unsigned char>(
-        (static_cast<unsigned char>(USART1.RXDATAH & USART_PERR_bm) >> 1U) |
-        (static_cast<unsigned char>(USART1.RXDATAH & USART_BUFOVF_bm) >> 5U) | (USART1.RXDATAH & USART_FERR_bm))};
+        // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
+        static_cast<unsigned char>(static_cast<unsigned char>(USART1.RXDATAH & USART_PERR_bm) >> 1U) |
+        // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
+        static_cast<unsigned char>(static_cast<unsigned char>(USART1.RXDATAH & USART_BUFOVF_bm) >> 5U) |
+        // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
+        static_cast<unsigned char>(USART1.RXDATAH & USART_FERR_bm))};
 #endif // __AVR_ATtiny841__
     if (_errors != 0U && _errors != errors)
     {
@@ -165,7 +174,7 @@ int LegHandler::read(unsigned int &remainingTime)
         console.send(ConsoleHandler::State::LIN, errors);
     }
 
-    return lin->read();
+    return lin.read();
 }
 
 /**
@@ -174,9 +183,9 @@ int LegHandler::read(unsigned int &remainingTime)
 void LegHandler::requestDiscardResponse()
 {
     serialBreak();
-    lin->write(linSyncByte);
-    lin->write(getPid(linDiagnosticResponseId));
-    lin->flush();
+    lin.write(linSyncByte);
+    lin.write(getPid(linDiagnosticResponseId));
+    lin.flush();
     unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
     while (remainingTime != 0U)
     {
@@ -213,10 +222,10 @@ void LegHandler::sendCommand(Command command, unsigned int position)
 void LegHandler::sendResponse(unsigned char pid)
 {
     serialBreak();
-    lin->write(linSyncByte);
-    lin->write(pid);
-    lin->write(static_cast<unsigned char>(~pid));
-    lin->flush();
+    lin.write(linSyncByte);
+    lin.write(pid);
+    lin.write(static_cast<unsigned char>(~pid));
+    lin.flush();
 }
 
 /**
@@ -228,13 +237,15 @@ void LegHandler::sendResponse(unsigned char pid)
  */
 void LegHandler::serialBreak()
 {
-    lin->end();
+    lin.end();
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
     delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baudRate)); // ~780 µs
     digitalWrite(pin, HIGH);
     delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baudRate));
-    lin->begin(baudRate);
+    lin.begin(baudRate);
 }
+
+#undef lin
 
 #endif // __AVR__

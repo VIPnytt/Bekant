@@ -4,6 +4,12 @@
 
 #include <HardwareSerial.h>
 
+#ifdef __AVR_ATtiny841__
+#define esp Serial1
+#elif defined(__AVR_ATtiny1624__)
+#define esp Serial
+#endif // __AVR_ATtiny841__
+
 /**
  * Handles buffered console input.
  */
@@ -31,20 +37,12 @@ private:
 
     Command commandRx{};
 
-    HardwareSerial *const esp;
-
     /**
      * Parses buffered console input into a command.
      */
     void parse();
 
 public:
-#ifdef __AVR_ATtiny841__
-    ConsoleHandler() : esp{&Serial1} {}
-#elif defined(__AVR_ATtiny1624__)
-    ConsoleHandler() : esp{&Serial} {}
-#endif // __AVR_ATtiny841__
-
     /**
      * Identifies protocol message states exchanged with the console.
      */
@@ -99,8 +97,8 @@ public:
     template <unsigned int N> void send(State state, const unsigned char (&data)[N])
     {
         static_assert(N < (0b1U << 4U));
-        esp->write((N << 4U) | static_cast<unsigned char>(state));
-        esp->write(data, N);
+        esp.write(static_cast<unsigned char>((N << 4U) | static_cast<unsigned char>(state)));
+        esp.write(data, N);
     }
 
     static ConsoleHandler &getInstance();
@@ -108,5 +106,7 @@ public:
 
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
 extern ConsoleHandler &console;
+
+#undef esp
 
 #endif // __AVR__
