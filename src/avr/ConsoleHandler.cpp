@@ -5,13 +5,15 @@
 #include "avr/ControllerService.h"
 #include "avr/ToneHandler.h"
 
-#ifdef __AVR_ATtiny841__
-#define esp Serial1
-#elif defined(__AVR_ATtiny1624__)
-#define esp Serial
-#endif // __AVR_ATtiny841__
+void ConsoleHandler::begin()
+{
 
-void ConsoleHandler::begin() { esp.begin(115'200UL); }
+#ifdef __AVR_ATtiny841__
+    Serial1.begin(115'200UL);
+#elif defined(__AVR_ATtiny1624__)
+    Serial.begin(115'200UL);
+#endif // __AVR_ATtiny841__
+}
 
 /**
  * @brief Buffers a serial command and parses it when its complete payload is received.
@@ -21,7 +23,11 @@ void ConsoleHandler::begin() { esp.begin(115'200UL); }
  */
 void ConsoleHandler::handle()
 {
-    if (esp.available() != 0)
+#ifdef __AVR_ATtiny841__
+    if (Serial1.available() != 0)
+#elif defined(__AVR_ATtiny1624__)
+    if (Serial.available() != 0)
+#endif // __AVR_ATtiny841__
     {
 #ifdef __AVR_ATtiny841__
         // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
@@ -40,7 +46,11 @@ void ConsoleHandler::handle()
             errors = _errors;
             send(State::CONSOLE, errors);
         }
-        const int byte{esp.read()};
+#ifdef __AVR_ATtiny841__
+        const int byte{Serial1.read()};
+#elif defined(__AVR_ATtiny1624__)
+        const int byte{Serial.read()};
+#endif // __AVR_ATtiny841__
         if (lengthRx == 0U)
         {
             lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
@@ -106,7 +116,14 @@ void ConsoleHandler::parse()
  *
  * @param state Command to send.
  */
-void ConsoleHandler::send(State state) { esp.write(static_cast<unsigned char>(state)); }
+void ConsoleHandler::send(State state)
+{
+#ifdef __AVR_ATtiny841__
+    Serial1.write(static_cast<unsigned char>(state));
+#elif defined(__AVR_ATtiny1624__)
+    Serial.write(static_cast<unsigned char>(state));
+#endif // __AVR_ATtiny841__
+}
 
 /**
  * @brief Writes a command with one payload byte to Serial1.
@@ -116,8 +133,13 @@ void ConsoleHandler::send(State state) { esp.write(static_cast<unsigned char>(st
  */
 void ConsoleHandler::send(State state, unsigned char byte)
 {
-    esp.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
-    esp.write(byte);
+#ifdef __AVR_ATtiny841__
+    Serial1.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
+    Serial1.write(byte);
+#elif defined(__AVR_ATtiny1624__)
+    Serial.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
+    Serial.write(byte);
+#endif // __AVR_ATtiny841__
 }
 
 /**
@@ -143,7 +165,5 @@ ConsoleHandler &ConsoleHandler::getInstance()
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 ConsoleHandler &console{ConsoleHandler::getInstance()};
-
-#undef esp
 
 #endif // __AVR__

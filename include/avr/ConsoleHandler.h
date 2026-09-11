@@ -4,12 +4,6 @@
 
 #include <HardwareSerial.h>
 
-#ifdef __AVR_ATtiny841__
-#define esp Serial1
-#elif defined(__AVR_ATtiny1624__)
-#define esp Serial
-#endif // __AVR_ATtiny841__
-
 /**
  * Handles buffered console input.
  */
@@ -97,8 +91,13 @@ public:
     template <unsigned int N> void send(State state, const unsigned char (&data)[N])
     {
         static_assert(N < (0b1U << 4U));
-        esp.write(static_cast<unsigned char>((N << 4U) | static_cast<unsigned char>(state)));
-        esp.write(data, N);
+#ifdef __AVR_ATtiny841__
+        Serial1.write(static_cast<unsigned char>((N << 4U) | static_cast<unsigned char>(state)));
+        Serial1.write(data, N);
+#elif defined(__AVR_ATtiny1624__)
+        Serial.write(static_cast<unsigned char>((N << 4U) | static_cast<unsigned char>(state)));
+        Serial.write(data, N);
+#endif // __AVR_ATtiny841__
     }
 
     static ConsoleHandler &getInstance();
@@ -106,7 +105,5 @@ public:
 
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
 extern ConsoleHandler &console;
-
-#undef esp
 
 #endif // __AVR__

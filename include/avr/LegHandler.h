@@ -10,12 +10,6 @@
 #include <pins_arduino.h>
 #endif // __AVR_ATtiny841__
 
-#ifdef __AVR_ATtiny841__
-#define lin Serial
-#elif defined(__AVR_ATtiny1624__)
-#define lin Serial1
-#endif // __AVR_ATtiny841__
-
 namespace LinFrame
 {
 static constexpr unsigned char breakBits{13U};
@@ -130,9 +124,16 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        lin.write(linSyncByte);
-        lin.write(pid);
-        lin.flush();
+
+#ifdef __AVR_ATtiny841__
+        Serial.write(linSyncByte);
+        Serial.write(pid);
+        Serial.flush();
+#elif defined(__AVR_ATtiny1624__)
+        Serial1.write(linSyncByte);
+        Serial1.write(pid);
+        Serial1.flush();
+#endif // __AVR_ATtiny841__
         int receivedByte{};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
         do // NOLINT(cppcoreguidelines-avoid-do-while)
@@ -172,11 +173,19 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        lin.write(linSyncByte);
-        lin.write(getPid(linDiagnosticRequestId));
-        lin.write(data, N);
-        lin.write(getChecksum(data));
-        lin.flush();
+#ifdef __AVR_ATtiny841__
+        Serial.write(linSyncByte);
+        Serial.write(getPid(linDiagnosticRequestId));
+        Serial.write(data, N);
+        Serial.write(getChecksum(data));
+        Serial.flush();
+#elif defined(__AVR_ATtiny1624__)
+        Serial1.write(linSyncByte);
+        Serial1.write(getPid(linDiagnosticRequestId));
+        Serial1.write(data, N);
+        Serial1.write(getChecksum(data));
+        Serial1.flush();
+#endif // __AVR_ATtiny841__
     }
 
     /**
@@ -189,14 +198,20 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        lin.write(linSyncByte);
-        lin.write(pid);
-        lin.write(data, N);
-        lin.write(getChecksum(data, pid));
-        lin.flush();
+#ifdef __AVR_ATtiny841__
+        Serial.write(linSyncByte);
+        Serial.write(pid);
+        Serial.write(data, N);
+        Serial.write(getChecksum(data, pid));
+        Serial.flush();
+#elif defined(__AVR_ATtiny1624__)
+        Serial1.write(linSyncByte);
+        Serial1.write(pid);
+        Serial1.write(data, N);
+        Serial1.write(getChecksum(data, pid));
+        Serial1.flush();
+#endif // __AVR_ATtiny841__
     }
 };
-
-#undef lin
 
 #endif // __AVR__

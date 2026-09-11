@@ -2,7 +2,7 @@
 
 **Bekant** is a hardware and firmware modification for the *IKEA Bekant* desk. It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add network connectivity and smart-home functionality, while the Megadesk remains responsible for the desk’s core operation and works fully independently of the ESP32.
 
-The project provides local two-button control, height presets, Home Assistant integration through MQTT, OTA updates, remote flashing of the Megadesk’s ATtiny841, and optional monitoring of the desk power supply.
+The project provides local two-button control, height presets, Home Assistant integration through MQTT, OTA updates, remote flashing of the Megadesk’s AVR, and optional monitoring of the desk power supply.
 
 ## Features
 
@@ -44,7 +44,7 @@ Wire the ESP32 and level shifter to the Megadesk controller according to the dia
 
 Configure the pin assignments and credentials in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h), then build and upload the ESP32 firmware.
 
-The ESP32 must be running before flashing the Megadesk controller because it acts as the programmer for the ATtiny841. Once both firmware images have been installed, verify desk movement before configuring optional features such as Home Assistant.
+The ESP32 must be running before flashing the Megadesk controller because it acts as the programmer for the AVR. Once both firmware images have been installed, verify desk movement before configuring optional features such as Home Assistant.
 
 > [!TIP]
 > The level shifter breakout board can be soldered directly to the ESP32, creating one compact assembly. Cut a small opening in the back of the controller case so the level shifter can be placed inside the desk’s controller compartment, leaving only the ESP32 exposed on the outside next to the cable.
@@ -64,7 +64,7 @@ The ESP32 must be running before flashing the Megadesk controller because it act
 | `OE`   | Level shifter control  | No       |
 | `ADC`  | Supply voltage monitor | No       |
 
-During normal operation, `SCK` and `MISO` are used for serial communication with the Megadesk controller. Together with `MOSI` and `RST`, they are also used to flash the Megadesk’s ATtiny841 through the ESP32.
+During normal operation, `SCK` and `MISO` are used for serial communication with the Megadesk controller. Together with `MOSI` and `RST`, they are also used to flash the Megadesk’s AVR through the ESP32.
 
 `TPUP` and `TPDN` can simulate physical button presses by pulling the corresponding Megadesk inputs low. These connections are normally unnecessary because the ESP32 can control the desk directly through serial communication, but they can be useful for testing and custom control implementations.
 
