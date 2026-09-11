@@ -1,9 +1,11 @@
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
 
 #include "avr/ConsoleHandler.h"
 
 #include "avr/ControllerService.h"
-#include "avr/constants.h"
+#include "avr/ToneHandler.h"
+
+void ConsoleHandler::begin() { esp32.begin(115'200UL); }
 
 /**
  * @brief Buffers a serial command and parses it when its complete payload is received.
@@ -13,16 +15,22 @@
  */
 void ConsoleHandler::handle()
 {
-    if (Serial1.available() != 0)
+    if (esp32.available() != 0)
     {
+#ifdef __AVR_ATtiny841__
         // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
         const unsigned char _errors{static_cast<unsigned char>(static_cast<unsigned char>(UCSR1A >> 2U) & 0b111U)};
+#elif defined(__AVR_ATtiny1624__)
+        const unsigned char _errors{static_cast<unsigned char>(((USART0.RXDATAH & USART_PERR_bm) >> 1U) |
+                                                               ((USART0.RXDATAH & USART_BUFOVF_bm) >> 5U) |
+                                                               ((USART0.RXDATAH & USART_FERR_bm)))};
+#endif // __AVR_ATtiny841__
         if (_errors != 0U && _errors != errors)
         {
             errors = _errors;
             send(State::CONSOLE, errors);
         }
-        const int byte{Serial1.read()};
+        const int byte{esp32.read()};
         if (lengthRx == 0U)
         {
             lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
@@ -54,7 +62,7 @@ void ConsoleHandler::parse()
     else if (commandRx == Command::POSITION && lengthRx == 2U)
     {
         const uint16_t target{static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U};
-        if (target <= Encoder::maxLimit && target >= Encoder::minLimit)
+        if (target <= LegHandler::maxLimit && target >= LegHandler::minLimit)
         {
             controller.setTarget(target);
         }
@@ -79,7 +87,7 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == Command::TONE && lengthRx == 2U)
     {
-        controller.tone(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        ToneHandler::play(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
     }
 }
 
@@ -88,7 +96,7 @@ void ConsoleHandler::parse()
  *
  * @param state Command to send.
  */
-void ConsoleHandler::send(State state) { Serial1.write(static_cast<unsigned char>(state)); }
+void ConsoleHandler::send(State state) { esp32.write(static_cast<unsigned char>(state)); }
 
 /**
  * @brief Writes a command with one payload byte to Serial1.
@@ -98,8 +106,8 @@ void ConsoleHandler::send(State state) { Serial1.write(static_cast<unsigned char
  */
 void ConsoleHandler::send(State state, unsigned char byte)
 {
-    Serial1.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
-    Serial1.write(byte);
+    esp32.write(static_cast<unsigned char>((1U << 4U) | static_cast<unsigned char>(state)));
+    esp32.write(byte);
 }
 
 /**
@@ -117,4 +125,13 @@ void ConsoleHandler::send(State state, unsigned int value)
     send(state, data);
 }
 
-#endif // ARDUINO_ARCH_AVR
+ConsoleHandler &ConsoleHandler::getInstance()
+{
+    static ConsoleHandler instance;
+    return instance;
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+ConsoleHandler &console{ConsoleHandler::getInstance()};
+
+#endif // __AVR__

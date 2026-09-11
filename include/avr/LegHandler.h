@@ -1,8 +1,14 @@
 #pragma once
 
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
 
 #include <HardwareSerial.h>
+
+#ifdef __AVR_ATtiny841__
+#include <core_pins.h>
+#elif defined(__AVR_ATtiny1624__)
+#include <pins_arduino.h>
+#endif // __AVR_ATtiny841__
 
 namespace LinFrame
 {
@@ -23,8 +29,15 @@ private:
     static constexpr unsigned char linDiagnosticRequestId{0x3CU};
     static constexpr unsigned char linDiagnosticResponseId{0x3DU};
     static constexpr unsigned char linSyncByte{0x55U};
+    static constexpr unsigned char pin{PIN_PA1};
 
     unsigned char errors{0U};
+
+#ifdef __AVR_ATtiny841__
+    HardwareSerial &lin{Serial};
+#elif defined(__AVR_ATtiny1624__)
+    HardwareSerial &lin{Serial1};
+#endif // __AVR_ATtiny841__
 
     void requestDiscardResponse();
 
@@ -35,6 +48,14 @@ private:
     [[nodiscard]] int read(unsigned int &remainingTime);
 
 public:
+    static constexpr unsigned char maxDelta{0xFFU};
+
+    static constexpr unsigned char minLimit{0xFFU};
+
+    static constexpr unsigned char targetOffset{137U};
+
+    static constexpr unsigned int maxLimit{0b1U << 13U};
+
     /**
      * Builds a LIN protected identifier from a frame identifier.
      *
@@ -109,9 +130,9 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(pid);
-        Serial.flush();
+        lin.write(linSyncByte);
+        lin.write(pid);
+        lin.flush();
         int receivedByte{};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
         do // NOLINT(cppcoreguidelines-avoid-do-while)
@@ -151,11 +172,11 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(getPid(linDiagnosticRequestId));
-        Serial.write(data, N);
-        Serial.write(getChecksum(data));
-        Serial.flush();
+        lin.write(linSyncByte);
+        lin.write(getPid(linDiagnosticRequestId));
+        lin.write(data, N);
+        lin.write(getChecksum(data));
+        lin.flush();
     }
 
     /**
@@ -168,12 +189,12 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(pid);
-        Serial.write(data, N);
-        Serial.write(getChecksum(data, pid));
-        Serial.flush();
+        lin.write(linSyncByte);
+        lin.write(pid);
+        lin.write(data, N);
+        lin.write(getChecksum(data, pid));
+        lin.flush();
     }
 };
 
-#endif // ARDUINO_ARCH_AVR
+#endif // __AVR__

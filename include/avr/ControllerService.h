@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
 
 #include "avr/ButtonHandler.h"
 #include "avr/ConsoleHandler.h"
@@ -33,8 +33,6 @@ public:
     void setPresetLow(unsigned int preset);
 
     void setTarget(unsigned int position);
-
-    void tone(unsigned int frequency);
 
     [[nodiscard]] unsigned int getEncoderMax() const;
     [[nodiscard]] unsigned int getEncoderMin() const;
@@ -82,8 +80,6 @@ private:
     unsigned long lastMillis{0U};
 
     ButtonHandler button{};
-
-    ConsoleHandler console{};
 
     /**
      * Handles leg movement commands and encoder communication.
@@ -152,4 +148,4 @@ private:
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
 extern ControllerService &controller;
 
-#endif // ARDUINO_ARCH_AVR
+#endif // __AVR__

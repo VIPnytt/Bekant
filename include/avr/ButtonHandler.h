@@ -1,15 +1,29 @@
 #pragma once
 
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
+
+#ifdef __AVR_ATtiny841__
+#include <core_pins.h>
+#elif defined(__AVR_ATtiny1624__)
+#include <pins_arduino.h>
+#endif // __AVR_ATtiny841__
 
 class ButtonHandler
 {
 private:
+#ifdef __AVR_ATtiny841__
+    static constexpr unsigned char pinDown{PIN_PB1};
+    static constexpr unsigned char pinUp{PIN_PB0};
+#elif defined(__AVR_ATtiny1624__)
+    static constexpr unsigned char pinDown{PIN_PA6};
+    static constexpr unsigned char pinUp{PIN_PA5};
+#endif // __AVR_ATtiny841__
+
     /**
      * Handles the current button-down input state.
      */
-
     bool stateDown{false};
+
     /**
      * Handles the current button-up input state.
      */
@@ -34,7 +48,9 @@ private:
     void stop();
 
 public:
+    void begin();
+
     void handle();
 };
 
-#endif // ARDUINO_ARCH_AVR
+#endif // __AVR__

@@ -44,6 +44,7 @@ jobs:
         environment: ${{ fromJSON(needs.context.outputs.pio-environments) }}
         exclude:
           - environment: attiny841
+          - environment: attiny1624
 
     steps:
       - name: Checkout

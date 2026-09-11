@@ -1,13 +1,22 @@
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
 
 #include "avr/ButtonHandler.h"
 
 #include "avr/ConsoleHandler.h"
 #include "avr/ControllerService.h"
-#include "avr/constants.h"
+#include "avr/ToneHandler.h"
 
 #include <HardwareSerial.h>
+
+#ifdef __AVR_ATtiny841__
 #include <wiring.h>
+#endif // __AVR_ATtiny841__
+
+void ButtonHandler::begin()
+{
+    pinMode(pinDown, INPUT_PULLUP);
+    pinMode(pinUp, INPUT_PULLUP);
+}
 
 /**
  * @brief Handles button state changes and processes the resulting input.
@@ -18,8 +27,8 @@
  */
 void ButtonHandler::handle()
 {
-    const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
-    const bool _buttonUp{digitalRead(Pin::buttonUp) == LOW};
+    const bool _buttonDown{digitalRead(pinDown) == LOW};
+    const bool _buttonUp{digitalRead(pinUp) == LOW};
     if (_buttonDown != stateDown)
     {
         stateDown = _buttonDown;
@@ -32,8 +41,7 @@ void ButtonHandler::handle()
         {
             stop();
         }
-        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::BUTTON_DOWN));
-        Serial1.write(static_cast<unsigned char>(stateDown));
+        console.send(ConsoleHandler::State::BUTTON_DOWN, static_cast<unsigned char>(stateDown));
     }
     if (_buttonUp != stateUp)
     {
@@ -47,8 +55,7 @@ void ButtonHandler::handle()
         {
             stop();
         }
-        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::BUTTON_UP));
-        Serial1.write(static_cast<unsigned char>(stateUp));
+        console.send(ConsoleHandler::State::BUTTON_UP, static_cast<unsigned char>(stateUp));
     }
     process();
 }
@@ -91,13 +98,13 @@ void ButtonHandler::process()
     {
         count = 0;
         controller.setPresetHigh(controller.getEncoderMin());
-        controller.tone(0b1U << 12U);
+        ToneHandler::play(0b1U << 12U);
     }
     else if (count == -2 && !stateDown && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
         controller.setPresetLow(controller.getEncoderMax());
-        controller.tone(0b1U << 12U);
+        ToneHandler::play(0b1U << 12U);
     }
     else if (count != 0 && !stateDown && !stateUp && millis() - lastMillis > 0b1U << 8U)
     {
@@ -111,8 +118,8 @@ void ButtonHandler::process()
 void ButtonHandler::incrementDown()
 {
     const unsigned int maxCurrent{controller.getEncoderMax()};
-    controller.setTarget(maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
-                                                                            : Encoder::minLimit);
+    controller.setTarget(maxCurrent > LegHandler::minLimit + LegHandler::maxDelta ? maxCurrent - LegHandler::maxDelta
+                                                                                  : LegHandler::minLimit);
 }
 
 /**
@@ -121,8 +128,8 @@ void ButtonHandler::incrementDown()
 void ButtonHandler::incrementUp()
 {
     const unsigned int minCurrent{controller.getEncoderMin()};
-    controller.setTarget(minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
-                                                                            : Encoder::maxLimit);
+    controller.setTarget(minCurrent < LegHandler::maxLimit - LegHandler::maxDelta ? minCurrent + LegHandler::maxDelta
+                                                                                  : LegHandler::maxLimit);
 }
 
 /**
@@ -146,4 +153,4 @@ void ButtonHandler::stop()
     }
 }
 
-#endif // ARDUINO_ARCH_AVR
+#endif // __AVR__

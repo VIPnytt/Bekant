@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
 
 #include <HardwareSerial.h>
 
@@ -9,7 +9,7 @@
  */
 class ConsoleHandler
 {
-public:
+private:
     /**
      * Identifies protocol message commands exchanged with the console.
      */
@@ -22,6 +22,27 @@ public:
         TONE,
     };
 
+    unsigned char errors{0U};
+    unsigned char lengthRx{0U};
+
+    unsigned char bufferRx[0b1U << 4U]{};
+
+    unsigned int bytesRx{0U};
+
+    Command commandRx{};
+
+#ifdef __AVR_ATtiny841__
+    HardwareSerial &esp32{Serial1};
+#elif defined(__AVR_ATtiny1624__)
+    HardwareSerial &esp32{Serial};
+#endif // __AVR_ATtiny841__
+
+    /**
+     * Parses buffered console input into a command.
+     */
+    void parse();
+
+public:
     /**
      * Identifies protocol message states exchanged with the console.
      */
@@ -39,6 +60,8 @@ public:
         PRESET_LOW,
         VERSION,
     };
+
+    void begin();
 
     /**
      * Processes buffered console input.
@@ -74,24 +97,14 @@ public:
     template <unsigned int N> void send(State state, const unsigned char (&data)[N])
     {
         static_assert(N < (0b1U << 4U));
-        Serial1.write((N << 4U) | static_cast<unsigned char>(state));
-        Serial1.write(data, N);
+        esp32.write((N << 4U) | static_cast<unsigned char>(state));
+        esp32.write(data, N);
     }
 
-private:
-    unsigned char errors{0U};
-    unsigned char lengthRx{0U};
-
-    unsigned char bufferRx[0b1U << 4U]{};
-
-    unsigned int bytesRx{0U};
-
-    Command commandRx{};
-
-    /**
-     * Parses buffered console input into a command.
-     */
-    void parse();
+    static ConsoleHandler &getInstance();
 };
 
-#endif // ARDUINO_ARCH_AVR
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
+extern ConsoleHandler &console;
+
+#endif // __AVR__

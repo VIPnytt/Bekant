@@ -1,13 +1,16 @@
-#ifdef ARDUINO_ARCH_AVR
+#ifdef __AVR__
 
 #include "avr/ControllerService.h"
 
-#include "avr/constants.h"
+#include "avr/ToneHandler.h"
 
 #include <EEPROM.h>
 #include <HardwareSerial.h>
 #include <avr/wdt.h>
+
+#ifdef __AVR_ATtiny841__
 #include <wiring.h>
+#endif // __AVR_ATtiny841__
 
 /**
  * @brief Initializes communication, hardware pins, presets, the watchdog, and the LIN interface.
@@ -17,12 +20,15 @@
  */
 void ControllerService::begin()
 {
-    Serial1.begin(115'200UL);
-    delay(0b1UL << 11U);
+    console.begin();
+    delay(0b1UL << 10U);
+#ifdef __AVR_ATtiny841__
     wdt_enable(WDTO_8S);
-    pinMode(Pin::buttonDown, INPUT_PULLUP);
-    pinMode(Pin::buttonUp, INPUT_PULLUP);
-    pinMode(Pin::tone, OUTPUT);
+#else
+    wdt_enable(WDTO_2S);
+#endif // __AVR_ATtiny841__
+    button.begin();
+    ToneHandler::begin();
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     console.send(ConsoleHandler::State::VERSION, fingerprint(version));
@@ -32,7 +38,7 @@ void ControllerService::begin()
     if (init != 0U)
     {
         console.send(ConsoleHandler::State::INITIALIZATION, init);
-        tone(0b1U << 8U);
+        ToneHandler::play(0b1U << 8U);
         return;
     }
     wdt_reset();
@@ -51,7 +57,6 @@ void ControllerService::handle()
     {
         console.handle();
         button.handle();
-        Serial1.flush();
     }
 }
 
@@ -116,7 +121,7 @@ bool ControllerService::read()
     {
         if (pending)
         {
-            tone(0b1U << 8U);
+            ToneHandler::play(0b1U << 8U);
         }
         return false;
     }
@@ -200,17 +205,17 @@ void ControllerService::handleStatePrepare()
 {
     if (encoderTarget < getEncoderMin())
     {
-        if (encoderTarget >= Encoder::minLimit + Encoder::targetOffset)
+        if (encoderTarget >= LegHandler::minLimit + LegHandler::targetOffset)
         {
-            encoderTarget -= Encoder::targetOffset;
+            encoderTarget -= LegHandler::targetOffset;
         }
         state = State::DOWN;
     }
     else if (encoderTarget > getEncoderMax())
     {
-        if (encoderTarget <= Encoder::maxLimit - Encoder::targetOffset)
+        if (encoderTarget <= LegHandler::maxLimit - LegHandler::targetOffset)
         {
-            encoderTarget += Encoder::targetOffset;
+            encoderTarget += LegHandler::targetOffset;
         }
         state = State::UP;
     }
@@ -292,32 +297,13 @@ void ControllerService::sendCommand(LegHandler::Command command)
 {
     const unsigned int maxCurrent{controller.getEncoderMax()};
     const unsigned int minCurrent{controller.getEncoderMin()};
-    const unsigned int maxTarget{minCurrent < Encoder::maxLimit - Encoder::maxDelta ? minCurrent + Encoder::maxDelta
-                                                                                    : Encoder::maxLimit};
-    const unsigned int minTarget{maxCurrent > Encoder::minLimit + Encoder::maxDelta ? maxCurrent - Encoder::maxDelta
-                                                                                    : Encoder::minLimit};
+    const unsigned int maxTarget{minCurrent < LegHandler::maxLimit - LegHandler::maxDelta
+                                     ? minCurrent + LegHandler::maxDelta
+                                     : LegHandler::maxLimit};
+    const unsigned int minTarget{maxCurrent > LegHandler::minLimit + LegHandler::maxDelta
+                                     ? maxCurrent - LegHandler::maxDelta
+                                     : LegHandler::minLimit};
     leg.sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
-}
-
-/**
- * @brief Generates a square-wave tone at the specified frequency.
- *
- * @param frequency Tone frequency in hertz.
- */
-void ControllerService::tone(unsigned int frequency)
-{
-    if (frequency != 0U)
-    {
-        const unsigned int halfPeriod{static_cast<unsigned int>(500'000UL / frequency)};
-        const unsigned int delay{static_cast<unsigned int>(halfPeriod - (48'000'000UL / F_CPU))};
-        for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfPeriod; ++idx)
-        {
-            digitalWrite(Pin::tone, HIGH);
-            delayMicroseconds(delay);
-            digitalWrite(Pin::tone, LOW);
-            delayMicroseconds(delay);
-        }
-    }
 }
 
 /**
@@ -327,7 +313,7 @@ void ControllerService::recalibrate()
 {
     if (isIdle())
     {
-        tone(0b1U << 12U);
+        ToneHandler::play(0b1U << 12U);
         pending = false;
         state = State::RECAL_PREPARE;
     }
@@ -340,7 +326,7 @@ void ControllerService::recalibrate()
  */
 void ControllerService::setPresetHigh(unsigned int preset)
 {
-    if (preset != presetHigh && preset <= Encoder::maxLimit && preset >= Encoder::minLimit)
+    if (preset != presetHigh && preset <= LegHandler::maxLimit && preset >= LegHandler::minLimit)
     {
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
@@ -358,7 +344,7 @@ void ControllerService::setPresetHigh(unsigned int preset)
  */
 void ControllerService::setPresetLow(unsigned int preset)
 {
-    if (preset != presetLow && preset <= Encoder::maxLimit && preset >= Encoder::minLimit)
+    if (preset != presetLow && preset <= LegHandler::maxLimit && preset >= LegHandler::minLimit)
     {
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
@@ -430,4 +416,4 @@ ControllerService &ControllerService::getInstance()
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 ControllerService &controller{ControllerService::getInstance()};
 
-#endif // ARDUINO_ARCH_AVR
+#endif // __AVR__
