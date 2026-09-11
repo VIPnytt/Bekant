@@ -169,11 +169,11 @@ int LegHandler::read(unsigned int &remainingTime)
 #elif defined(__AVR_ATtiny1624__)
     const unsigned char _errors{static_cast<unsigned char>(
         // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
-        static_cast<unsigned char>(static_cast<unsigned char>(USART1.RXDATAH & USART_PERR_bm) >> 1U) |
+        (USART1.RXDATAH & static_cast<unsigned int>(USART_PERR_bm)) >> 1U |
         // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
-        static_cast<unsigned char>(static_cast<unsigned char>(USART1.RXDATAH & USART_BUFOVF_bm) >> 5U) |
+        (USART1.RXDATAH & static_cast<unsigned int>(USART_BUFOVF_bm)) >> 5U |
         // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
-        static_cast<unsigned char>(USART1.RXDATAH & USART_FERR_bm))};
+        USART1.RXDATAH & static_cast<unsigned int>(USART_FERR_bm))};
 #endif // __AVR_ATtiny841__
     if (_errors != 0U && _errors != errors)
     {

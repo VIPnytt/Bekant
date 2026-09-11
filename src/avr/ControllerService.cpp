@@ -303,6 +303,7 @@ void ControllerService::sendCommand(LegHandler::Command command)
     const unsigned int minTarget{maxCurrent > LegHandler::minLimit + LegHandler::maxDelta
                                      ? maxCurrent - LegHandler::maxDelta
                                      : LegHandler::minLimit};
+    // NOLINTNEXTLINE(misc-const-correctness,readability-identifier-length)
     leg.sendCommand(command, constrain(encoderTarget, minTarget, maxTarget));
 }
 
