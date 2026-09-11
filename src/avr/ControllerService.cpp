@@ -2,10 +2,10 @@
 
 #include "avr/ControllerService.h"
 
+#include "avr/ConsoleHandler.h"
 #include "avr/ToneHandler.h"
 
 #include <EEPROM.h>
-#include <HardwareSerial.h>
 #include <avr/wdt.h>
 
 #ifdef __AVR_ATtiny841__
@@ -24,7 +24,7 @@ void ControllerService::begin()
     delay(0b1UL << 10U);
 #ifdef __AVR_ATtiny841__
     wdt_enable(WDTO_8S);
-#else
+#elif defined(__AVR_ATtiny1624__)
     wdt_enable(WDTO_2S);
 #endif // __AVR_ATtiny841__
     button.begin();

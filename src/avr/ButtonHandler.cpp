@@ -6,8 +6,6 @@
 #include "avr/ControllerService.h"
 #include "avr/ToneHandler.h"
 
-#include <HardwareSerial.h>
-
 #ifdef __AVR_ATtiny841__
 #include <wiring.h>
 #endif // __AVR_ATtiny841__

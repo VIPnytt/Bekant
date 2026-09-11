@@ -31,11 +31,7 @@ private:
 
     Command commandRx{};
 
-#ifdef __AVR_ATtiny841__
-    HardwareSerial &esp32{Serial1};
-#elif defined(__AVR_ATtiny1624__)
-    HardwareSerial &esp32{Serial};
-#endif // __AVR_ATtiny841__
+    HardwareSerial *const esp;
 
     /**
      * Parses buffered console input into a command.
@@ -43,6 +39,12 @@ private:
     void parse();
 
 public:
+#ifdef __AVR_ATtiny841__
+    ConsoleHandler() : esp{&Serial1} {}
+#elif defined(__AVR_ATtiny1624__)
+    ConsoleHandler() : esp{&Serial} {}
+#endif // __AVR_ATtiny841__
+
     /**
      * Identifies protocol message states exchanged with the console.
      */
@@ -97,8 +99,8 @@ public:
     template <unsigned int N> void send(State state, const unsigned char (&data)[N])
     {
         static_assert(N < (0b1U << 4U));
-        esp32.write((N << 4U) | static_cast<unsigned char>(state));
-        esp32.write(data, N);
+        esp->write((N << 4U) | static_cast<unsigned char>(state));
+        esp->write(data, N);
     }
 
     static ConsoleHandler &getInstance();

@@ -3,7 +3,6 @@
 #ifdef __AVR__
 
 #include "avr/ButtonHandler.h"
-#include "avr/ConsoleHandler.h"
 #include "avr/LegHandler.h"
 
 class ControllerService

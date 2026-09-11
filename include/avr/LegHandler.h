@@ -33,11 +33,7 @@ private:
 
     unsigned char errors{0U};
 
-#ifdef __AVR_ATtiny841__
-    HardwareSerial &lin{Serial};
-#elif defined(__AVR_ATtiny1624__)
-    HardwareSerial &lin{Serial1};
-#endif // __AVR_ATtiny841__
+    HardwareSerial *const lin;
 
     void requestDiscardResponse();
 
@@ -48,6 +44,12 @@ private:
     [[nodiscard]] int read(unsigned int &remainingTime);
 
 public:
+#ifdef __AVR_ATtiny841__
+    LegHandler() : lin{&Serial} {}
+#elif defined(__AVR_ATtiny1624__)
+    LegHandler() : lin{&Serial1} {}
+#endif // __AVR_ATtiny841__
+
     static constexpr unsigned char maxDelta{0xFFU};
 
     static constexpr unsigned char minLimit{0xFFU};
@@ -130,9 +132,9 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        lin.write(linSyncByte);
-        lin.write(pid);
-        lin.flush();
+        lin->write(linSyncByte);
+        lin->write(pid);
+        lin->flush();
         int receivedByte{};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
         do // NOLINT(cppcoreguidelines-avoid-do-while)
@@ -172,11 +174,11 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        lin.write(linSyncByte);
-        lin.write(getPid(linDiagnosticRequestId));
-        lin.write(data, N);
-        lin.write(getChecksum(data));
-        lin.flush();
+        lin->write(linSyncByte);
+        lin->write(getPid(linDiagnosticRequestId));
+        lin->write(data, N);
+        lin->write(getChecksum(data));
+        lin->flush();
     }
 
     /**
@@ -189,11 +191,11 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        lin.write(linSyncByte);
-        lin.write(pid);
-        lin.write(data, N);
-        lin.write(getChecksum(data, pid));
-        lin.flush();
+        lin->write(linSyncByte);
+        lin->write(pid);
+        lin->write(data, N);
+        lin->write(getChecksum(data, pid));
+        lin->flush();
     }
 };
 
