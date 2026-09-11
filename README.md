@@ -20,6 +20,9 @@ A [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) rep
 
 The Megadesk controller operates at 5 V logic levels while the ESP32 uses 3.3 V, so level shifting is required for communication between them. The optional `ADC` connection requires a resistor divider to monitor the desk’s supply voltage.
 
+> [!NOTE]
+> The Megadesk Companion has a built-in ESP32, but its wiring to the Megadesk’s AVR does not include `MOSI` and `RST`, which are required for flashing the AVR. There are spare soldering pads connected to the ESP32 which can be used to add the required wires. These additional connections also require level shifting.
+
 ### ESP32 power
 
 The desk provides approximately 29–35 V DC, depending on its power supply. An ESP32 board that supports this input voltage is the preferred solution. The [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is one suitable option.
