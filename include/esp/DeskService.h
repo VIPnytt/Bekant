@@ -15,6 +15,12 @@
 class DeskService
 {
 private:
+    /**
+     * Computes the fingerprint used to compare firmware versions.
+     *
+     * @param characters Version characters to fingerprint.
+     * @return The 8-bit firmware fingerprint.
+     */
     [[nodiscard]] constexpr uint8_t fingerprint(std::string_view characters)
     {
         uint8_t hash{0U}; // NOLINT(misc-const-correctness)
