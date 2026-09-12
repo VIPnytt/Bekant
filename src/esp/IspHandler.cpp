@@ -105,12 +105,12 @@ void IspHandler::handle()
                 universal();
                 break;
             case 0x60U:
-                getChar();
-                getChar();
+                static_cast<void>(getChar());
+                static_cast<void>(getChar());
                 emptyReply();
                 break;
             case 0x61U:
-                getChar();
+                static_cast<void>(getChar());
                 emptyReply();
                 break;
             case 0x64U:

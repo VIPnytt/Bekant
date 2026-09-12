@@ -99,7 +99,7 @@ private:
      * Receives a byte from the connected client.
      * @return The received byte.
      */
-    uint8_t getChar();
+    [[nodiscard]] uint8_t getChar();
 
 public:
     /**

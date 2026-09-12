@@ -8,8 +8,8 @@ private:
     /**
      * Handles the current button-down input state.
      */
-
     bool stateDown{false};
+
     /**
      * Handles the current button-up input state.
      */

@@ -708,7 +708,7 @@ std::string DeskService::toHex(std::span<const uint8_t> payload)
     for (const uint8_t byte : payload)
     {
         hex += map.at(static_cast<size_t>(byte >> 4U));
-        hex += map.at(static_cast<size_t>(byte & 0xFU));
+        hex += map.at(static_cast<size_t>(byte & 0b1111U));
     }
     return hex;
 }

@@ -3,4 +3,5 @@
 /.platformio
 /.venv
 /.vscode
+/include/esp/secrets*.h
 /logs
