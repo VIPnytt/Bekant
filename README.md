@@ -57,6 +57,13 @@ Other level shifters may also be suitable. The selected device should support:
 
 The optional `ADC` connection requires a resistor divider to monitor the desk’s supply voltage.
 
+> [!TIP]
+> The level-shifter breakout board can be soldered directly to the ESP32 to create a compact assembly.
+>
+> A small opening can be made in the back of the controller case so the level shifter can sit inside the controller compartment while the ESP32 remains exposed next to the cable.
+>
+> This keeps the USB port accessible for debugging and allows the RGB LED to provide visual feedback underneath the desk.
+
 ## Installation
 
 ### 1. Wire the hardware
@@ -101,11 +108,6 @@ Use the ESP32 to flash the Megadesk AVR.
 ### 5. Verify operation
 
 Once both firmware images have been installed, verify that the desk moves correctly.
-
-> [!TIP]
-> The level-shifter breakout board can be soldered directly to the ESP32 to create a compact assembly.
-> A small opening can be made in the back of the controller case so the level shifter can sit inside the controller compartment while the ESP32 remains exposed next to the cable.
-> This keeps the USB port accessible for debugging and allows the RGB LED to provide visual feedback underneath the desk.
 
 ## Connections
 
