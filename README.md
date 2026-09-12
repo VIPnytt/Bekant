@@ -32,7 +32,7 @@ The desk provides approximately 24–35 V DC, depending on the power supply.
 
 An ESP32 board rated for this input voltage is the preferred solution. The [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is one suitable option.
 
-A conventional ESP32 board can also be used with a suitable buck converter. The *Megadesk Companion* is another supported option. Both are functional, but neither is recommended for new setups.
+A conventional ESP32 board can also be used with a suitable buck converter. The *Megadesk Companion* is another option. Both are supported, but neither is recommended for new setups.
 
 > [!WARNING]
 > Do not connect the desk’s 24–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
