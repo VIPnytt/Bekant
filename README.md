@@ -32,16 +32,16 @@ The desk provides approximately 24–35 V DC, depending on the power supply.
 
 An ESP32 board rated for this input voltage is the preferred solution. The [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is one suitable option.
 
-A conventional ESP32 board can also be used with a suitable buck converter.
+A conventional ESP32 board can also be used with a suitable buck converter. The *Megadesk Companion* is another supported option. Both are functional, but neither is recommended for new setups.
 
 > [!WARNING]
 > Do not connect the desk’s 24–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
 
 ### Megadesk Companion
 
-The *Megadesk Companion* is a supported alternative with a built-in ESP32 and level shifting. It is not recommended for new setups.
+The *Megadesk Companion* has a built-in ESP32 and level shifting. Its stock wiring supports normal operation, but does not include `MOSI` and `RST`, so the ESP32 cannot be used to flash the Megadesk AVR.
 
-Its wiring to the Megadesk AVR does not include `MOSI` and `RST`, so the Companion cannot flash the AVR as supplied. Spare soldering pads connected to the ESP32 can be used to add these connections. The additional connections require external level shifting.
+Spare soldering pads connected to the ESP32 can be used to add these connections. The additional connections require external level shifting.
 
 ### Logic level shifting
 
