@@ -130,6 +130,8 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
          └─────────────────── +35 V DC
 ```
 
+`MISO` and `SCK` are broken out to `TX` and `RX` on newer revisions through series resistors. `MISO`/`SCK` are preferred for new setups, but `TX`/`RX` are compatible.
+
 ### ESP32 connections
 
 ```text
