@@ -78,11 +78,9 @@ The minimum connections are:
 | `ADC`  | Supply voltage monitor | Optional    |
 | `OE`   | Level shifter control  | Optional    |
 
-`MOSI` and `RST` are recommended because they allow the ESP32 to flash and reset the Megadesk AVR.
-
-`TPUP` and `TPDN` are special-purpose connections for simulating the physical buttons.
-
-`ADC` and `OE` provide optional functionality.
+- `MOSI` and `RST` are recommended because they allow the ESP32 to flash and reset the Megadesk AVR.
+- `TPUP` and `TPDN` are special-purpose connections for simulating the physical buttons.
+- `ADC` and `OE` provide optional functionality.
 
 ### 2. Configure the firmware
 
