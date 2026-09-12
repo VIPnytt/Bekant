@@ -21,7 +21,7 @@ void IspHandler::begin()
  * @brief Processes pending AVR ISP commands or accepts a new client connection.
  *
  * Handles protocol commands for programming and reading the target device, and
- * terminates the active connection when the client disconnects.
+ * restarts the ESP32 when the active client disconnects.
  */
 void IspHandler::handle()
 {
@@ -242,7 +242,7 @@ void IspHandler::flashReadPage(size_t length)
 }
 
 /**
- * @brief Reads the next byte from the connected client.
+ * @brief Waits for and reads the next byte from the connected client.
  *
  * @return uint8_t The byte read from the client.
  */
