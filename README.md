@@ -2,7 +2,7 @@
 
 **Bekant** is a hardware and firmware modification for the *IKEA Bekant* desk.
 
-It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add network connectivity and smart-home functionality. The Megadesk remains responsible for the desk's core operation and works fully independently of the ESP32.
+It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add network connectivity and smart-home functionality. The Megadesk remains responsible for the desk’s core operation and works fully independently of the ESP32.
 
 ## Features
 
@@ -24,7 +24,7 @@ The recommended setup consists of:
 
 Megadesk uses 5 V logic. The ESP32 uses 3.3 V. A logic level shifter is required between them.
 
-The ESP32 also needs to be powered from the desk's supply.
+The ESP32 also needs to be powered from the desk’s supply.
 
 ### ESP32 power
 
@@ -35,7 +35,7 @@ An ESP32 board rated for this input voltage is the preferred solution. The [Wave
 A conventional ESP32 board can also be used with a suitable buck converter.
 
 > [!WARNING]
-> Do not connect the desk's 24–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
+> Do not connect the desk’s 24–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
 
 ### Megadesk Companion
 
@@ -55,7 +55,7 @@ Other level shifters may also be suitable. The selected device should support:
 
 `RST`, `TPUP`, and `TPDN` are open-drain signals.
 
-The optional `ADC` connection requires a resistor divider to monitor the desk's supply voltage.
+The optional `ADC` connection requires a resistor divider to monitor the desk’s supply voltage.
 
 ## Installation
 
@@ -154,7 +154,7 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
 └────────────────┘
 ```
 
-\* Only for ESP32 boards rated for the desk's supply voltage.
+\* Only for ESP32 boards rated for the desk’s supply voltage.
 
 ### Logic level shifter
 
@@ -234,7 +234,7 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 
 | Name          | Description                                | Requirement |
 | ------------- | ------------------------------------------ | ----------- |
-| Output enable | Control the logic level shifter's `OE` pin | `PIN_OE`    |
+| Output enable | Control the logic level shifter’s `OE` pin | `PIN_OE`    |
 | Preset high   | Set the high preset                        |             |
 | Preset low    | Set the low preset                         |             |
 | Reboot        | Reboot the ESP32                           |             |
