@@ -113,6 +113,8 @@ The ESP32 GPIO assignments depend on the board and are configured in [`secrets.h
 
 ### Megadesk pinout
 
+`MISO` and `SCK` are broken out to `TX` and `RX` on newer revisions through series resistors. `MISO`/`SCK` are preferred for new setups, but `TX`/`RX` are compatible.
+
 ```text
       ┌────────────────────┐
 TPUP ─┼ TPUP   ┌───────────┼─ MISO
@@ -130,13 +132,13 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
          └─────────────────── +35 V DC
 ```
 
-`MISO` and `SCK` are broken out to `TX` and `RX` on newer revisions through series resistors. `MISO`/`SCK` are preferred for new setups, but `TX`/`RX` are compatible.
-
 ### ESP32 connections
+
+Only for ESP32 boards rated for the desk’s supply voltage.
 
 ```text
 ┌────────────────┐
-│            VIN ├─ +35 V DC*
+│            VIN ├─ +35 V DC
 │            3V3 ├─ +3.3 V DC
 │            GND ├─ 0 V DC
 │                │
@@ -153,8 +155,6 @@ TPDN ─┼ TPDN   │   ┌───────┼─ SCK
 │   Analog input ├─ ADC
 └────────────────┘
 ```
-
-\* Only for ESP32 boards rated for the desk’s supply voltage.
 
 ### Logic level shifter
 
