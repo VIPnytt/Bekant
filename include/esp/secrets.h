@@ -10,19 +10,19 @@
 /**
  * ESP32 pins, please change to match your board and wiring.
  */
-#define PIN_MISO 1
-#define PIN_MOSI 2
-#define PIN_RST 3
-#define PIN_SCK 4
+#define PIN_MISO 7 // Megadesk Companion: 7
+#define PIN_MOSI 4 // Use any unused GPIO if not connected
+#define PIN_RST 5  // Use any unused GPIO if not connected
+#define PIN_SCK 6  // Megadesk Companion: 6
 
 /**
  * Optional ESP32 pins for additional features.
  */
-// #define PIN_ADC 5
-// #define PIN_LED 6 // WaveShare ESP32-C6-Zero-B has a built-in LED on pin 8
-// #define PIN_OE 7
-// #define PIN_TPDN 8
-// #define PIN_TPUP 9
+// #define PIN_ADC 2
+// #define PIN_LED 8 // WaveShare ESP32-C6-Zero-B: 8
+// #define PIN_OE 3
+// #define PIN_TPDN 20
+// #define PIN_TPUP 21
 
 /**
  * Wi-Fi configuration.
@@ -31,7 +31,7 @@
 #define WIFI_KEY "password"
 
 /**
- * MQTT configuration.
+ * MQTT configuration. Leave the defaults if MQTT is not used.
  */
 #define MQTT_HOST "mqtt.local"
 #define MQTT_USER "username"

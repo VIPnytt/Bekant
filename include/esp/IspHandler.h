@@ -96,10 +96,10 @@ private:
     [[nodiscard]] bool writeEeprom(size_t length);
 
     /**
-     * Receives a byte from the connected client.
+     * Waits for and receives a byte from the connected client.
      * @return The received byte.
      */
-    uint8_t getChar();
+    [[nodiscard]] uint8_t getChar();
 
 public:
     /**
