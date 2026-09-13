@@ -6,7 +6,6 @@
 #include "avr/ControllerService.h"
 #include "avr/constants.h"
 
-#include <HardwareSerial.h>
 #include <wiring.h>
 
 /**
@@ -32,8 +31,7 @@ void ButtonHandler::handle()
         {
             stop();
         }
-        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::BUTTON_DOWN));
-        Serial1.write(static_cast<unsigned char>(stateDown));
+        ConsoleHandler::send(ConsoleHandler::State::BUTTON_DOWN, static_cast<unsigned char>(stateDown));
     }
     if (_buttonUp != stateUp)
     {
@@ -47,8 +45,7 @@ void ButtonHandler::handle()
         {
             stop();
         }
-        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::BUTTON_UP));
-        Serial1.write(static_cast<unsigned char>(stateUp));
+        ConsoleHandler::send(ConsoleHandler::State::BUTTON_UP, static_cast<unsigned char>(stateUp));
     }
     process();
 }

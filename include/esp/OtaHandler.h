@@ -14,6 +14,8 @@ private:
 
     static void onStart();
 
+    static void onError(ota_error_t error);
+
 public:
     void begin();
 

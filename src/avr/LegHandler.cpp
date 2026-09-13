@@ -154,8 +154,7 @@ int LegHandler::read(unsigned int &remainingTime)
     if (_errors != 0U && _errors != errors)
     {
         errors = _errors;
-        Serial1.write((1U << 4U) | static_cast<unsigned char>(ConsoleHandler::State::LIN));
-        Serial1.write(errors);
+        ConsoleHandler::send(ConsoleHandler::State::LIN, errors);
     }
     return Serial.read();
 }

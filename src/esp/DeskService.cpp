@@ -3,6 +3,7 @@
 #include "esp/DeskService.h"
 
 #include "esp/constants.h"
+#include "esp/secrets.h"
 
 #include <WiFi.h> // NOLINT(misc-include-cleaner)
 #include <esp_crt_bundle.h>
@@ -69,6 +70,7 @@ void DeskService::begin()
     attachInterrupt(PIN_TPUP, onInterruptUp, CHANGE);
 #endif // PIN_TPUP
     digitalWrite(PIN_RST, HIGH);
+    status.begin();
     console.begin();
     wifi.begin();
     ota.begin();
@@ -92,7 +94,7 @@ void DeskService::handle()
     status.handle();
     if (!process)
     {
-        status.setNone(true);
+        StatusHandler::setNone(true);
         return;
     }
     console.handle();
@@ -177,7 +179,7 @@ void DeskService::request(JsonObjectConst doc)
         else if (action == "restart")
         {
             mqtt.disconnect();
-            status.setNone();
+            StatusHandler::setNone();
             digitalWrite(PIN_RST, LOW);
             vTaskDelay(0b1U << 7U);
             ESP.restart();
@@ -369,7 +371,7 @@ void DeskService::setButtonDown(bool state)
     if (state != buttonDown)
     {
         buttonDown = state;
-        status.setWhite();
+        StatusHandler::setWhite();
         pending = true;
     }
 }
@@ -384,7 +386,7 @@ void DeskService::setButtonUp(bool state)
     if (state != buttonUp)
     {
         buttonUp = state;
-        status.setWhite();
+        StatusHandler::setWhite();
         pending = true;
     }
 }
@@ -398,7 +400,7 @@ void DeskService::setDriveDown(bool state)
 {
 #ifdef PIN_TPDN
     driveDown.first = state;
-    status.setRed();
+    StatusHandler::setRed();
     digitalWrite(PIN_TPDN, state ? LOW : HIGH);
 #endif // PIN_TPDN
 }
@@ -412,7 +414,7 @@ void DeskService::setDriveUp(bool state)
 {
 #ifdef PIN_TPUP
     driveUp.first = state;
-    status.setRed();
+    StatusHandler::setRed();
     digitalWrite(PIN_TPUP, driveUp.first ? LOW : HIGH);
 #endif // PIN_TPUP
 }
@@ -429,7 +431,7 @@ void DeskService::setError8(uint8_t flags)
         error8 = flags;
         pending = true;
     }
-    statusRed();
+    StatusHandler::setRed();
 }
 
 /**
@@ -444,7 +446,7 @@ void DeskService::setError9(uint8_t flags)
         error9 = flags;
         pending = true;
     }
-    statusRed();
+    StatusHandler::setRed();
 }
 
 /**
@@ -460,7 +462,7 @@ void DeskService::setErrorInit(uint8_t flags)
         errorInit = flags;
         pending = true;
     }
-    statusRed();
+    StatusHandler::setRed();
 }
 
 /**
@@ -559,7 +561,7 @@ void DeskService::setOutputEnable(bool state)
     if (state != enable)
     {
         enable = state;
-        status.setNone();
+        StatusHandler::setNone();
         digitalWrite(PIN_OE, enable ? HIGH : LOW);
         saved = false;
         pending = true;
@@ -657,19 +659,9 @@ void DeskService::setVersion(uint8_t hash)
     }
     if (versionAvr != fingerprint(version))
     {
-        statusRed();
+        StatusHandler::setRed();
     }
 }
-
-/**
- * @brief Sets the status indicator to red.
- */
-void DeskService::statusRed() { status.setRed(); }
-
-/**
- * @brief Sets the status indicator to white.
- */
-void DeskService::statusWhite() { status.setWhite(); }
 
 /**
  * @brief Selects the status indicator color from motor, button, and drive activity.
@@ -681,16 +673,16 @@ void DeskService::statusNode() // NOLINT(readability-make-member-function-const)
 {
     if ((state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U))
     {
-        status.setWhite(true);
+        StatusHandler::setWhite(true);
     }
     else if ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
              (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
     {
-        status.setGreen();
+        StatusHandler::setGreen();
     }
     else
     {
-        status.setBlue();
+        StatusHandler::setBlue();
     }
 }
 
@@ -797,7 +789,7 @@ void DeskService::onInterruptDown()
     desk.driveDown.second = digitalRead(PIN_TPDN) == LOW;
     if (desk.driveDown.first)
     {
-        desk.driveDown.second ? desk.status.setWhite(true) : desk.status.setRed();
+        desk.driveDown.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
     }
     desk.pending = true;
 #endif // PIN_TPDN
@@ -820,11 +812,11 @@ void DeskService::onInterruptReset()
         desk.lengthRx = 0U;
         desk.lengthTx = 0U;
         desk.console.reset();
-        desk.status.setNone(true);
+        StatusHandler::setNone(true);
     }
     else
     {
-        desk.status.setWhite();
+        StatusHandler::setWhite();
     }
     desk.pending = true;
 }
@@ -841,7 +833,7 @@ void DeskService::onInterruptUp()
     desk.driveUp.second = digitalRead(PIN_TPUP) == LOW;
     if (desk.driveUp.first)
     {
-        desk.driveUp.second ? desk.status.setWhite(true) : desk.status.setRed();
+        desk.driveUp.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
     }
     desk.pending = true;
 #endif // PIN_TPUP
