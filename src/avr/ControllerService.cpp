@@ -25,13 +25,13 @@ void ControllerService::begin()
     pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
-    console.send(ConsoleHandler::State::VERSION, fingerprint(version));
-    console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
-    console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
+    ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
+    ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
+    ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
     const unsigned char init{leg.begin()};
     if (init != 0U)
     {
-        console.send(ConsoleHandler::State::INITIALIZATION, init);
+        ConsoleHandler::send(ConsoleHandler::State::INITIALIZATION, init);
         tone(0b1U << 8U);
         return;
     }
@@ -83,13 +83,13 @@ bool ControllerService::read()
             encoder8 = _encoder8;
             state8 = node[2U];
             error8 = 0U;
-            console.send(ConsoleHandler::State::NODE8, node);
+            ConsoleHandler::send(ConsoleHandler::State::NODE8, node);
         }
     }
     else if (_error8 != error8)
     {
         error8 = _error8;
-        console.send(ConsoleHandler::State::NODE8, error8);
+        ConsoleHandler::send(ConsoleHandler::State::NODE8, error8);
     }
     const unsigned char _error9{leg.getLeg(LegHandler::getPid(0x9U), node)};
     if (_error9 == 0U)
@@ -104,13 +104,13 @@ bool ControllerService::read()
             encoder9 = _encoder9;
             state9 = node[2U];
             error9 = 0U;
-            console.send(ConsoleHandler::State::NODE9, node);
+            ConsoleHandler::send(ConsoleHandler::State::NODE9, node);
         }
     }
     else if (_error9 != error9)
     {
         error9 = _error9;
-        console.send(ConsoleHandler::State::NODE9, error9);
+        ConsoleHandler::send(ConsoleHandler::State::NODE9, error9);
     }
     if (_error8 != 0U || _error9 != 0U)
     {
@@ -345,7 +345,7 @@ void ControllerService::setPresetHigh(unsigned int preset)
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
     }
-    console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
+    ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
 }
 
 /**
@@ -363,7 +363,7 @@ void ControllerService::setPresetLow(unsigned int preset)
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
     }
-    console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
+    ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
 }
 
 /**
