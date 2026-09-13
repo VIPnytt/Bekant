@@ -4,6 +4,7 @@
 
 #include "esp/DeskService.h"
 #include "esp/HomeAssistantHandler.h"
+#include "esp/StatusHandler.h"
 #include "esp/secrets.h"
 
 #include <WiFi.h>
@@ -120,7 +121,7 @@ void MqttHandler::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 {
     ESP_LOGI("MQTT", "disconnected");
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
-    desk.statusRed();
+    StatusHandler::setRed();
 }
 
 /**
