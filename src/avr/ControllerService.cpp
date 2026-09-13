@@ -378,7 +378,6 @@ void ControllerService::setTarget(unsigned int position)
         encoderTarget = position;
         pending = true;
     }
-    console.send(ConsoleHandler::State::POSITION, encoderTarget);
 }
 
 /**
