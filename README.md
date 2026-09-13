@@ -28,14 +28,14 @@ The ESP32 also needs to be powered from the desk’s supply.
 
 ### ESP32 power
 
-The desk uses a power supply with a nominal output rating of approximately 28–35 V DC.
+The desk uses a power supply rated for approximately 29–35 V DC, depending on which power supply was supplied with the desk.
 
 An ESP32 board rated for this input voltage is the preferred solution. The [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is one suitable option.
 
 Alternatively, a conventional ESP32 board can be used with a suitable buck converter, or the *Megadesk Companion* add-on board. Neither is recommended for new setups.
 
 > [!WARNING]
-> Do not connect the desk’s 28–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
+> Do not connect the desk’s 29–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
 
 ### Megadesk Companion
 
