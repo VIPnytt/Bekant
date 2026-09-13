@@ -61,7 +61,7 @@ void StatusHandler::setGreen()
  */
 void StatusHandler::setNone(bool force)
 {
-    if (color.red == 0U || (color.blue == color.green && color.green == color.red) || force)
+    if (color.r == 0U || (color.b == color.g && color.g == color.r) || force)
     {
         color = CRGB::Black;
         pending = true;
@@ -84,7 +84,7 @@ void StatusHandler::setRed()
  */
 void StatusHandler::setWhite(bool force)
 {
-    if ((color.blue == color.green && color.green == color.red) || force)
+    if ((color.b == color.g && color.g == color.r) || force)
     {
         color = CRGB::White;
         pending = true;
@@ -96,19 +96,19 @@ void StatusHandler::setWhite(bool force)
  */
 void StatusHandler::fade()
 {
-    if (color.blue != 0U)
+    if (color.b != 0U)
     {
-        --color.blue;
+        --color.b;
         pending = true;
     }
-    if (color.green != 0U)
+    if (color.g != 0U)
     {
-        --color.green;
+        --color.g;
         pending = true;
     }
-    if (color.red != 0U)
+    if (color.r != 0U)
     {
-        --color.red;
+        --color.r;
         pending = true;
     }
 }
