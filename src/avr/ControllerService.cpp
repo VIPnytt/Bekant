@@ -345,7 +345,7 @@ void ControllerService::setPresetHigh(unsigned int preset)
         presetHigh = preset;
         EEPROM.put(static_cast<int>('h'), presetHigh);
     }
-    console.send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
+    ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
 }
 
 /**
@@ -363,7 +363,7 @@ void ControllerService::setPresetLow(unsigned int preset)
         presetLow = preset;
         EEPROM.put(static_cast<int>('l'), presetLow);
     }
-    console.send(ConsoleHandler::State::PRESET_LOW, presetLow);
+    ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
 }
 
 /**

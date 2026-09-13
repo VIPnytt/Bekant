@@ -6,7 +6,6 @@
 #include "avr/ControllerService.h"
 #include "avr/constants.h"
 
-#include <HardwareSerial.h>
 #include <wiring.h>
 
 /**
