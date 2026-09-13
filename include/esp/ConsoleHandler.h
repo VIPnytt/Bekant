@@ -10,7 +10,7 @@
 class ConsoleHandler
 {
 public:
-    enum class Command : uint8_t
+    enum class Command : uint8_t // NOLINT(performance-enum-size)
     {
         CALIBRATE = 1U,
         POSITION,
@@ -19,7 +19,7 @@ public:
         TONE,
     };
 
-    enum class State : uint8_t
+    enum class State : uint8_t // NOLINT(performance-enum-size)
     {
         BUTTON_DOWN = 1U,
         BUTTON_UP,
