@@ -144,10 +144,6 @@ public:
 
     void setVersion(uint8_t hash);
 
-    void statusRed();
-
-    void statusWhite();
-
     void transmit(JsonDocument &doc);
 
     static DeskService &getInstance();

@@ -189,7 +189,7 @@ void ConsoleHandler::parse()
     }
     else
     {
-        desk.statusRed();
+        StatusHandler::setRed();
     }
 }
 
@@ -242,7 +242,7 @@ void ConsoleHandler::setErrorLin(uint8_t flags)
         errorLin = flags;
         desk.setPending();
     }
-    desk.statusRed();
+    StatusHandler::setRed();
 }
 
 /**
@@ -257,7 +257,7 @@ void ConsoleHandler::setErrorTx(uint8_t flags)
         errorTx = flags;
         desk.setPending();
     }
-    desk.statusRed();
+    StatusHandler::setRed();
 }
 
 /**
@@ -268,7 +268,7 @@ void ConsoleHandler::setErrorTx(uint8_t flags)
 void ConsoleHandler::write(std::span<const uint8_t> payload)
 {
     desk.setTx(payload);
-    desk.statusWhite();
+    StatusHandler::setWhite();
     for (const uint8_t byte : payload)
     {
         Serial1.write(byte);
@@ -288,7 +288,7 @@ void ConsoleHandler::onReceiveError(hardwareSerial_error_t error)
         errorRx = error;
         desk.setPending();
     }
-    desk.statusRed();
+    StatusHandler::setRed();
 }
 
 #endif // ARDUINO_ARCH_ESP32

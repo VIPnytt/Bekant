@@ -2,27 +2,44 @@
 
 #include "esp/StatusHandler.h"
 
+#include "esp/secrets.h"
+
+#include <FastLED.h>
+
+/**
+ * @brief Registers the configured status LED with FastLED.
+ */
+void StatusHandler::begin()
+{
+#ifdef PIN_LED
+    FastLED.addLeds<WS2812, PIN_LED, fl::EOrder::GRB>(&color, 1);
+#endif // PIN_LED
+}
+
 /**
  * @brief Updates the status LED and advances its color state periodically.
  *
  * Applies pending color changes immediately and gradually fades the current
- * color after approximately 512 milliseconds without a pending update.
+ * color after approximately 256 milliseconds without a pending update.
  */
 void StatusHandler::handle()
 {
     if (pending)
     {
 #ifdef PIN_LED
-        led.SetPixelColor(0U, color);
-        led.Show();
+        FastLED.show();
 #endif // PIN_LED
         lastMillis = millis();
         pending = false;
     }
-    else if (millis() - lastMillis > (0b1U << 9U))
+    else if (millis() - lastMillis > (0b1U << 8U))
     {
-        fade();
         lastMillis = millis();
+        if (color != CRGB::Black)
+        {
+            --color;
+            pending = true;
+        }
     }
 }
 
@@ -31,9 +48,7 @@ void StatusHandler::handle()
  */
 void StatusHandler::setBlue()
 {
-    color.B = 0xFFU;
-    color.G = 0U;
-    color.R = 0U;
+    color = CRGB::Blue;
     pending = true;
 }
 
@@ -42,9 +57,7 @@ void StatusHandler::setBlue()
  */
 void StatusHandler::setGreen()
 {
-    color.B = 0U;
-    color.G = 0xFFU;
-    color.R = 0U;
+    color = CRGB::Green;
     pending = true;
 }
 
@@ -55,11 +68,9 @@ void StatusHandler::setGreen()
  */
 void StatusHandler::setNone(bool force)
 {
-    if (color.R == 0U || (color.B == color.G && color.G == color.R) || force)
+    if (color[0U] == 0U || (color[0U] == color[1U] && color[1U] == color[2U]) || force)
     {
-        color.B = 0U;
-        color.G = 0U;
-        color.R = 0U;
+        color = CRGB::Black;
         pending = true;
     }
 }
@@ -69,9 +80,7 @@ void StatusHandler::setNone(bool force)
  */
 void StatusHandler::setRed()
 {
-    color.B = 0U;
-    color.G = 0U;
-    color.R = 0xFFU;
+    color = CRGB::Red;
     pending = true;
 }
 
@@ -82,33 +91,9 @@ void StatusHandler::setRed()
  */
 void StatusHandler::setWhite(bool force)
 {
-    if ((color.B == color.G && color.G == color.R) || force)
+    if ((color[0U] == color[1U] && color[1U] == color[2U]) || force)
     {
-        color.B = 0xFFU;
-        color.G = 0xFFU;
-        color.R = 0xFFU;
-        pending = true;
-    }
-}
-
-/**
- * @brief Fades the current color by decreasing each nonzero RGB channel by one.
- */
-void StatusHandler::fade()
-{
-    if (color.B != 0U)
-    {
-        --color.B;
-        pending = true;
-    }
-    if (color.G != 0U)
-    {
-        --color.G;
-        pending = true;
-    }
-    if (color.R != 0U)
-    {
-        --color.R;
+        color = CRGB::White;
         pending = true;
     }
 }
