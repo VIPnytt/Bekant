@@ -149,7 +149,7 @@ void DeskService::save()
         nvs_set_u16(handle, "9", encoder9);
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
-        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
+        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable)); // NOLINT(readability-implicit-bool-conversion)
         if (nvs_commit(handle) != ESP_OK)
         {
             saved = false;
