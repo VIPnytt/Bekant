@@ -54,7 +54,7 @@ void WifiHandler::onDisconnected(arduino_event_id_t event, // NOLINT(misc-unused
     ESP_LOGD("Wi-Fi",
              "disconnect reason %s",
              WiFi.disconnectReasonName(static_cast<wifi_err_reason_t>(info.wifi_sta_disconnected.reason)));
-    desk.statusRed();
+    StatusHandler::setRed();
 }
 
 #endif // ARDUINO_ARCH_ESP32

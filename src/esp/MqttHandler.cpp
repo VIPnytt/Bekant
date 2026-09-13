@@ -120,7 +120,7 @@ void MqttHandler::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 {
     ESP_LOGI("MQTT", "disconnected");
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
-    desk.statusRed();
+    StatusHandler::setRed();
 }
 
 /**
