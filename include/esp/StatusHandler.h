@@ -13,8 +13,6 @@ private:
 
     static inline CRGB color{CRGB::Black};
 
-    void fade();
-
 public:
     void begin();
 

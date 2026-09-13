@@ -31,8 +31,12 @@ void StatusHandler::handle()
     }
     else if (millis() - lastMillis > (0b1U << 8U))
     {
-        fade();
         lastMillis = millis();
+        if (color != CRGB::Black)
+        {
+            --color;
+            pending = true;
+        }
     }
 }
 
@@ -61,7 +65,7 @@ void StatusHandler::setGreen()
  */
 void StatusHandler::setNone(bool force)
 {
-    if (color.red == 0U || (color.blue == color.green && color.green == color.red) || force)
+    if (color[0U] == 0U || (color[0U] == color[1U] && color[1U] == color[2U]) || force)
     {
         color = CRGB::Black;
         pending = true;
@@ -84,31 +88,9 @@ void StatusHandler::setRed()
  */
 void StatusHandler::setWhite(bool force)
 {
-    if ((color.blue == color.green && color.green == color.red) || force)
+    if ((color[0U] == color[1U] && color[1U] == color[2U]) || force)
     {
         color = CRGB::White;
-        pending = true;
-    }
-}
-
-/**
- * @brief Fades the current color by decreasing each nonzero RGB channel by one.
- */
-void StatusHandler::fade()
-{
-    if (color.blue != 0U)
-    {
-        --color.blue;
-        pending = true;
-    }
-    if (color.green != 0U)
-    {
-        --color.green;
-        pending = true;
-    }
-    if (color.red != 0U)
-    {
-        --color.red;
         pending = true;
     }
 }
