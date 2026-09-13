@@ -6,6 +6,9 @@
 
 #include <FastLED.h>
 
+/**
+ * @brief Registers the configured status LED with FastLED.
+ */
 void StatusHandler::begin()
 {
 #ifdef PIN_LED
@@ -17,7 +20,7 @@ void StatusHandler::begin()
  * @brief Updates the status LED and advances its color state periodically.
  *
  * Applies pending color changes immediately and gradually fades the current
- * color after approximately 512 milliseconds without a pending update.
+ * color after approximately 256 milliseconds without a pending update.
  */
 void StatusHandler::handle()
 {

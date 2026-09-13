@@ -30,6 +30,11 @@ void OtaHandler::handle() { ota.handle(); }
  */
 void OtaHandler::onStart() { desk.safeMode(); }
 
+/**
+ * @brief Marks the status indicator red when an OTA update fails.
+ *
+ * @param error OTA error reported by ArduinoOTA; all error codes are handled identically.
+ */
 void OtaHandler::onError(ota_error_t error) // NOLINT(misc-unused-parameters)
 {
     StatusHandler::setRed();
