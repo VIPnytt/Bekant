@@ -34,7 +34,6 @@ public:
         LIN,
         NODE8,
         NODE9,
-        POSITION,
         PRESET_HIGH,
         PRESET_LOW,
         VERSION,
