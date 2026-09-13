@@ -30,6 +30,9 @@ void OtaHandler::handle() { ota.handle(); }
  */
 void OtaHandler::onStart() { desk.safeMode(); }
 
-void OtaHandler::onError(ota_error_t) { StatusHandler::setRed(); }
+void OtaHandler::onError(ota_error_t error) // NOLINT(misc-unused-parameters)
+{
+    StatusHandler::setRed();
+}
 
 #endif // ARDUINO_ARCH_ESP32
