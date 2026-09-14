@@ -4,9 +4,16 @@
 
 #include "avr/ConsoleHandler.h"
 #include "avr/ControllerService.h"
+#include "avr/ToneHandler.h"
 #include "avr/constants.h"
 
 #include <wiring.h>
+
+void ButtonHandler::begin()
+{
+    pinMode(Pin::buttonDown, INPUT_PULLUP);
+    pinMode(Pin::buttonUp, INPUT_PULLUP);
+}
 
 /**
  * @brief Handles button state changes and processes the resulting input.
@@ -88,13 +95,13 @@ void ButtonHandler::process()
     {
         count = 0;
         controller.setPresetHigh(controller.getEncoderMin());
-        controller.tone(0b1U << 12U);
+        ToneHandler::play(0b1U << 12U, 0b1U << 8U);
     }
     else if (count == -2 && !stateDown && millis() - lastMillis > 0b1U << 8U)
     {
         count = 0;
         controller.setPresetLow(controller.getEncoderMax());
-        controller.tone(0b1U << 12U);
+        ToneHandler::play(0b1U << 12U, 0b1U << 8U);
     }
     else if (count != 0 && !stateDown && !stateUp && millis() - lastMillis > 0b1U << 8U)
     {

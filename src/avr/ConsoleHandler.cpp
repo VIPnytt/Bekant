@@ -3,7 +3,17 @@
 #include "avr/ConsoleHandler.h"
 
 #include "avr/ControllerService.h"
+#include "avr/ToneHandler.h"
 #include "avr/constants.h"
+
+#include <wiring.h>
+
+void ConsoleHandler::begin()
+{
+    pinMode(Pin::consoleRx, INPUT);
+    pinMode(Pin::consoleTx, OUTPUT);
+    Serial1.begin(115'200UL);
+}
 
 /**
  * @brief Buffers a serial command and parses it when its complete payload is received.
@@ -79,7 +89,8 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == Command::TONE && lengthRx == 2U)
     {
-        controller.tone(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        ToneHandler::play(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U,
+                          0b1U << 10U);
     }
 }
 
