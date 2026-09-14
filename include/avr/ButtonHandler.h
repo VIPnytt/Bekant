@@ -35,7 +35,7 @@ private:
 
 public:
     void begin();
-    
+
     void handle();
 };
 
