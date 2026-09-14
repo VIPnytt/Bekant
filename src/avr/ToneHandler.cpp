@@ -6,8 +6,19 @@
 
 #include <wiring.h>
 
+/**
+ * @brief Configures the tone pin as an output.
+ */
 void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
 
+/**
+ * @brief Generates a blocking square-wave tone on the tone output.
+ *
+ * Unsupported frequencies and zero-duration requests produce no output.
+ *
+ * @param frequency Tone frequency in hertz.
+ * @param duration Approximate playback duration in milliseconds.
+ */
 void ToneHandler::play(unsigned int frequency, unsigned long duration)
 {
     if (duration == 0UL || frequency < minFrequency || frequency > maxFrequency)

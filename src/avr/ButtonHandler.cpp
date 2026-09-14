@@ -9,6 +9,9 @@
 
 #include <wiring.h>
 
+/**
+ * @brief Configures the desk buttons as inputs with internal pull-ups.
+ */
 void ButtonHandler::begin()
 {
     pinMode(Pin::buttonDown, INPUT_PULLUP);
@@ -62,7 +65,8 @@ void ButtonHandler::handle()
  *
  * Handles button combinations and press sequences to start movement, initiate
  * recalibration, store or recall low and high position presets, and reset
- * incomplete sequences after a timeout.
+ * incomplete sequences after a timeout. A confirmation tone is played after
+ * storing a preset.
  */
 void ButtonHandler::process()
 {
