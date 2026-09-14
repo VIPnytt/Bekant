@@ -10,12 +10,16 @@ void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
 
 void ToneHandler::play(unsigned int frequency, unsigned long duration)
 {
-    if (frequency == 0U || duration == 0UL)
+    if (duration == 0UL || frequency < minFrequency || frequency > maxFrequency)
     {
         return;
     }
     const unsigned int halfPeriod{static_cast<unsigned int>(500'000UL / frequency)};
-    const unsigned int delay{static_cast<unsigned int>(500'000UL / frequency) - overhead};
+    if (halfPeriod <= overhead)
+    {
+        return;
+    }
+    const unsigned int delay{halfPeriod - overhead};
     for (unsigned long idx{0UL}; idx < (duration * 1000UL) / (2UL * halfPeriod); ++idx)
     {
         digitalWrite(Pin::tone, HIGH);
