@@ -595,7 +595,7 @@ void DeskService::setSimulateDown(bool state)
 {
 #ifdef PIN_TPDN
     simulateDown.first = state;
-    if (simulateDown.first)
+    if (simulateDown.first && simulateDown.first != simulateDown.second)
     {
         StatusHandler::setRed();
     }
@@ -612,7 +612,7 @@ void DeskService::setSimulateUp(bool state)
 {
 #ifdef PIN_TPUP
     simulateUp.first = state;
-    if (simulateUp.first)
+    if (simulateUp.first && simulateUp.first != simulateUp.second)
     {
         StatusHandler::setRed();
     }
