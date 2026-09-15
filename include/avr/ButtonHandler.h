@@ -6,6 +6,16 @@ class ButtonHandler
 {
 private:
     /**
+     * Handles the current button-3 input state.
+     */
+    bool state3{false};
+
+    /**
+     * Handles the current button-4 input state.
+     */
+    bool state4{false};
+
+    /**
      * Handles the current button-down input state.
      */
     bool stateDown{false};

@@ -12,7 +12,7 @@ It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add
 - OTA updates for the ESP32
 - Remote flashing of the Megadesk AVR
 - RGB status and error indication
-- Optional power-supply voltage monitoring
+- Optional macro buttons and power-supply monitoring
 
 ## Hardware
 
@@ -115,23 +115,31 @@ The ESP32 GPIO assignments depend on the board and are configured in [`secrets.h
 
 ### Megadesk pinout
 
-`MISO` and `SCK` are broken out to `TX` and `RX` on newer revisions through series resistors. `MISO`/`SCK` are preferred for new setups, but `TX`/`RX` are compatible.
+On some revisions, `SCK` and `MISO` are also broken out to `RX` and `TX` through series resistors. Direct `SCK`/`MISO` wiring is preferred, as the resistors are best avoided for SPI and unnecessary for UART, though `RX`/`TX` should work just fine.
+
+Buttons 3 and 4 are optional macro buttons.
 
 ```text
-      ┌────────────────────┐
-TPUP ─┼ TPUP   ┌───────────┼─ MISO
-TPDN ─┼ TPDN   │   ┌───────┼─ SCK
-      │        │   │    ┌──┼─ RST
-      │      MISO SCK  RST │
-      │        +5 MOSI GND │
-      │        │   │    └──┼─ 0 V DC
-      │  x  x  │   └───────┼─ MOSI
-      │        └───────────┼─ +5 V DC
-      │ RED+ GND LIN RX TX │
-      └──┼────┼───┼────────┘
-         │    │   └────────── LIN
-         │    └────────────── 0 V DC
-         └─────────────────── +35 V DC
+                    ┌────────── Button 4
+                    │ ┌──────── Button 3
+                    │ │ ┌────── 0 V DC
+                    │ │ │ ┌──── Button down
+                    │ │ │ │ ┌── Button up
+         ┌──────────┼─┼─┼─┼─┼─┐
+         │         10 9 7 6 5 │
+   MISO ─┼──────────┐         │
+    SCK ─┼──────┐   │    TPUP ┼─ TPUP
+    RST ─┼──┐   │   │    TPDN ┼─ TPDN
+         │ RST SCK MISO       │
+         │ GND MOSI +5        │
+ 0 V DC ─┼──┘   │   │         │
+   MOSI ─┼──────┘   │  x   x  │
++5 V DC ─┼──────────┘         │
+         │ TX RX LIN GND RED+ │
+         └───────┼────┼───┼───┘
+                 │    │   └───── +35 V DC
+                 │    └───────── 0 V DC
+                 └────────────── LIN
 ```
 
 ### ESP32 connections
@@ -218,19 +226,25 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 
 ### Controls
 
-| Name        | Description               |
-| ----------- | ------------------------- |
-| Height      | Move to a specific height |
-| Preset high | Move to the high preset   |
-| Preset low  | Move to the low preset    |
+| Name        | Description                           | Requirement |
+| ----------- | ------------------------------------- | ----------- |
+| Height      | Move to a specific height             |             |
+| Lower       | Simulate a physical down-button press | `PIN_TPDN`  |
+| Preset high | Move to the high preset               |             |
+| Preset low  | Move to the low preset                |             |
+| Raise       | Simulate a physical up-button press   | `PIN_TPUP`  |
 
 ### Sensors
 
-| Name        | Description            |
-| ----------- | ---------------------- |
-| Desk        | Current desk height    |
-| Preset high | Configured high preset |
-| Preset low  | Configured low preset  |
+| Name        | Description            | Requirement          |
+| ----------- | ---------------------- | -------------------- |
+| Button 3    | Macro button           | Custom control panel |
+| Button 4    | Macro button           | Custom control panel |
+| Button down | Button press state     |                      |
+| Button up   | Button press state     |                      |
+| Desk        | Current desk height    |                      |
+| Preset high | Configured high preset |                      |
+| Preset low  | Configured low preset  |                      |
 
 ### Configuration
 
@@ -246,8 +260,6 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 
 | Name         | Description                             | Requirement |
 | ------------ | --------------------------------------- | ----------- |
-| Button down  | Simulate a physical down-button press   | `PIN_TPDN`  |
-| Button up    | Simulate a physical up-button press     | `PIN_TPUP`  |
 | Calibrate    | Recalibrate the leg encoder sensors     |             |
 | Errors       | Currently detected communication errors |             |
 | Firmware     | ESP32 firmware version                  |             |

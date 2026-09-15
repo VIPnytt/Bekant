@@ -14,6 +14,8 @@
  */
 void ButtonHandler::begin()
 {
+    pinMode(Pin::button3, INPUT_PULLUP);
+    pinMode(Pin::button4, INPUT_PULLUP);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
 }
@@ -22,16 +24,30 @@ void ButtonHandler::begin()
  * @brief Handles button state changes and processes the resulting input.
  *
  * Updates the press sequence and timing state, cancels movement when a button
- * is released, reports state transitions over the serial interface, and
- * processes the resulting button input.
+ * is released, reports all four button states over the serial interface when
+ * any state changes, and processes the resulting button input.
  */
 void ButtonHandler::handle()
 {
+    const bool _button3{digitalRead(Pin::button3) == LOW};
+    const bool _button4{digitalRead(Pin::button4) == LOW};
     const bool _buttonDown{digitalRead(Pin::buttonDown) == LOW};
     const bool _buttonUp{digitalRead(Pin::buttonUp) == LOW};
+    bool pending{false};
+    if (_button3 != state3)
+    {
+        state3 = _button3;
+        pending = true;
+    }
+    if (_button4 != state4)
+    {
+        state4 = _button4;
+        pending = true;
+    }
     if (_buttonDown != stateDown)
     {
         stateDown = _buttonDown;
+        pending = true;
         if (stateDown)
         {
             lastMillis = millis();
@@ -41,11 +57,11 @@ void ButtonHandler::handle()
         {
             stop();
         }
-        ConsoleHandler::send(ConsoleHandler::State::BUTTON_DOWN, static_cast<unsigned char>(stateDown));
     }
     if (_buttonUp != stateUp)
     {
         stateUp = _buttonUp;
+        pending = true;
         if (stateUp)
         {
             lastMillis = millis();
@@ -55,7 +71,12 @@ void ButtonHandler::handle()
         {
             stop();
         }
-        ConsoleHandler::send(ConsoleHandler::State::BUTTON_UP, static_cast<unsigned char>(stateUp));
+    }
+    if (pending)
+    {
+        ConsoleHandler::send(ConsoleHandler::State::BUTTONS,
+                             static_cast<unsigned char>((stateUp ? 0b1U : 0U) | (stateDown ? 0b1U << 1U : 0U) |
+                                                        (state3 ? 0b1U << 2U : 0U) | (state4 ? 0b1U << 3U : 0U)));
     }
     process();
 }

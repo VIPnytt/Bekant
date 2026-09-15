@@ -56,7 +56,7 @@ void HomeAssistantHandler::origin()
 }
 
 /**
- * @brief Configures Home Assistant controls for desk height and preset recall.
+ * @brief Configures Home Assistant controls for height, preset recall, and optional up/down simulation.
  */
 void HomeAssistantHandler::controls()
 {
@@ -80,6 +80,24 @@ void HomeAssistantHandler::controls()
         height[ComponentAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
         height[ComponentAbbreviations::value_template].set("{{value_json.desk|round(1)}}");
     }
+#ifdef PIN_TPDN
+    {
+        JsonObject lower{discovery[ComponentAbbreviations::components]["lower"].to<JsonObject>()};
+        lower[ComponentAbbreviations::command_template].set(R"({"simulate":{"down":{{value}}}})");
+        lower[ComponentAbbreviations::command_topic].set(commandTopic);
+        lower[ComponentAbbreviations::enabled_by_default].set(false);
+        lower[ComponentAbbreviations::icon].set("mdi:menu-down-outline");
+        lower[ComponentAbbreviations::name].set("Lower");
+        lower[ComponentAbbreviations::payload_off].set("false");
+        lower[ComponentAbbreviations::payload_on].set("true");
+        lower[ComponentAbbreviations::state_off].set("False");
+        lower[ComponentAbbreviations::state_on].set("True");
+        lower[ComponentAbbreviations::platform].set("switch");
+        lower[ComponentAbbreviations::state_topic].set(stateTopic);
+        lower[ComponentAbbreviations::unique_id].set("lower");
+        lower[ComponentAbbreviations::value_template].set("{{value_json.simulate.down}}");
+    }
+#endif // PIN_TPDN
     {
         JsonObject presetHigh{discovery[ComponentAbbreviations::components]["recall_high"].to<JsonObject>()};
         presetHigh[ComponentAbbreviations::command_template].set(R"({"preset":{"{{value}}":true}})");
@@ -104,13 +122,83 @@ void HomeAssistantHandler::controls()
         presetLow[ComponentAbbreviations::platform].set("button");
         presetLow[ComponentAbbreviations::unique_id].set("recall_low");
     }
+#ifdef PIN_TPUP
+    {
+        JsonObject raise{discovery[ComponentAbbreviations::components]["raise"].to<JsonObject>()};
+        raise[ComponentAbbreviations::command_template].set(R"({"simulate":{"up":{{value}}}})");
+        raise[ComponentAbbreviations::command_topic].set(commandTopic);
+        raise[ComponentAbbreviations::enabled_by_default].set(false);
+        raise[ComponentAbbreviations::icon].set("mdi:menu-up-outline");
+        raise[ComponentAbbreviations::name].set("Raise");
+        raise[ComponentAbbreviations::payload_off].set("false");
+        raise[ComponentAbbreviations::payload_on].set("true");
+        raise[ComponentAbbreviations::state_off].set("False");
+        raise[ComponentAbbreviations::state_on].set("True");
+        raise[ComponentAbbreviations::platform].set("switch");
+        raise[ComponentAbbreviations::state_topic].set(stateTopic);
+        raise[ComponentAbbreviations::unique_id].set("raise");
+        raise[ComponentAbbreviations::value_template].set("{{value_json.simulate.up}}");
+    }
+#endif // PIN_TPUP
 }
 
 /**
- * @brief Configures Home Assistant sensors for desk height and stored presets.
+ * @brief Configures Home Assistant sensors for physical button states, desk height, and stored presets.
  */
 void HomeAssistantHandler::sensors()
 {
+    {
+        JsonObject button3{discovery[ComponentAbbreviations::components]["button_3"].to<JsonObject>()};
+        button3[ComponentAbbreviations::device_class].set("occupancy");
+        button3[ComponentAbbreviations::enabled_by_default].set(false);
+        button3[ComponentAbbreviations::icon].set("mdi:numeric-3-circle-outline");
+        button3[ComponentAbbreviations::name].set("Button 3");
+        button3[ComponentAbbreviations::payload_off].set("False");
+        button3[ComponentAbbreviations::payload_on].set("True");
+        button3[ComponentAbbreviations::platform].set("binary_sensor");
+        button3[ComponentAbbreviations::state_topic].set(stateTopic);
+        button3[ComponentAbbreviations::unique_id].set("button_3");
+        button3[ComponentAbbreviations::value_template].set("{{value_json.button['3']}}");
+    }
+    {
+        JsonObject button4{discovery[ComponentAbbreviations::components]["button_4"].to<JsonObject>()};
+        button4[ComponentAbbreviations::device_class].set("occupancy");
+        button4[ComponentAbbreviations::enabled_by_default].set(false);
+        button4[ComponentAbbreviations::icon].set("mdi:numeric-4-circle-outline");
+        button4[ComponentAbbreviations::name].set("Button 4");
+        button4[ComponentAbbreviations::payload_off].set("False");
+        button4[ComponentAbbreviations::payload_on].set("True");
+        button4[ComponentAbbreviations::platform].set("binary_sensor");
+        button4[ComponentAbbreviations::state_topic].set(stateTopic);
+        button4[ComponentAbbreviations::unique_id].set("button_4");
+        button4[ComponentAbbreviations::value_template].set("{{value_json.button['4']}}");
+    }
+    {
+        JsonObject buttonDown{discovery[ComponentAbbreviations::components]["button_down"].to<JsonObject>()};
+        buttonDown[ComponentAbbreviations::device_class].set("occupancy");
+        buttonDown[ComponentAbbreviations::enabled_by_default].set(false);
+        buttonDown[ComponentAbbreviations::icon].set("mdi:menu-down-outline");
+        buttonDown[ComponentAbbreviations::name].set("Button down");
+        buttonDown[ComponentAbbreviations::payload_off].set("False");
+        buttonDown[ComponentAbbreviations::payload_on].set("True");
+        buttonDown[ComponentAbbreviations::platform].set("binary_sensor");
+        buttonDown[ComponentAbbreviations::state_topic].set(stateTopic);
+        buttonDown[ComponentAbbreviations::unique_id].set("button_down");
+        buttonDown[ComponentAbbreviations::value_template].set("{{value_json.button.down}}");
+    }
+    {
+        JsonObject buttonUp{discovery[ComponentAbbreviations::components]["button_up"].to<JsonObject>()};
+        buttonUp[ComponentAbbreviations::device_class].set("occupancy");
+        buttonUp[ComponentAbbreviations::enabled_by_default].set(false);
+        buttonUp[ComponentAbbreviations::icon].set("mdi:menu-up-outline");
+        buttonUp[ComponentAbbreviations::name].set("Button up");
+        buttonUp[ComponentAbbreviations::payload_off].set("False");
+        buttonUp[ComponentAbbreviations::payload_on].set("True");
+        buttonUp[ComponentAbbreviations::platform].set("binary_sensor");
+        buttonUp[ComponentAbbreviations::state_topic].set(stateTopic);
+        buttonUp[ComponentAbbreviations::unique_id].set("button_up");
+        buttonUp[ComponentAbbreviations::value_template].set("{{value_json.button.up}}");
+    }
     {
         JsonObject desk{discovery[ComponentAbbreviations::components]["desk"].to<JsonObject>()};
         desk[ComponentAbbreviations::device_class].set("distance");
@@ -250,52 +338,14 @@ void HomeAssistantHandler::configuration()
  * @brief Configures diagnostic entities for Home Assistant discovery.
  *
  * Adds diagnostic controls and sensors for calibration, encoder data, firmware
- * versions, communication errors, positional offset, serial activity, temperature, Wi-Fi signal
- * strength, and optionally button inputs and power-supply voltage. Diagnostic
- * entities are categorized and selected hardware-specific entities are disabled
- * by default.
+ * versions, communication errors, positional offset, serial activity,
+ * temperature, Wi-Fi signal strength, and optional power-supply voltage.
+ * Diagnostic entities are categorized and selected hardware-specific entities
+ * are disabled by default.
  */
 void HomeAssistantHandler::diagnostic()
 {
     constexpr std::string_view entityCategory{"diagnostic"};
-#ifdef PIN_TPDN
-    {
-        JsonObject buttonDown{discovery[ComponentAbbreviations::components]["tpdn"].to<JsonObject>()};
-        buttonDown[ComponentAbbreviations::command_template].set(R"({"button":{"down":{{value}}}})");
-        buttonDown[ComponentAbbreviations::command_topic].set(commandTopic);
-        buttonDown[ComponentAbbreviations::enabled_by_default].set(false);
-        buttonDown[ComponentAbbreviations::entity_category].set(entityCategory);
-        buttonDown[ComponentAbbreviations::icon].set("mdi:menu-down-outline");
-        buttonDown[ComponentAbbreviations::name].set("Button down");
-        buttonDown[ComponentAbbreviations::payload_off].set("false");
-        buttonDown[ComponentAbbreviations::payload_on].set("true");
-        buttonDown[ComponentAbbreviations::state_off].set("False");
-        buttonDown[ComponentAbbreviations::state_on].set("True");
-        buttonDown[ComponentAbbreviations::platform].set("switch");
-        buttonDown[ComponentAbbreviations::state_topic].set(stateTopic);
-        buttonDown[ComponentAbbreviations::unique_id].set("tpdn");
-        buttonDown[ComponentAbbreviations::value_template].set("{{value_json.button.down}}");
-    }
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
-    {
-        JsonObject buttonUp{discovery[ComponentAbbreviations::components]["tpup"].to<JsonObject>()};
-        buttonUp[ComponentAbbreviations::command_template].set(R"({"button":{"up":{{value}}}})");
-        buttonUp[ComponentAbbreviations::command_topic].set(commandTopic);
-        buttonUp[ComponentAbbreviations::enabled_by_default].set(false);
-        buttonUp[ComponentAbbreviations::entity_category].set(entityCategory);
-        buttonUp[ComponentAbbreviations::icon].set("mdi:menu-up-outline");
-        buttonUp[ComponentAbbreviations::name].set("Button up");
-        buttonUp[ComponentAbbreviations::payload_off].set("false");
-        buttonUp[ComponentAbbreviations::payload_on].set("true");
-        buttonUp[ComponentAbbreviations::state_off].set("False");
-        buttonUp[ComponentAbbreviations::state_on].set("True");
-        buttonUp[ComponentAbbreviations::platform].set("switch");
-        buttonUp[ComponentAbbreviations::state_topic].set(stateTopic);
-        buttonUp[ComponentAbbreviations::unique_id].set("tpup");
-        buttonUp[ComponentAbbreviations::value_template].set("{{value_json.button.up}}");
-    }
-#endif // PIN_TPUP
     {
         JsonObject calibrate{discovery[ComponentAbbreviations::components]["calibrate"].to<JsonObject>()};
         calibrate[ComponentAbbreviations::command_template].set(R"({"action":"{{value}}"})");

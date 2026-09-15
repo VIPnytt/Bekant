@@ -27,8 +27,7 @@ public:
      */
     enum class State : unsigned char
     {
-        BUTTON_DOWN = 1U,
-        BUTTON_UP,
+        BUTTONS,
         CONSOLE,
         INITIALIZATION,
         LIN,

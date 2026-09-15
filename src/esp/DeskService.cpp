@@ -62,12 +62,12 @@ void DeskService::begin()
 #ifdef PIN_TPUP
     digitalWrite(PIN_TPUP, HIGH);
 #endif // PIN_TPUP
-    attachInterrupt(PIN_RST, onInterruptReset, CHANGE);
+    attachInterrupt(PIN_RST, onReset, CHANGE);
 #ifdef PIN_TPDN
-    attachInterrupt(PIN_TPDN, onInterruptDown, CHANGE);
+    attachInterrupt(PIN_TPDN, onDown, CHANGE);
 #endif // PIN_TPDN
 #ifdef PIN_TPUP
-    attachInterrupt(PIN_TPUP, onInterruptUp, CHANGE);
+    attachInterrupt(PIN_TPUP, onUp, CHANGE);
 #endif // PIN_TPUP
     digitalWrite(PIN_RST, HIGH);
     status.begin();
@@ -102,17 +102,17 @@ void DeskService::handle()
     if (pending || millis() - lastMillis > 0b1U << 16U)
     {
 #ifdef PIN_TPDN
-        if (driveDown.first && !pending)
+        if (simulateDown.first && !pending)
         {
             digitalWrite(PIN_TPDN, HIGH);
-            driveDown.first = false;
+            simulateDown.first = false;
         }
 #endif // PIN_TPDN
 #ifdef PIN_TPUP
-        if (driveUp.first && !pending)
+        if (simulateUp.first && !pending)
         {
             digitalWrite(PIN_TPUP, HIGH);
-            driveUp.first = false;
+            simulateUp.first = false;
         }
 #endif // PIN_TPUP
         if (!saved && !pending)
@@ -161,9 +161,9 @@ void DeskService::save()
 /**
  * @brief Processes commands from a JSON request.
  *
- * Handles calibration, restart, desk positioning, preset updates, drive control,
- * output enable, reset, and tone commands. Position and preset heights outside
- * the configured reference range are ignored.
+ * Handles calibration, restart, desk positioning, preset updates, optional
+ * down/up output simulation, output enable, reset, and tone commands. Position
+ * and preset heights outside the configured reference range are ignored.
  *
  * @param doc JSON object containing the commands to process.
  */
@@ -184,14 +184,6 @@ void DeskService::request(JsonObjectConst doc)
             vTaskDelay(0b1U << 7U);
             ESP.restart();
         }
-    }
-    if (doc["button"]["down"].is<bool>())
-    {
-        desk.setDriveDown(doc["button"]["down"].as<bool>());
-    }
-    if (doc["button"]["up"].is<bool>())
-    {
-        desk.setDriveUp(doc["button"]["up"].as<bool>());
     }
     if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["desk"].as<float>() >= ReferenceHeight::heightLow)
@@ -224,6 +216,14 @@ void DeskService::request(JsonObjectConst doc)
     {
         desk.setReset(doc["reset"].as<bool>());
     }
+    if (doc["simulate"]["down"].is<bool>())
+    {
+        desk.setSimulateDown(doc["simulate"]["down"].as<bool>());
+    }
+    if (doc["simulate"]["up"].is<bool>())
+    {
+        desk.setSimulateUp(doc["simulate"]["up"].as<bool>());
+    }
     if (doc["tone"].is<uint16_t>() && doc["tone"].as<uint16_t>() != 0U)
     {
         console.send(ConsoleHandler::Command::TONE, doc["tone"].as<uint16_t>());
@@ -237,8 +237,10 @@ void DeskService::request(JsonObjectConst doc)
  */
 void DeskService::transmit(JsonDocument &doc)
 {
-    doc["button"]["down"].set(buttonDown || driveDown.first);
-    doc["button"]["up"].set(buttonUp || driveUp.first);
+    doc["button"]["3"].set((buttons & (0b1U << 2U)) != 0U);
+    doc["button"]["4"].set((buttons & (0b1U << 3U)) != 0U);
+    doc["button"]["down"].set((buttons & (0b1U << 1U)) != 0U);
+    doc["button"]["up"].set((buttons & 0b1U) != 0U);
     doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
@@ -267,6 +269,12 @@ void DeskService::transmit(JsonDocument &doc)
     {
         doc["rx"].set(toHex(std::span<const uint8_t>(payloadRx).subspan(0U, lengthRx)));
     }
+#ifdef PIN_TPDN
+    doc["simulate"]["down"].set(simulateDown.first);
+#endif // PIN_TPDN
+#ifdef PIN_TPUP
+    doc["simulate"]["up"].set(simulateUp.first);
+#endif // PIN_TPUP
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
     doc["temperature"].set(temperatureRead());
@@ -362,61 +370,18 @@ void DeskService::getErrors(JsonArray &list)
 }
 
 /**
- * @brief Updates the down-button state and requests a state publication.
+ * @brief Updates the physical button states and requests state publication when they change.
  *
- * @param state The new down-button state.
+ * @param flags Button-state bitmask with up, down, button 3, and button 4 in bits 0 through 3, respectively.
  */
-void DeskService::setButtonDown(bool state)
+void DeskService::setButtons(uint8_t flags)
 {
-    if (state != buttonDown)
+    if (flags != buttons)
     {
-        buttonDown = state;
+        buttons = flags;
         StatusHandler::setWhite();
         pending = true;
     }
-}
-
-/**
- * @brief Updates the physical up-button state.
- *
- * @param state Whether the up button is pressed.
- */
-void DeskService::setButtonUp(bool state)
-{
-    if (state != buttonUp)
-    {
-        buttonUp = state;
-        StatusHandler::setWhite();
-        pending = true;
-    }
-}
-
-/**
- * @brief Sets the optional desk down-drive output state.
- *
- * @param state Whether the down-drive output should be active.
- */
-void DeskService::setDriveDown(bool state)
-{
-#ifdef PIN_TPDN
-    driveDown.first = state;
-    StatusHandler::setRed();
-    digitalWrite(PIN_TPDN, state ? LOW : HIGH);
-#endif // PIN_TPDN
-}
-
-/**
- * @brief Sets the requested state of the optional desk drive-up output.
- *
- * @param state `true` to activate the output; `false` to deactivate it.
- */
-void DeskService::setDriveUp(bool state)
-{
-#ifdef PIN_TPUP
-    driveUp.first = state;
-    StatusHandler::setRed();
-    digitalWrite(PIN_TPUP, driveUp.first ? LOW : HIGH);
-#endif // PIN_TPUP
 }
 
 /**
@@ -627,6 +592,46 @@ void DeskService::setRx(std::span<const uint8_t> payload)
 }
 
 /**
+ * @brief Controls the optional output that simulates pressing the desk's down button.
+ *
+ * Marks the status as an error when activation is requested but the observed
+ * output state is not active. Has no effect when down-button simulation is not configured.
+ *
+ * @param state Whether to activate the simulated down-button press.
+ */
+void DeskService::setSimulateDown(bool state)
+{
+#ifdef PIN_TPDN
+    simulateDown.first = state;
+    if (simulateDown.first && simulateDown.first != simulateDown.second)
+    {
+        StatusHandler::setRed();
+    }
+    digitalWrite(PIN_TPDN, state ? LOW : HIGH);
+#endif // PIN_TPDN
+}
+
+/**
+ * @brief Controls the optional output that simulates pressing the desk's up button.
+ *
+ * Marks the status as an error when activation is requested but the observed
+ * output state is not active. Has no effect when up-button simulation is not configured.
+ *
+ * @param state Whether to activate the simulated up-button press.
+ */
+void DeskService::setSimulateUp(bool state)
+{
+#ifdef PIN_TPUP
+    simulateUp.first = state;
+    if (simulateUp.first && simulateUp.first != simulateUp.second)
+    {
+        StatusHandler::setRed();
+    }
+    digitalWrite(PIN_TPUP, simulateUp.first ? LOW : HIGH);
+#endif // PIN_TPUP
+}
+
+/**
  * @brief Updates the stored transmitted serial payload.
  *
  * @param payload Bytes to store as the transmitted payload.
@@ -675,8 +680,8 @@ void DeskService::statusNode() // NOLINT(readability-make-member-function-const)
     {
         StatusHandler::setWhite(true);
     }
-    else if ((buttonDown && !buttonUp && !driveDown.first && !driveUp.first) ||
-             (buttonUp && !buttonDown && !driveDown.first && !driveUp.first))
+    else if (((buttons & (0b1U << 1U)) != 0U && (buttons & 0b1U) == 0U && !simulateDown.first && !simulateUp.first) ||
+             ((buttons & 0b1U) != 0U && (buttons & (0b1U << 1U)) == 0U && !simulateDown.first && !simulateUp.first))
     {
         StatusHandler::setGreen();
     }
@@ -783,13 +788,13 @@ void DeskService::fetchRelease()
  * Records the physical down-drive state, updates the status indicator for an
  * active down-drive request, and marks the device state for publication.
  */
-void DeskService::onInterruptDown()
+void DeskService::onDown()
 {
 #ifdef PIN_TPDN
-    desk.driveDown.second = digitalRead(PIN_TPDN) == LOW;
-    if (desk.driveDown.first)
+    desk.simulateDown.second = digitalRead(PIN_TPDN) == LOW;
+    if (desk.simulateDown.first)
     {
-        desk.driveDown.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
+        desk.simulateDown.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
     }
     desk.pending = true;
 #endif // PIN_TPDN
@@ -801,7 +806,7 @@ void DeskService::onInterruptDown()
  * Clears recorded communication errors and removes captured serial payloads from subsequent publications while reset
  * is asserted.
  */
-void DeskService::onInterruptReset()
+void DeskService::onReset()
 {
     desk.reset = digitalRead(PIN_RST) == LOW;
     if (desk.reset)
@@ -827,13 +832,13 @@ void DeskService::onInterruptReset()
  * Records the active state of the upward drive input, updates the status indicator
  * when upward driving is requested, and marks the device state for publication.
  */
-void DeskService::onInterruptUp()
+void DeskService::onUp()
 {
 #ifdef PIN_TPUP
-    desk.driveUp.second = digitalRead(PIN_TPUP) == LOW;
-    if (desk.driveUp.first)
+    desk.simulateUp.second = digitalRead(PIN_TPUP) == LOW;
+    if (desk.simulateUp.first)
     {
-        desk.driveUp.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
+        desk.simulateUp.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
     }
     desk.pending = true;
 #endif // PIN_TPUP
