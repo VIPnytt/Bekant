@@ -299,7 +299,7 @@ void ControllerService::sendCommand(LegHandler::Command command)
 }
 
 /**
- * @brief Starts desk recalibration when both desk nodes are idle.
+ * @brief Plays a confirmation tone and starts desk recalibration when both desk nodes are idle.
  */
 void ControllerService::recalibrate()
 {
