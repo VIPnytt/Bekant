@@ -595,7 +595,10 @@ void DeskService::setSimulateDown(bool state)
 {
 #ifdef PIN_TPDN
     simulateDown.first = state;
-    StatusHandler::setRed();
+    if (simulateDown.first)
+    {
+        StatusHandler::setRed();
+    }
     digitalWrite(PIN_TPDN, state ? LOW : HIGH);
 #endif // PIN_TPDN
 }
@@ -609,7 +612,10 @@ void DeskService::setSimulateUp(bool state)
 {
 #ifdef PIN_TPUP
     simulateUp.first = state;
-    StatusHandler::setRed();
+    if (simulateUp.first)
+    {
+        StatusHandler::setRed();
+    }
     digitalWrite(PIN_TPUP, simulateUp.first ? LOW : HIGH);
 #endif // PIN_TPUP
 }
