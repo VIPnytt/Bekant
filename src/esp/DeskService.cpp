@@ -161,9 +161,9 @@ void DeskService::save()
 /**
  * @brief Processes commands from a JSON request.
  *
- * Handles calibration, restart, desk positioning, preset updates, drive control,
- * output enable, reset, and tone commands. Position and preset heights outside
- * the configured reference range are ignored.
+ * Handles calibration, restart, desk positioning, preset updates, optional
+ * down/up output simulation, output enable, reset, and tone commands. Position
+ * and preset heights outside the configured reference range are ignored.
  *
  * @param doc JSON object containing the commands to process.
  */
@@ -369,6 +369,11 @@ void DeskService::getErrors(JsonArray &list)
     }
 }
 
+/**
+ * @brief Updates the physical button states and requests state publication when they change.
+ *
+ * @param flags Button-state bitmask with up, down, button 3, and button 4 in bits 0 through 3, respectively.
+ */
 void DeskService::setButtons(uint8_t flags)
 {
     if (flags != buttons)
@@ -587,9 +592,12 @@ void DeskService::setRx(std::span<const uint8_t> payload)
 }
 
 /**
- * @brief Sets the optional desk down-drive output state.
+ * @brief Controls the optional output that simulates pressing the desk's down button.
  *
- * @param state Whether the down-drive output should be active.
+ * Marks the status as an error when activation is requested but the observed
+ * output state is not active. Has no effect when down-button simulation is not configured.
+ *
+ * @param state Whether to activate the simulated down-button press.
  */
 void DeskService::setSimulateDown(bool state)
 {
@@ -604,9 +612,12 @@ void DeskService::setSimulateDown(bool state)
 }
 
 /**
- * @brief Sets the requested state of the optional desk drive-up output.
+ * @brief Controls the optional output that simulates pressing the desk's up button.
  *
- * @param state `true` to activate the output; `false` to deactivate it.
+ * Marks the status as an error when activation is requested but the observed
+ * output state is not active. Has no effect when up-button simulation is not configured.
+ *
+ * @param state Whether to activate the simulated up-button press.
  */
 void DeskService::setSimulateUp(bool state)
 {
