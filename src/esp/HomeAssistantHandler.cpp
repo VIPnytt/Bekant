@@ -56,7 +56,7 @@ void HomeAssistantHandler::origin()
 }
 
 /**
- * @brief Configures Home Assistant controls for desk height and preset recall.
+ * @brief Configures Home Assistant controls for height, preset recall, and optional up/down simulation.
  */
 void HomeAssistantHandler::controls()
 {
@@ -143,7 +143,7 @@ void HomeAssistantHandler::controls()
 }
 
 /**
- * @brief Configures Home Assistant sensors for desk height and stored presets.
+ * @brief Configures Home Assistant sensors for physical button states, desk height, and stored presets.
  */
 void HomeAssistantHandler::sensors()
 {
@@ -338,10 +338,10 @@ void HomeAssistantHandler::configuration()
  * @brief Configures diagnostic entities for Home Assistant discovery.
  *
  * Adds diagnostic controls and sensors for calibration, encoder data, firmware
- * versions, communication errors, positional offset, serial activity, temperature, Wi-Fi signal
- * strength, and optionally button inputs and power-supply voltage. Diagnostic
- * entities are categorized and selected hardware-specific entities are disabled
- * by default.
+ * versions, communication errors, positional offset, serial activity,
+ * temperature, Wi-Fi signal strength, and optional power-supply voltage.
+ * Diagnostic entities are categorized and selected hardware-specific entities
+ * are disabled by default.
  */
 void HomeAssistantHandler::diagnostic()
 {
