@@ -21,8 +21,7 @@ public:
 
     enum class State : uint8_t // NOLINT(performance-enum-size)
     {
-        BUTTON_DOWN = 1U,
-        BUTTON_UP,
+        BUTTONS,
         CONSOLE,
         INITIALIZATION,
         LIN,

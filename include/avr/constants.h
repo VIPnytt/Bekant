@@ -14,6 +14,8 @@ static constexpr unsigned int targetOffset{137U};
 
 namespace Pin
 {
+static constexpr unsigned char button3{PIN_PA0};
+static constexpr unsigned char button4{PIN_PA3};
 static constexpr unsigned char buttonDown{PIN_PB1};
 static constexpr unsigned char buttonUp{PIN_PB0};
 static constexpr unsigned char consoleRx{PIN_PA4};
