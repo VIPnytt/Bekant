@@ -39,6 +39,8 @@ public:
         VERSION,
     };
 
+    void begin();
+
     /**
      * Processes buffered console input.
      */

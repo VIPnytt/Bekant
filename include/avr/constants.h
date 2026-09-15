@@ -16,7 +16,10 @@ namespace Pin
 {
 static constexpr unsigned char buttonDown{PIN_PB1};
 static constexpr unsigned char buttonUp{PIN_PB0};
-static constexpr unsigned char lin{PIN_PA1};
+static constexpr unsigned char consoleRx{PIN_PA4};
+static constexpr unsigned char consoleTx{PIN_PA5};
+static constexpr unsigned char deskRx{PIN_PA2};
+static constexpr unsigned char deskTx{PIN_PA1};
 static constexpr unsigned char tone{PIN_PA7};
 } // namespace Pin
 

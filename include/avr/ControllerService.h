@@ -5,6 +5,7 @@
 #include "avr/ButtonHandler.h"
 #include "avr/ConsoleHandler.h"
 #include "avr/LegHandler.h"
+#include "avr/ToneHandler.h"
 
 class ControllerService
 {
@@ -33,8 +34,6 @@ public:
     void setPresetLow(unsigned int preset);
 
     void setTarget(unsigned int position);
-
-    void tone(unsigned int frequency);
 
     [[nodiscard]] unsigned int getEncoderMax() const;
     [[nodiscard]] unsigned int getEncoderMin() const;
@@ -91,6 +90,8 @@ private:
     LegHandler leg{};
 
     State state{State::IDLE};
+
+    ToneHandler tone{};
 
     /**
      * Polls both desk nodes for encoder and state data.

@@ -34,6 +34,8 @@ private:
     void stop();
 
 public:
+    void begin();
+
     void handle();
 };
 

@@ -15,7 +15,8 @@
  */
 unsigned char LegHandler::begin()
 {
-    pinMode(Pin::lin, OUTPUT);
+    pinMode(Pin::deskRx, INPUT);
+    pinMode(Pin::deskTx, OUTPUT);
     Serial.begin(baudRate);
     constexpr unsigned char initial[3U][2U]{
         {0x7U, 0xFFU},
@@ -220,10 +221,10 @@ void LegHandler::sendResponse(unsigned char pid)
 void LegHandler::serialBreak()
 {
     Serial.end();
-    pinMode(Pin::lin, OUTPUT);
-    digitalWrite(Pin::lin, LOW);
+    pinMode(Pin::deskTx, OUTPUT);
+    digitalWrite(Pin::deskTx, LOW);
     delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baudRate)); // ~780 µs
-    digitalWrite(Pin::lin, HIGH);
+    digitalWrite(Pin::deskTx, HIGH);
     delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baudRate));
     Serial.begin(baudRate);
 }

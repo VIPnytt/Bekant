@@ -17,22 +17,21 @@
  */
 void ControllerService::begin()
 {
-    Serial1.begin(115'200UL);
+    console.begin();
     delay(0b1UL << 11U);
     wdt_enable(WDTO_8S);
-    pinMode(Pin::buttonDown, INPUT_PULLUP);
-    pinMode(Pin::buttonUp, INPUT_PULLUP);
-    pinMode(Pin::tone, OUTPUT);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
     ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
+    button.begin();
+    tone.begin();
     const unsigned char init{leg.begin()};
     if (init != 0U)
     {
         ConsoleHandler::send(ConsoleHandler::State::INITIALIZATION, init);
-        tone(0b1U << 8U);
+        ToneHandler::play(0b1U << 8U, 0b1U << 7U);
         return;
     }
     wdt_reset();
@@ -116,7 +115,7 @@ bool ControllerService::read()
     {
         if (pending)
         {
-            tone(0b1U << 8U);
+            ToneHandler::play(0b1U << 8U, 0b1U << 7U);
         }
         return false;
     }
@@ -300,34 +299,13 @@ void ControllerService::sendCommand(LegHandler::Command command)
 }
 
 /**
- * @brief Generates a square-wave tone at the specified frequency.
- *
- * @param frequency Tone frequency in hertz.
- */
-void ControllerService::tone(unsigned int frequency)
-{
-    if (frequency != 0U)
-    {
-        const unsigned int halfPeriod{static_cast<unsigned int>(500'000UL / frequency)};
-        const unsigned int delay{static_cast<unsigned int>(halfPeriod - (48'000'000UL / F_CPU))};
-        for (unsigned long idx{0UL}; idx < (0b1UL << 17U) / halfPeriod; ++idx)
-        {
-            digitalWrite(Pin::tone, HIGH);
-            delayMicroseconds(delay);
-            digitalWrite(Pin::tone, LOW);
-            delayMicroseconds(delay);
-        }
-    }
-}
-
-/**
- * @brief Starts desk recalibration when both desk nodes are idle.
+ * @brief Plays a confirmation tone and starts desk recalibration when both desk nodes are idle.
  */
 void ControllerService::recalibrate()
 {
     if (isIdle())
     {
-        tone(0b1U << 12U);
+        ToneHandler::play(0b1U << 12U, 0b1U << 10U);
         pending = false;
         state = State::RECAL_PREPARE;
     }

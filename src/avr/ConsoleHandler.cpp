@@ -3,7 +3,20 @@
 #include "avr/ConsoleHandler.h"
 
 #include "avr/ControllerService.h"
+#include "avr/ToneHandler.h"
 #include "avr/constants.h"
+
+#include <wiring.h>
+
+/**
+ * @brief Configures the console pins and starts Serial1 at 115200 baud.
+ */
+void ConsoleHandler::begin()
+{
+    pinMode(Pin::consoleRx, INPUT);
+    pinMode(Pin::consoleTx, OUTPUT);
+    Serial1.begin(115'200UL);
+}
 
 /**
  * @brief Buffers a serial command and parses it when its complete payload is received.
@@ -41,7 +54,7 @@ void ConsoleHandler::handle()
 /**
  * @brief Applies the buffered command when its command and payload are valid.
  *
- * Recalibrates, updates the target or presets, or sets the tone frequency.
+ * Recalibrates, updates the target or presets, or plays a tone.
  * Position targets outside the encoder limits and unsupported command or payload
  * combinations are ignored.
  */
@@ -79,7 +92,8 @@ void ConsoleHandler::parse()
     }
     else if (commandRx == Command::TONE && lengthRx == 2U)
     {
-        controller.tone(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U);
+        ToneHandler::play(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U,
+                          0b1U << 10U);
     }
 }
 
