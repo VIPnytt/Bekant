@@ -15,10 +15,10 @@ public:
      */
     enum class Command : unsigned char
     {
-        CALIBRATE = 1U,
         POSITION,
         PRESET_HIGH,
         PRESET_LOW,
+        RECALIBRATE,
         TONE,
     };
 

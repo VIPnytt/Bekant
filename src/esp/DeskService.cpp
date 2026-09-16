@@ -128,6 +128,22 @@ void DeskService::handle()
     }
 }
 
+void DeskService::parseAction(std::string_view action)
+{
+    if (action == "recalibrate")
+    {
+        console.send(ConsoleHandler::Command::RECALIBRATE);
+    }
+    else if (action == "restart")
+    {
+        mqtt.disconnect();
+        StatusHandler::setNone();
+        digitalWrite(PIN_RST, LOW);
+        vTaskDelay(0b1U << 7U);
+        ESP.restart();
+    }
+}
+
 /**
  * @brief Applies tone settings from a JSON object and sends a playback command.
  *
@@ -213,19 +229,7 @@ void DeskService::request(JsonObjectConst doc)
 {
     if (doc["action"].is<std::string_view>())
     {
-        const std::string_view action{doc["action"].as<std::string_view>()};
-        if (action == "calibrate")
-        {
-            console.send(ConsoleHandler::Command::CALIBRATE);
-        }
-        else if (action == "restart")
-        {
-            mqtt.disconnect();
-            StatusHandler::setNone();
-            digitalWrite(PIN_RST, LOW);
-            vTaskDelay(0b1U << 7U);
-            ESP.restart();
-        }
+        parseAction(doc["action"].as<std::string_view>());
     }
     if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["desk"].as<float>() >= ReferenceHeight::heightLow)

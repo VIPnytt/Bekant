@@ -12,10 +12,10 @@ class ConsoleHandler
 public:
     enum class Command : uint8_t // NOLINT(performance-enum-size)
     {
-        CALIBRATE = 1U,
         POSITION,
         PRESET_HIGH,
         PRESET_LOW,
+        RECALIBRATE,
         TONE,
     };
 

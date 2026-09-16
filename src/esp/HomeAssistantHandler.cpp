@@ -329,6 +329,17 @@ void HomeAssistantHandler::configuration()
         reboot[ComponentAbbreviations::unique_id].set("reboot");
     }
     {
+        JsonObject recalibrateLegs{discovery[ComponentAbbreviations::components]["recalibrate"].to<JsonObject>()};
+        recalibrateLegs[ComponentAbbreviations::command_template].set(R"({"action":"{{value}}"})");
+        recalibrateLegs[ComponentAbbreviations::command_topic].set(commandTopic);
+        recalibrateLegs[ComponentAbbreviations::entity_category].set(entityCategory);
+        recalibrateLegs[ComponentAbbreviations::icon].set("mdi:sync-alert");
+        recalibrateLegs[ComponentAbbreviations::name].set("Recalibrate legs");
+        recalibrateLegs[ComponentAbbreviations::payload_press].set("recalibrate");
+        recalibrateLegs[ComponentAbbreviations::platform].set("button");
+        recalibrateLegs[ComponentAbbreviations::unique_id].set("recalibrate");
+    }
+    {
         JsonObject reset{discovery[ComponentAbbreviations::components]["reset"].to<JsonObject>()};
         reset[ComponentAbbreviations::command_template].set(R"({"reset":{{value}}})");
         reset[ComponentAbbreviations::command_topic].set(commandTopic);
@@ -397,17 +408,6 @@ void HomeAssistantHandler::configuration()
 void HomeAssistantHandler::diagnostic()
 {
     constexpr std::string_view entityCategory{"diagnostic"};
-    {
-        JsonObject calibrate{discovery[ComponentAbbreviations::components]["calibrate"].to<JsonObject>()};
-        calibrate[ComponentAbbreviations::command_template].set(R"({"action":"{{value}}"})");
-        calibrate[ComponentAbbreviations::command_topic].set(commandTopic);
-        calibrate[ComponentAbbreviations::entity_category].set(entityCategory);
-        calibrate[ComponentAbbreviations::icon].set("mdi:arrow-collapse-down");
-        calibrate[ComponentAbbreviations::name].set("Calibrate");
-        calibrate[ComponentAbbreviations::payload_press].set("calibrate");
-        calibrate[ComponentAbbreviations::platform].set("button");
-        calibrate[ComponentAbbreviations::unique_id].set("calibrate");
-    }
     {
         JsonObject errors{discovery[ComponentAbbreviations::components]["error"].to<JsonObject>()};
         errors[ComponentAbbreviations::entity_category].set(entityCategory);
