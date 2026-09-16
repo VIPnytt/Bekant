@@ -17,9 +17,9 @@
  */
 void ControllerService::begin()
 {
-    console.begin();
-    delay(0b1UL << 11U);
     wdt_enable(WDTO_8S);
+    console.begin();
+    delay(0b1UL << 10U);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
