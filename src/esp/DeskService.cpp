@@ -128,6 +128,14 @@ void DeskService::handle()
     }
 }
 
+/**
+ * @brief Applies a named maintenance action.
+ *
+ * Supports recalibrating the leg encoder sensors and restarting the ESP32.
+ * Unsupported action names are ignored.
+ *
+ * @param action Action name from the JSON request; "recalibrate" and "restart" are supported.
+ */
 void DeskService::parseAction(std::string_view action)
 {
     if (action == "recalibrate")
@@ -217,7 +225,7 @@ void DeskService::save()
 /**
  * @brief Processes commands from a JSON request.
  *
- * Handles calibration, restart, desk positioning, preset updates, optional
+ * Handles recalibration, restart, desk positioning, preset updates, optional
  * down/up output simulation, output enable, reset, and tone commands. Position
  * and preset heights outside the configured reference range are ignored.
  * Tone objects reuse the current setting for duration or frequency values that
