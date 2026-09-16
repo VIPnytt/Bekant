@@ -233,6 +233,7 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 | Preset high | Move to the high preset               |             |
 | Preset low  | Move to the low preset                |             |
 | Raise       | Simulate a physical up-button press   | `PIN_TPUP`  |
+| Tone        | Play the configured tone              |             |
 
 ### Sensors
 
@@ -248,13 +249,15 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 
 ### Configuration
 
-| Name          | Description                                | Requirement |
-| ------------- | ------------------------------------------ | ----------- |
-| Output enable | Control the logic level shifter’s `OE` pin | `PIN_OE`    |
-| Preset high   | Set the high preset                        |             |
-| Preset low    | Set the low preset                         |             |
-| Reboot        | Reboot the ESP32                           |             |
-| Reset         | Hold the Megadesk controller in reset      | `PIN_RST`   |
+| Name           | Description                                | Requirement |
+| -------------- | ------------------------------------------ | ----------- |
+| Output enable  | Control the logic level shifter’s `OE` pin | `PIN_OE`    |
+| Preset high    | Set the high preset                        |             |
+| Preset low     | Set the low preset                         |             |
+| Reboot         | Reboot the ESP32                           |             |
+| Reset          | Hold the Megadesk controller in reset      | `PIN_RST`   |
+| Tone duration  | Set the playback duration in seconds       |             |
+| Tone frequency | Set the audio pitch in kHz                 |             |
 
 ### Diagnostics
 

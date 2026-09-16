@@ -50,6 +50,8 @@ private:
     uint16_t encoder9{0U};
     uint16_t presetLow{0U};
     uint16_t presetHigh{0U};
+    uint16_t toneDuration{0b1U << 9U};
+    uint16_t toneFrequency{0b1U << 12U};
 
     unsigned long lastMillis{0U};
 
@@ -79,6 +81,8 @@ private:
     WifiHandler wifi{};
 
     void getErrors(JsonArray &list);
+
+    void parseTone(const JsonObjectConst &doc);
 
     void save();
 

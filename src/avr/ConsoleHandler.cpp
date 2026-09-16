@@ -90,10 +90,10 @@ void ConsoleHandler::parse()
         controller.setPresetLow(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U])
                                                                               << 8U);
     }
-    else if (commandRx == Command::TONE && lengthRx == 2U)
+    else if (commandRx == Command::TONE && lengthRx == 4U)
     {
         ToneHandler::play(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U,
-                          0b1U << 10U);
+                          static_cast<unsigned int>(bufferRx[3U]) | static_cast<unsigned int>(bufferRx[4U]) << 8U);
     }
 }
 
