@@ -128,6 +128,16 @@ void DeskService::handle()
     }
 }
 
+/**
+ * @brief Applies tone settings from a JSON object and sends a playback command.
+ *
+ * Nonzero 16-bit duration and frequency values replace the current settings.
+ * Missing, invalid, or zero values leave their respective settings unchanged.
+ * Changed settings are marked for persistence and publication, and the command
+ * always uses the resulting settings.
+ *
+ * @param doc Tone configuration object with duration in milliseconds and frequency in hertz.
+ */
 void DeskService::parseTone(const JsonObjectConst &doc)
 {
     if (doc["duration"].is<uint16_t>())
@@ -165,7 +175,7 @@ void DeskService::safeMode()
 }
 
 /**
- * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
+ * @brief Persists encoder, preset, tone, and output-enable state to non-volatile storage.
  */
 void DeskService::save()
 {
@@ -194,6 +204,8 @@ void DeskService::save()
  * Handles calibration, restart, desk positioning, preset updates, optional
  * down/up output simulation, output enable, reset, and tone commands. Position
  * and preset heights outside the configured reference range are ignored.
+ * Tone objects reuse the current setting for duration or frequency values that
+ * are missing, invalid, or zero.
  *
  * @param doc JSON object containing the commands to process.
  */
