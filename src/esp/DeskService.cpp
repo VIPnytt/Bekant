@@ -381,7 +381,8 @@ uint16_t DeskService::encode(float height)
 }
 
 /**
- * @brief Appends descriptions of a firmware mismatch and recorded leg initialization and communication errors.
+ * @brief Appends descriptions of a firmware mismatch, reset causes, and recorded initialization or communication
+ * errors.
  *
  * @param list JSON array to append to.
  */
@@ -666,6 +667,11 @@ void DeskService::setPresetLow(uint16_t preset)
  */
 void DeskService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
 
+/**
+ * @brief Stores the AVR reset-cause flags and requests state publication when they change.
+ *
+ * @param flags AVR MCUSR reset-cause bitmask.
+ */
 void DeskService::setResetReason(uint8_t flags)
 {
     if (flags != resetReason)
@@ -902,8 +908,8 @@ void DeskService::onDown()
 /**
  * @brief Updates the reset state and status indicator from the reset input.
  *
- * Clears recorded communication errors and removes captured serial payloads from subsequent publications while reset
- * is asserted.
+ * Clears recorded communication errors, the AVR reset cause, and captured serial payloads from subsequent publications
+ * while reset is asserted.
  */
 void DeskService::onReset()
 {
