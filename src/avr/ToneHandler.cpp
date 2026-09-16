@@ -4,6 +4,7 @@
 
 #include "avr/constants.h"
 
+#include <avr/wdt.h>
 #include <wiring.h>
 
 /**
@@ -31,6 +32,7 @@ void ToneHandler::play(unsigned int frequency, unsigned int duration)
         return;
     }
     const unsigned int delay{halfPeriod - overhead};
+    wdt_reset();
     for (unsigned long idx{0UL}; idx < (duration * 1000UL) / (2UL * halfPeriod); ++idx)
     {
         digitalWrite(Pin::tone, HIGH);
@@ -38,6 +40,7 @@ void ToneHandler::play(unsigned int frequency, unsigned int duration)
         digitalWrite(Pin::tone, LOW);
         delayMicroseconds(delay);
     }
+    wdt_reset();
 }
 
 #endif // ARDUINO_ARCH_AVR

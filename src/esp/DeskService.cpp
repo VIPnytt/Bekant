@@ -137,6 +137,7 @@ void DeskService::parseTone(const JsonObjectConst &doc)
         {
             toneDuration = _duration;
             saved = false;
+            pending = true;
         }
     }
     if (doc["frequency"].is<uint16_t>())
@@ -146,6 +147,7 @@ void DeskService::parseTone(const JsonObjectConst &doc)
         {
             toneFrequency = _frequency;
             saved = false;
+            pending = true;
         }
     }
     console.send(ConsoleHandler::Command::TONE,
