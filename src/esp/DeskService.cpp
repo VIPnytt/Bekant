@@ -637,7 +637,11 @@ void DeskService::setPending() { pending = true; }
  */
 void DeskService::setPresetHigh(uint16_t preset)
 {
-    if (preset != presetHigh)
+    if (preset == 0xFFFFU && presetHigh <= ReferenceHeight::encoderHigh && presetHigh >= ReferenceHeight::encoderLow)
+    {
+        console.send(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
+    }
+    else if (preset != presetHigh)
     {
         presetHigh = preset;
         saved = false;
@@ -652,7 +656,11 @@ void DeskService::setPresetHigh(uint16_t preset)
  */
 void DeskService::setPresetLow(uint16_t preset)
 {
-    if (preset != presetLow)
+    if (preset == 0xFFFFU && presetLow <= ReferenceHeight::encoderHigh && presetLow >= ReferenceHeight::encoderLow)
+    {
+        console.send(ConsoleHandler::Command::PRESET_LOW, presetLow);
+    }
+    else if (preset != presetLow)
     {
         presetLow = preset;
         saved = false;
