@@ -347,8 +347,7 @@ void HomeAssistantHandler::configuration()
     }
     {
         JsonObject toneDuration{discovery[ComponentAbbreviations::components]["tone_duration"].to<JsonObject>()};
-        toneDuration[ComponentAbbreviations::command_template].set(
-            R"({"tone":{"duration":{{(value*1000)|int}}}})");
+        toneDuration[ComponentAbbreviations::command_template].set(R"({"tone":{"duration":{{(value*1000)|int}}}})");
         toneDuration[ComponentAbbreviations::command_topic].set(commandTopic);
         toneDuration[ComponentAbbreviations::device_class].set("duration");
         toneDuration[ComponentAbbreviations::enabled_by_default].set(false);
@@ -367,8 +366,7 @@ void HomeAssistantHandler::configuration()
     }
     {
         JsonObject toneFrequency{discovery[ComponentAbbreviations::components]["tone_frequency"].to<JsonObject>()};
-        toneFrequency[ComponentAbbreviations::command_template].set(
-            R"({"tone":{"frequency":{{(value*1000)|int}}}})");
+        toneFrequency[ComponentAbbreviations::command_template].set(R"({"tone":{"frequency":{{(value*1000)|int}}}})");
         toneFrequency[ComponentAbbreviations::command_topic].set(commandTopic);
         toneFrequency[ComponentAbbreviations::device_class].set("frequency");
         toneFrequency[ComponentAbbreviations::enabled_by_default].set(false);
