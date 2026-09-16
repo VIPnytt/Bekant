@@ -298,9 +298,9 @@ void DeskService::transmit(JsonDocument &doc)
     doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
-    JsonArray errors{doc["errors"].to<JsonArray>()};
-    getErrors(errors);
-    console.getErrors(errors);
+    JsonArray issues{doc["issues"].to<JsonArray>()};
+    getIssues(issues);
+    console.getIssues(issues);
     const float leg8{decode(static_cast<float>(encoder8))};
     const float leg9{decode(static_cast<float>(encoder9))};
     doc["legs"][0U].set(leg8);
@@ -385,7 +385,7 @@ uint16_t DeskService::encode(float height)
  *
  * @param list JSON array to append to.
  */
-void DeskService::getErrors(JsonArray &list)
+void DeskService::getIssues(JsonArray &list)
 {
     if (versionAvr != fingerprint(version))
     {
@@ -422,6 +422,40 @@ void DeskService::getErrors(JsonArray &list)
     if ((errorInit & (0b1U << 3U)) != 0U)
     {
         list.add("probe B: checksum mismatch");
+    }
+    if ((resetReason & (0b1U << 2U)) != 0U)
+    {
+        list.add("MCUSR: brown-out reset");
+    }
+    if ((resetReason & (0b1U << 3U)) != 0U)
+    {
+        list.add("MCUSR: watchdog reset");
+    }
+    switch (esp_reset_reason())
+    {
+    case esp_reset_reason_t::ESP_RST_PANIC:
+        list.add("ESP32: panic reset");
+        break;
+    case esp_reset_reason_t::ESP_RST_INT_WDT:
+        list.add("ESP32: interrupt watchdog reset");
+        break;
+    case esp_reset_reason_t::ESP_RST_TASK_WDT:
+        list.add("ESP32: task watchdog reset");
+        break;
+    case esp_reset_reason_t::ESP_RST_WDT:
+        list.add("ESP32: watchdog reset");
+        break;
+    case esp_reset_reason_t::ESP_RST_BROWNOUT:
+        list.add("ESP32: brown-out reset");
+        break;
+    case esp_reset_reason_t::ESP_RST_PWR_GLITCH:
+        list.add("ESP32: power glitch reset");
+        break;
+    case esp_reset_reason_t::ESP_RST_CPU_LOCKUP:
+        list.add("ESP32: CPU lock-up reset");
+        break;
+    default:
+        break;
     }
 }
 
@@ -631,6 +665,15 @@ void DeskService::setPresetLow(uint16_t preset)
  * @param state Whether to assert the reset signal.
  */
 void DeskService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
+
+void DeskService::setResetReason(uint8_t flags)
+{
+    if (flags != resetReason)
+    {
+        resetReason = flags;
+        pending = true;
+    }
+}
 
 /**
  * @brief Stores a newly received serial payload for publication.
@@ -872,7 +915,8 @@ void DeskService::onReset()
         desk.errorInit = 0U;
         desk.lengthRx = 0U;
         desk.lengthTx = 0U;
-        desk.console.reset();
+        desk.resetReason = 0U;
+        desk.console.clear();
         StatusHandler::setNone(true);
     }
     else

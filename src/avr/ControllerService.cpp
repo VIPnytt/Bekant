@@ -17,13 +17,16 @@
  */
 void ControllerService::begin()
 {
+    const unsigned char _mcusr{MCUSR};
+    MCUSR = 0U;
     wdt_enable(WDTO_8S);
     console.begin();
     delay(0b1UL << 10U);
-    EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
-    EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
+    ConsoleHandler::send(ConsoleHandler::State::RESET_REASON, _mcusr);
+    EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
+    EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
     button.begin();
     tone.begin();

@@ -42,6 +42,7 @@ private:
     uint8_t error8{0U};
     uint8_t error9{0U};
     uint8_t errorInit{0U};
+    uint8_t resetReason{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
     uint8_t versionAvr{0U};
@@ -80,7 +81,7 @@ private:
 
     WifiHandler wifi{};
 
-    void getErrors(JsonArray &list);
+    void getIssues(JsonArray &list);
 
     void parseAction(std::string_view action);
 
@@ -140,6 +141,8 @@ public:
     void setPresetHigh(uint16_t encoder);
 
     void setPresetLow(uint16_t encoder);
+
+    void setResetReason(uint8_t flags);
 
     void setRx(std::span<const uint8_t> payload);
 

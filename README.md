@@ -262,16 +262,16 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 
 ### Diagnostics
 
-| Name         | Description                             | Requirement |
-| ------------ | --------------------------------------- | ----------- |
-| Errors       | Currently detected communication errors |             |
-| Firmware     | ESP32 firmware version                  |             |
-| Offset       | Current leg offset                      |             |
-| Position     | Average encoder position                |             |
-| Power supply | Desk power-supply input voltage         | `PIN_ADC`   |
-| Serial RX    | Last UART message received              |             |
-| Serial TX    | Last UART message sent                  |             |
-| Temperature  | Internal temperature of the ESP32       |             |
-| Wi-Fi signal | ESP32 Wi-Fi RSSI                        |             |
+| Name         | Description                       | Requirement |
+| ------------ | --------------------------------- | ----------- |
+| Firmware     | ESP32 firmware version            |             |
+| Issues       | Alerts and error messages         |             |
+| Offset       | Current leg offset                |             |
+| Position     | Average encoder position          |             |
+| Power supply | Desk power-supply input voltage   | `PIN_ADC`   |
+| Serial RX    | Last UART message received        |             |
+| Serial TX    | Last UART message sent            |             |
+| Temperature  | Internal temperature of the ESP32 |             |
+| Wi-Fi signal | ESP32 Wi-Fi RSSI                  |             |
 
 Only a handful of entities are enabled by default to avoid cluttering the Home Assistant interface.

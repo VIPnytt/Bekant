@@ -29,6 +29,7 @@ public:
         NODE9,
         PRESET_HIGH,
         PRESET_LOW,
+        RESET_REASON,
         VERSION,
     };
 
@@ -37,19 +38,19 @@ public:
      */
     void begin();
 
-    void getErrors(JsonArray &errors);
-
     /**
      * Processes available console input.
      */
     void handle();
 
+    void clear();
+
+    void getIssues(JsonArray &list);
+
     /**
      * Forwards buffered console data.
      */
     void forward();
-
-    void reset();
 
     void send(Command command);
 

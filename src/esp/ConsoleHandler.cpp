@@ -75,52 +75,52 @@ void ConsoleHandler::forward()
 /**
  * @brief Appends descriptions of recorded serial communication errors.
  *
- * @param errors JSON array to append to.
+ * @param list JSON array to append to.
  */
-void ConsoleHandler::getErrors(JsonArray &errors)
+void ConsoleHandler::getIssues(JsonArray &list)
 {
     if ((errorLin & 0b1U) != 0U)
     {
-        errors.add("USART0: parity error");
+        list.add("USART0: parity error");
     }
     if ((errorLin & (0b1U << 1U)) != 0U)
     {
-        errors.add("USART0: data overrun");
+        list.add("USART0: data overrun");
     }
     if ((errorLin & (0b1U << 2U)) != 0U)
     {
-        errors.add("USART0: frame error");
+        list.add("USART0: frame error");
     }
     if ((errorTx & 0b1U) != 0U)
     {
-        errors.add("USART1: parity error");
+        list.add("USART1: parity error");
     }
     if ((errorTx & (0b1U << 1U)) != 0U)
     {
-        errors.add("USART1: data overrun");
+        list.add("USART1: data overrun");
     }
     if ((errorTx & (0b1U << 2U)) != 0U)
     {
-        errors.add("USART1: frame error");
+        list.add("USART1: frame error");
     }
     switch (errorRx)
     {
-    case hardwareSerial_error_t::UART_NO_ERROR:
-        break;
     case hardwareSerial_error_t::UART_BREAK_ERROR:
-        errors.add("UART: break");
+        list.add("UART: break");
         break;
     case hardwareSerial_error_t::UART_BUFFER_FULL_ERROR:
-        errors.add("UART: buffer full");
+        list.add("UART: buffer full");
         break;
     case hardwareSerial_error_t::UART_FIFO_OVF_ERROR:
-        errors.add("UART: FIFO overflow");
+        list.add("UART: FIFO overflow");
         break;
     case hardwareSerial_error_t::UART_FRAME_ERROR:
-        errors.add("UART: frame error");
+        list.add("UART: frame error");
         break;
     case hardwareSerial_error_t::UART_PARITY_ERROR:
-        errors.add("UART: parity error");
+        list.add("UART: parity error");
+        break;
+    default:
         break;
     }
 }
@@ -179,6 +179,10 @@ void ConsoleHandler::parse()
         desk.setPresetLow(static_cast<uint16_t>(bufferRx.at(1U)) |
                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
     }
+    else if (stateRx == State::RESET_REASON && lengthRx == 1U)
+    {
+        desk.setResetReason(bufferRx.at(1U));
+    }
     else if (stateRx == State::VERSION && lengthRx == 1U)
     {
         desk.setVersion(bufferRx.at(1U));
@@ -192,7 +196,7 @@ void ConsoleHandler::parse()
 /**
  * @brief Clears all recorded serial communication errors.
  */
-void ConsoleHandler::reset()
+void ConsoleHandler::clear()
 {
     errorLin = 0U;
     errorRx = hardwareSerial_error_t::UART_NO_ERROR;
