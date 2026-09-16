@@ -82,6 +82,8 @@ private:
 
     void getErrors(JsonArray &list);
 
+    void parseAction(std::string_view action);
+
     void parseTone(const JsonObjectConst &doc);
 
     void save();

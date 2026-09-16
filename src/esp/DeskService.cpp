@@ -129,6 +129,30 @@ void DeskService::handle()
 }
 
 /**
+ * @brief Applies a named maintenance action.
+ *
+ * Supports recalibrating the leg encoder sensors and restarting the ESP32.
+ * Unsupported action names are ignored.
+ *
+ * @param action Action name from the JSON request; "recalibrate" and "restart" are supported.
+ */
+void DeskService::parseAction(std::string_view action)
+{
+    if (action == "recalibrate")
+    {
+        console.send(ConsoleHandler::Command::RECALIBRATE);
+    }
+    else if (action == "restart")
+    {
+        mqtt.disconnect();
+        StatusHandler::setNone();
+        digitalWrite(PIN_RST, LOW);
+        vTaskDelay(0b1U << 7U);
+        ESP.restart();
+    }
+}
+
+/**
  * @brief Applies tone settings from a JSON object and sends a playback command.
  *
  * Nonzero 16-bit duration and frequency values replace the current settings.
@@ -201,7 +225,7 @@ void DeskService::save()
 /**
  * @brief Processes commands from a JSON request.
  *
- * Handles calibration, restart, desk positioning, preset updates, optional
+ * Handles recalibration, restart, desk positioning, preset updates, optional
  * down/up output simulation, output enable, reset, and tone commands. Position
  * and preset heights outside the configured reference range are ignored.
  * Tone objects reuse the current setting for duration or frequency values that
@@ -213,19 +237,7 @@ void DeskService::request(JsonObjectConst doc)
 {
     if (doc["action"].is<std::string_view>())
     {
-        const std::string_view action{doc["action"].as<std::string_view>()};
-        if (action == "calibrate")
-        {
-            console.send(ConsoleHandler::Command::CALIBRATE);
-        }
-        else if (action == "restart")
-        {
-            mqtt.disconnect();
-            StatusHandler::setNone();
-            digitalWrite(PIN_RST, LOW);
-            vTaskDelay(0b1U << 7U);
-            ESP.restart();
-        }
+        parseAction(doc["action"].as<std::string_view>());
     }
     if (doc["desk"].is<float>() && doc["desk"].as<float>() <= ReferenceHeight::heightHigh &&
         doc["desk"].as<float>() >= ReferenceHeight::heightLow)

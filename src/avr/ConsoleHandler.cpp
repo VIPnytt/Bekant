@@ -60,11 +60,7 @@ void ConsoleHandler::handle()
  */
 void ConsoleHandler::parse()
 {
-    if (commandRx == Command::CALIBRATE && lengthRx == 0U)
-    {
-        controller.recalibrate();
-    }
-    else if (commandRx == Command::POSITION && lengthRx == 2U)
+    if (commandRx == Command::POSITION && lengthRx == 2U)
     {
         const uint16_t target{static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U]) << 8U};
         if (target <= Encoder::maxLimit && target >= Encoder::minLimit)
@@ -89,6 +85,10 @@ void ConsoleHandler::parse()
     {
         controller.setPresetLow(static_cast<unsigned int>(bufferRx[1U]) | static_cast<unsigned int>(bufferRx[2U])
                                                                               << 8U);
+    }
+    else if (commandRx == Command::RECALIBRATE && lengthRx == 0U)
+    {
+        controller.recalibrate();
     }
     else if (commandRx == Command::TONE && lengthRx == 4U)
     {
