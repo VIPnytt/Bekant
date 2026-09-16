@@ -23,7 +23,7 @@ void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
  */
 void ToneHandler::play(unsigned int frequency, unsigned int duration)
 {
-    if (duration == 0U || frequency < minFrequency || frequency > maxFrequency)
+    if (duration == 0U || frequency < minFrequency)
     {
         return;
     }

@@ -140,6 +140,19 @@ void HomeAssistantHandler::controls()
         raise[ComponentAbbreviations::value_template].set("{{value_json.simulate.up}}");
     }
 #endif // PIN_TPUP
+    {
+        JsonObject tone{discovery[ComponentAbbreviations::components]["tone"].to<JsonObject>()};
+        tone[ComponentAbbreviations::command_template].set(R"({"tone":{}})");
+        tone[ComponentAbbreviations::command_topic].set(commandTopic);
+        tone[ComponentAbbreviations::enabled_by_default].set(false);
+        tone[ComponentAbbreviations::icon].set("mdi:music-note-outline");
+        tone[ComponentAbbreviations::json_attributes_template].set(
+            R"({"Duration":{{value_json.tone.duration}},"Frequency":{{value_json.tone.frequency}}})");
+        tone[ComponentAbbreviations::json_attributes_topic].set(stateTopic);
+        tone[ComponentAbbreviations::name].set("Tone");
+        tone[ComponentAbbreviations::platform].set("button");
+        tone[ComponentAbbreviations::unique_id].set("tone");
+    }
 }
 
 /**
@@ -331,6 +344,46 @@ void HomeAssistantHandler::configuration()
         reset[ComponentAbbreviations::state_topic].set(stateTopic);
         reset[ComponentAbbreviations::unique_id].set("reset");
         reset[ComponentAbbreviations::value_template].set("{{value_json.reset}}");
+    }
+    {
+        JsonObject toneDuration{discovery[ComponentAbbreviations::components]["tone_duration"].to<JsonObject>()};
+        toneDuration[ComponentAbbreviations::command_template].set(
+            R"({"tone":{"duration":{{(value*1000)|int}}}})");
+        toneDuration[ComponentAbbreviations::command_topic].set(commandTopic);
+        toneDuration[ComponentAbbreviations::device_class].set("duration");
+        toneDuration[ComponentAbbreviations::enabled_by_default].set(false);
+        toneDuration[ComponentAbbreviations::entity_category].set(entityCategory);
+        toneDuration[ComponentAbbreviations::icon].set("mdi:timer-music-outline");
+        toneDuration[ComponentAbbreviations::max].set(8U);
+        toneDuration[ComponentAbbreviations::min].set(.1F);
+        toneDuration[ComponentAbbreviations::mode].set("slider");
+        toneDuration[ComponentAbbreviations::name].set("Tone duration");
+        toneDuration[ComponentAbbreviations::platform].set("number");
+        toneDuration[ComponentAbbreviations::state_topic].set(stateTopic);
+        toneDuration[ComponentAbbreviations::step].set(.1F);
+        toneDuration[ComponentAbbreviations::unique_id].set("tone_duration");
+        toneDuration[ComponentAbbreviations::unit_of_measurement].set("s");
+        toneDuration[ComponentAbbreviations::value_template].set("{{value_json.tone.duration/1000}}");
+    }
+    {
+        JsonObject toneFrequency{discovery[ComponentAbbreviations::components]["tone_frequency"].to<JsonObject>()};
+        toneFrequency[ComponentAbbreviations::command_template].set(
+            R"({"tone":{"frequency":{{(value*1000)|int}}}})");
+        toneFrequency[ComponentAbbreviations::command_topic].set(commandTopic);
+        toneFrequency[ComponentAbbreviations::device_class].set("frequency");
+        toneFrequency[ComponentAbbreviations::enabled_by_default].set(false);
+        toneFrequency[ComponentAbbreviations::entity_category].set(entityCategory);
+        toneFrequency[ComponentAbbreviations::icon].set("mdi:sine-wave");
+        toneFrequency[ComponentAbbreviations::max].set(8U);
+        toneFrequency[ComponentAbbreviations::min].set(.1F);
+        toneFrequency[ComponentAbbreviations::mode].set("slider");
+        toneFrequency[ComponentAbbreviations::name].set("Tone frequency");
+        toneFrequency[ComponentAbbreviations::platform].set("number");
+        toneFrequency[ComponentAbbreviations::state_topic].set(stateTopic);
+        toneFrequency[ComponentAbbreviations::step].set(.1F);
+        toneFrequency[ComponentAbbreviations::unique_id].set("tone_frequency");
+        toneFrequency[ComponentAbbreviations::unit_of_measurement].set("kHz");
+        toneFrequency[ComponentAbbreviations::value_template].set("{{value_json.tone.frequency/1000}}");
     }
 }
 
