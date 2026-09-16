@@ -16,6 +16,7 @@ void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
  * @brief Generates a blocking square-wave tone on the tone output.
  *
  * Unsupported frequencies and zero-duration requests produce no output.
+ * Accepted requests reset the watchdog before and after tone generation.
  *
  * @param frequency Tone frequency in hertz.
  * @param duration Approximate playback duration in milliseconds.
