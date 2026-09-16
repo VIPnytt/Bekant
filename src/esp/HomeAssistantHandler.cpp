@@ -353,9 +353,9 @@ void HomeAssistantHandler::configuration()
         toneDuration[ComponentAbbreviations::enabled_by_default].set(false);
         toneDuration[ComponentAbbreviations::entity_category].set(entityCategory);
         toneDuration[ComponentAbbreviations::icon].set("mdi:timer-music-outline");
-        toneDuration[ComponentAbbreviations::max].set(8U);
+        toneDuration[ComponentAbbreviations::max].set(65.5F);
         toneDuration[ComponentAbbreviations::min].set(.1F);
-        toneDuration[ComponentAbbreviations::mode].set("slider");
+        toneDuration[ComponentAbbreviations::mode].set("box");
         toneDuration[ComponentAbbreviations::name].set("Tone duration");
         toneDuration[ComponentAbbreviations::platform].set("number");
         toneDuration[ComponentAbbreviations::state_topic].set(stateTopic);

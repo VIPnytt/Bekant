@@ -16,7 +16,7 @@ void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
  * @brief Generates a blocking square-wave tone on the tone output.
  *
  * Unsupported frequencies and zero-duration requests produce no output.
- * Accepted requests reset the watchdog before and after tone generation.
+ * Accepted requests reset the watchdog during tone generation.
  *
  * @param frequency Tone frequency in hertz.
  * @param duration Approximate playback duration in milliseconds.
@@ -33,15 +33,14 @@ void ToneHandler::play(unsigned int frequency, unsigned int duration)
         return;
     }
     const unsigned int delay{halfPeriod - overhead};
-    wdt_reset();
     for (unsigned long idx{0UL}; idx < (duration * 1000UL) / (2UL * halfPeriod); ++idx)
     {
+        wdt_reset();
         digitalWrite(Pin::tone, HIGH);
         delayMicroseconds(delay);
         digitalWrite(Pin::tone, LOW);
         delayMicroseconds(delay);
     }
-    wdt_reset();
 }
 
 #endif // ARDUINO_ARCH_AVR
