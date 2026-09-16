@@ -399,8 +399,8 @@ void HomeAssistantHandler::configuration()
 /**
  * @brief Configures diagnostic entities for Home Assistant discovery.
  *
- * Adds diagnostic entities for encoder data, firmware versions, communication
- * errors, positional offset, serial activity,
+ * Adds diagnostic entities for encoder data, firmware versions, device issues,
+ * positional offset, serial activity,
  * temperature, Wi-Fi signal strength, and optional power-supply voltage.
  * Diagnostic entities are categorized and selected hardware-specific entities
  * are disabled by default.
