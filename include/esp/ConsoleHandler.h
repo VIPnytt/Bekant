@@ -55,6 +55,8 @@ public:
 
     void send(Command command, uint16_t value);
 
+    void send(Command command, uint32_t value);
+
 private:
     uint8_t errorLin{0U};
     uint8_t errorTx{0U};

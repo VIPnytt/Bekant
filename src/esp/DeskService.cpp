@@ -45,6 +45,8 @@ void DeskService::begin()
         nvs_get_u16(handle, "9", &encoder9);
         nvs_get_u16(handle, "h", &presetHigh);
         nvs_get_u16(handle, "l", &presetLow);
+        nvs_get_u16(handle, "tf", &toneFrequency);
+        nvs_get_u16(handle, "td", &toneDuration);
 #ifdef PIN_OE
         uint8_t _enable{};
         if (nvs_get_u8(handle, "oe", &_enable) == ESP_OK)
@@ -126,6 +128,30 @@ void DeskService::handle()
     }
 }
 
+void DeskService::parseTone(const JsonObjectConst &doc)
+{
+    if (doc["duration"].is<uint16_t>())
+    {
+        const uint16_t _duration{doc["duration"].as<uint16_t>()};
+        if (_duration != toneDuration && _duration != 0U)
+        {
+            toneDuration = _duration;
+            saved = false;
+        }
+    }
+    if (doc["frequency"].is<uint16_t>())
+    {
+        const uint16_t _frequency{doc["frequency"].as<uint16_t>()};
+        if (_frequency != toneFrequency && _frequency != 0U)
+        {
+            toneFrequency = _frequency;
+            saved = false;
+        }
+    }
+    console.send(ConsoleHandler::Command::TONE,
+                 static_cast<uint32_t>(toneFrequency) | (static_cast<uint32_t>(toneDuration) << 16U));
+}
+
 /**
  * @brief Disables device processing and disconnects serial and MQTT services.
  */
@@ -150,6 +176,8 @@ void DeskService::save()
         nvs_set_u16(handle, "h", presetHigh);
         nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable)); // NOLINT(readability-implicit-bool-conversion)
+        nvs_set_u16(handle, "td", toneDuration);
+        nvs_set_u16(handle, "tf", toneFrequency);
         if (nvs_commit(handle) != ESP_OK)
         {
             saved = false;
@@ -224,9 +252,9 @@ void DeskService::request(JsonObjectConst doc)
     {
         desk.setSimulateUp(doc["simulate"]["up"].as<bool>());
     }
-    if (doc["tone"].is<uint16_t>() && doc["tone"].as<uint16_t>() != 0U)
+    if (doc["tone"].is<JsonObjectConst>())
     {
-        console.send(ConsoleHandler::Command::TONE, doc["tone"].as<uint16_t>());
+        parseTone(doc["tone"].as<JsonObjectConst>());
     }
 }
 
@@ -278,6 +306,8 @@ void DeskService::transmit(JsonDocument &doc)
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
     doc["temperature"].set(temperatureRead());
+    doc["tone"]["duration"].set(toneDuration);
+    doc["tone"]["frequency"].set(toneFrequency);
     if (lengthTx != 0U)
     {
         doc["tx"].set(toHex(std::span<const uint8_t>(payloadTx).subspan(0U, lengthTx)));

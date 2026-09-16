@@ -227,6 +227,24 @@ void ConsoleHandler::send(Command command, uint16_t value)
 }
 
 /**
+ * @brief Sends a command with a 32-bit value.
+ *
+ * @param command Command to transmit.
+ * @param value Value associated with the command.
+ */
+void ConsoleHandler::send(Command command, uint32_t value)
+{
+    const std::array<uint8_t, 5U> payload{
+        static_cast<uint8_t>((4U << 4U) | static_cast<uint8_t>(command)),
+        static_cast<uint8_t>(value & 0xFFU),
+        static_cast<uint8_t>(value >> 8U),
+        static_cast<uint8_t>(value >> 16U),
+        static_cast<uint8_t>(value >> 24U),
+    };
+    write(payload);
+}
+
+/**
  * @brief Records LIN USART error flags and signals an error state.
  *
  * @param flags AVR USART status flags.

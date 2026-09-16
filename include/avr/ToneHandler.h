@@ -14,7 +14,7 @@ private:
 public:
     void begin();
 
-    static void play(unsigned int frequency, unsigned long duration);
+    static void play(unsigned int frequency, unsigned int duration);
 };
 
 #endif // ARDUINO_ARCH_AVR

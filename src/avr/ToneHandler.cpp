@@ -19,9 +19,9 @@ void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
  * @param frequency Tone frequency in hertz.
  * @param duration Approximate playback duration in milliseconds.
  */
-void ToneHandler::play(unsigned int frequency, unsigned long duration)
+void ToneHandler::play(unsigned int frequency, unsigned int duration)
 {
-    if (duration == 0UL || frequency < minFrequency || frequency > maxFrequency)
+    if (duration == 0U || frequency < minFrequency || frequency > maxFrequency)
     {
         return;
     }
