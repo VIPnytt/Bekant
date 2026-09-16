@@ -17,6 +17,7 @@ void OtaHandler::begin()
 #endif // OTA_KEY
     ota.onStart(&onStart);
     ota.onError(&onError);
+    ota.onEnd(&onEnd);
     ota.begin();
 }
 
@@ -38,6 +39,12 @@ void OtaHandler::onStart() { desk.safeMode(); }
 void OtaHandler::onError(ota_error_t error) // NOLINT(misc-unused-parameters)
 {
     StatusHandler::setRed();
+}
+
+void OtaHandler::onEnd()
+{
+    digitalWrite(PIN_RST, LOW);
+    vTaskDelay(1U);
 }
 
 #endif // ARDUINO_ARCH_ESP32

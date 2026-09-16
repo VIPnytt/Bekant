@@ -147,7 +147,7 @@ void DeskService::parseAction(std::string_view action)
         mqtt.disconnect();
         StatusHandler::setNone();
         digitalWrite(PIN_RST, LOW);
-        vTaskDelay(0b1U << 7U);
+        vTaskDelay(1U);
         ESP.restart();
     }
 }
