@@ -41,6 +41,9 @@ void OtaHandler::onError(ota_error_t error) // NOLINT(misc-unused-parameters)
     StatusHandler::setRed();
 }
 
+/**
+ * @brief Places the AVR controller in reset when an OTA update completes.
+ */
 void OtaHandler::onEnd()
 {
     digitalWrite(PIN_RST, LOW);
