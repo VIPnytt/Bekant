@@ -131,7 +131,7 @@ void DeskService::handle()
 /**
  * @brief Applies a named maintenance action.
  *
- * Supports recalibrating the leg encoder sensors and restarting the ESP32.
+ * Supports recalibrating the leg encoder sensors and restarting the ESP32 after placing the AVR controller in reset.
  * Unsupported action names are ignored.
  *
  * @param action Action name from the JSON request; "recalibrate" and "restart" are supported.
