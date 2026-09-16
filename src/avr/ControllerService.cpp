@@ -12,18 +12,22 @@
 /**
  * @brief Initializes communication, hardware pins, presets, the watchdog, and the LIN interface.
  *
- * Sends the firmware fingerprint and stored presets to the ESP32.
+ * Captures and clears the AVR reset flags, then sends the firmware fingerprint, captured reset flags, and stored
+ * presets to the ESP32.
  * Reports a LIN initialization failure and sounds a tone when initialization does not succeed.
  */
 void ControllerService::begin()
 {
+    const unsigned char _mcusr{MCUSR};
+    MCUSR = 0U;
     wdt_enable(WDTO_8S);
     console.begin();
     delay(0b1UL << 10U);
-    EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
-    EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
+    ConsoleHandler::send(ConsoleHandler::State::RESET_REASON, _mcusr);
+    EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
+    EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
     button.begin();
     tone.begin();

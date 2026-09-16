@@ -399,8 +399,8 @@ void HomeAssistantHandler::configuration()
 /**
  * @brief Configures diagnostic entities for Home Assistant discovery.
  *
- * Adds diagnostic entities for encoder data, firmware versions, communication
- * errors, positional offset, serial activity,
+ * Adds diagnostic entities for encoder data, firmware versions, device issues,
+ * positional offset, serial activity,
  * temperature, Wi-Fi signal strength, and optional power-supply voltage.
  * Diagnostic entities are categorized and selected hardware-specific entities
  * are disabled by default.
@@ -408,16 +408,6 @@ void HomeAssistantHandler::configuration()
 void HomeAssistantHandler::diagnostic()
 {
     constexpr std::string_view entityCategory{"diagnostic"};
-    {
-        JsonObject errors{discovery[ComponentAbbreviations::components]["error"].to<JsonObject>()};
-        errors[ComponentAbbreviations::entity_category].set(entityCategory);
-        errors[ComponentAbbreviations::icon].set("mdi:alert-outline");
-        errors[ComponentAbbreviations::name].set("Errors");
-        errors[ComponentAbbreviations::platform].set("sensor");
-        errors[ComponentAbbreviations::state_topic].set(stateTopic);
-        errors[ComponentAbbreviations::unique_id].set("error");
-        errors[ComponentAbbreviations::value_template].set("{{value_json.errors|join(', ')}}");
-    }
     {
         JsonObject firmware{discovery[ComponentAbbreviations::components]["firmware"].to<JsonObject>()};
         firmware[ComponentAbbreviations::enabled_by_default].set(false);
@@ -431,6 +421,16 @@ void HomeAssistantHandler::diagnostic()
         firmware[ComponentAbbreviations::unique_id].set("firmware");
         firmware[ComponentAbbreviations::value_template].set(
             "{{{'installed_version':value_json.version.installed,'latest_version':value_json.version.latest}|to_json}}");
+    }
+    {
+        JsonObject issues{discovery[ComponentAbbreviations::components]["issues"].to<JsonObject>()};
+        issues[ComponentAbbreviations::entity_category].set(entityCategory);
+        issues[ComponentAbbreviations::icon].set("mdi:alert-outline");
+        issues[ComponentAbbreviations::name].set("Issues");
+        issues[ComponentAbbreviations::platform].set("sensor");
+        issues[ComponentAbbreviations::state_topic].set(stateTopic);
+        issues[ComponentAbbreviations::unique_id].set("issues");
+        issues[ComponentAbbreviations::value_template].set("{{value_json.issues|join(', ')}}");
     }
     {
         JsonObject offset{discovery[ComponentAbbreviations::components]["offset"].to<JsonObject>()};

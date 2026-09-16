@@ -35,6 +35,7 @@ public:
         NODE9,
         PRESET_HIGH,
         PRESET_LOW,
+        RESET_REASON,
         VERSION,
     };
 
