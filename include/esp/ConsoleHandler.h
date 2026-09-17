@@ -48,7 +48,7 @@ public:
 
     void send(Command command);
 
-    void send(Command command, uint16_t value);
+    static void send(Command command, uint16_t value);
 
     static void send(Command command, uint16_t value1, uint16_t value2);
 

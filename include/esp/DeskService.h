@@ -8,6 +8,7 @@
 #include "esp/IssueHandler.h"
 #include "esp/MqttHandler.h"
 #include "esp/OtaHandler.h"
+#include "esp/PresetHandler.h"
 #include "esp/StatusHandler.h"
 #include "esp/ToneHandler.h"
 #include "esp/WifiHandler.h"
@@ -29,10 +30,8 @@ private:
 
     uint16_t encoder8{0U};
     uint16_t encoder9{0U};
-    uint16_t presetLow{0U};
-    uint16_t presetHigh{0U};
 
-    unsigned long lastMillis{0U};
+    unsigned long lastMillis{0UL};
 
     size_t lengthRx{0U};
     size_t lengthTx{0U};
@@ -54,6 +53,8 @@ private:
 
     OtaHandler ota{};
 
+    PresetHandler preset{};
+
     StatusHandler status{};
 
     ToneHandler tone{};
@@ -69,10 +70,6 @@ private:
     void setReset(bool state);
 
     void statusNode() const;
-
-    [[nodiscard]] float decode(float encoder);
-
-    [[nodiscard]] uint16_t encode(float height);
 
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
@@ -97,15 +94,15 @@ public:
 
     void setPending();
 
-    void setPresetHigh(uint16_t encoder);
-
-    void setPresetLow(uint16_t encoder);
-
     void setRx(std::span<const uint8_t> payload);
 
     void setTx(std::span<const uint8_t> payload);
 
     void transmit(JsonDocument &doc);
+
+    [[nodiscard]] static float decode(float encoder);
+
+    [[nodiscard]] static uint16_t encode(float height);
 
     static DeskService &getInstance();
 };

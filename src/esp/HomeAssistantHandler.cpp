@@ -239,7 +239,7 @@ void HomeAssistantHandler::sensors()
         presetHigh[ComponentAbbreviations::suggested_display_precision].set(1U);
         presetHigh[ComponentAbbreviations::unique_id].set("high_sensor");
         presetHigh[ComponentAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        presetHigh[ComponentAbbreviations::value_template].set(R"({{value_json.preset.high|round(1)}})");
+        presetHigh[ComponentAbbreviations::value_template].set("{{value_json.preset.high|round(1)}}");
     }
     {
         JsonObject presetLow{discovery[ComponentAbbreviations::components]["low_sensor"].to<JsonObject>()};
@@ -252,7 +252,7 @@ void HomeAssistantHandler::sensors()
         presetLow[ComponentAbbreviations::suggested_display_precision].set(1U);
         presetLow[ComponentAbbreviations::unique_id].set("low_sensor");
         presetLow[ComponentAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        presetLow[ComponentAbbreviations::value_template].set(R"({{value_json.preset.low|round(1)}})");
+        presetLow[ComponentAbbreviations::value_template].set("{{value_json.preset.low|round(1)}}");
     }
 }
 
