@@ -631,9 +631,14 @@ void DeskService::setOutputEnable(bool state)
 void DeskService::setPending() { pending = true; }
 
 /**
- * @brief Sets the high preset value and marks the device state for persistence and publication.
+ * @brief Reconciles the high desk-height preset reported by the AVR.
  *
- * @param preset High preset value.
+ * When the AVR reports the empty-EEPROM value `0xFFFF` and the ESP32's stored
+ * preset is within the reference encoder range, sends the stored value back to
+ * the AVR. Otherwise, stores a changed reported value and marks the device
+ * state for persistence and publication.
+ *
+ * @param preset Preset encoder value reported by the AVR; `0xFFFF` denotes empty EEPROM.
  */
 void DeskService::setPresetHigh(uint16_t preset)
 {
@@ -650,9 +655,14 @@ void DeskService::setPresetHigh(uint16_t preset)
 }
 
 /**
- * @brief Sets the lower desk-height preset.
+ * @brief Reconciles the low desk-height preset reported by the AVR.
  *
- * @param preset Lower preset value.
+ * When the AVR reports the empty-EEPROM value `0xFFFF` and the ESP32's stored
+ * preset is within the reference encoder range, sends the stored value back to
+ * the AVR. Otherwise, stores a changed reported value and marks the device
+ * state for persistence and publication.
+ *
+ * @param preset Preset encoder value reported by the AVR; `0xFFFF` denotes empty EEPROM.
  */
 void DeskService::setPresetLow(uint16_t preset)
 {
