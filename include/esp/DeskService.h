@@ -7,6 +7,7 @@
 #include "esp/IssueHandler.h"
 #include "esp/MqttHandler.h"
 #include "esp/OtaHandler.h"
+#include "esp/ToneHandler.h"
 #include "esp/StatusHandler.h"
 #include "esp/WifiHandler.h"
 
@@ -30,8 +31,6 @@ private:
     uint16_t encoder9{0U};
     uint16_t presetLow{0U};
     uint16_t presetHigh{0U};
-    uint16_t toneDuration{0b1U << 9U};
-    uint16_t toneFrequency{0b1U << 12U};
 
     unsigned long lastMillis{0U};
 
@@ -58,11 +57,11 @@ private:
 
     StatusHandler status{};
 
+    ToneHandler tone{};
+
     WifiHandler wifi{};
 
     void parseAction(std::string_view action);
-
-    void parseTone(const JsonObjectConst &doc);
 
     void save();
 

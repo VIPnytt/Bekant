@@ -373,7 +373,7 @@ void HomeAssistantHandler::configuration()
         toneDuration[ComponentAbbreviations::step].set(.1F);
         toneDuration[ComponentAbbreviations::unique_id].set("tone_duration");
         toneDuration[ComponentAbbreviations::unit_of_measurement].set("s");
-        toneDuration[ComponentAbbreviations::value_template].set("{{value_json.tone.duration/1000}}");
+        toneDuration[ComponentAbbreviations::value_template].set("{{(value_json.tone.duration/1000)|round(1)}}");
     }
     {
         JsonObject toneFrequency{discovery[ComponentAbbreviations::components]["tone_frequency"].to<JsonObject>()};
@@ -392,7 +392,7 @@ void HomeAssistantHandler::configuration()
         toneFrequency[ComponentAbbreviations::step].set(.1F);
         toneFrequency[ComponentAbbreviations::unique_id].set("tone_frequency");
         toneFrequency[ComponentAbbreviations::unit_of_measurement].set("kHz");
-        toneFrequency[ComponentAbbreviations::value_template].set("{{value_json.tone.frequency/1000}}");
+        toneFrequency[ComponentAbbreviations::value_template].set("{{(value_json.tone.frequency/1000)|round(1)}}");
     }
 }
 
