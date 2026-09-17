@@ -185,7 +185,7 @@ void DeskService::request(JsonObjectConst doc)
     {
         preset.setHigh();
     }
-    if (doc["preset"]["high"].is<float>())
+    else if (doc["preset"]["high"].is<float>())
     {
         preset.setHigh(doc["preset"]["high"].as<float>());
     }
@@ -193,7 +193,7 @@ void DeskService::request(JsonObjectConst doc)
     {
         preset.setLow();
     }
-    if (doc["preset"]["low"].is<float>())
+    else if (doc["preset"]["low"].is<float>())
     {
         preset.setLow(doc["preset"]["low"].as<float>());
     }
@@ -239,8 +239,16 @@ void DeskService::transmit(JsonDocument &doc)
     doc["oe"].set(enable);
 #endif // PIN_OE
     doc["offset"].set(leg8 - leg9);
-    doc["preset"]["high"].set(preset.getHigh());
-    doc["preset"]["low"].set(preset.getLow());
+    const float presetHigh{preset.getHigh()};
+    if (presetHigh >= ReferenceHeight::heightLow && presetHigh <= ReferenceHeight::heightHigh)
+    {
+        doc["preset"]["high"].set(presetHigh);
+    }
+    const float presetLow{preset.getLow()};
+    if (presetLow >= ReferenceHeight::heightLow && presetLow <= ReferenceHeight::heightHigh)
+    {
+        doc["preset"]["low"].set(presetLow);
+    }
     doc["reset"].set(reset);
     doc["rssi"].set(WiFi.RSSI());
     if (lengthRx != 0U)
