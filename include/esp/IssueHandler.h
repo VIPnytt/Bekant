@@ -55,19 +55,19 @@ public:
      */
     static void onReceiveError(hardwareSerial_error_t error);
 
+    static void setConsoleTx(uint8_t flags);
+
+    static void setInitialization(uint8_t flags);
+
+    static void setLegsRx(uint8_t flags);
+
     static void setNode8(uint8_t flags);
 
     static void setNode9(uint8_t flags);
 
-    static void setInitialization(uint8_t flags);
-
     static void setResetReason(uint8_t flags);
 
     static void setVersion(uint8_t hash);
-
-    static void setLegsRx(uint8_t flags);
-
-    static void setConsoleTx(uint8_t flags);
 };
 
 #endif // ARDUINO_ARCH_ESP32

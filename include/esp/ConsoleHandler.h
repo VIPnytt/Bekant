@@ -2,8 +2,6 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
-#include <HardwareSerial.h>
 #include <span>
 #include <string>
 

@@ -3,7 +3,8 @@
 #include "esp/IssueHandler.h"
 
 #include "esp/DeskService.h"
-#include "esp/secrets.h"
+
+#include <HardwareSerial.h>
 
 /**
  * @brief Appends descriptions of a firmware mismatch, reset causes, and recorded initialization or communication
