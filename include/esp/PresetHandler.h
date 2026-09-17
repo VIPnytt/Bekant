@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include <sys/_stdint.h>
+#include <cstdint>
 
 class PresetHandler
 {

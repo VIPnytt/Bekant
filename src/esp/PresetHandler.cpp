@@ -2,7 +2,6 @@
 
 #include "esp/PresetHandler.h"
 
-#include "esp/ConsoleHandler.h"
 #include "esp/DeskService.h"
 #include "esp/constants.h"
 
@@ -42,7 +41,7 @@ void PresetHandler::setHigh(float height)
 {
     if (height <= ReferenceHeight::heightHigh && height >= ReferenceHeight::heightLow)
     {
-        setHigh(DeskService::encode(height));
+        PresetHandler::setHigh(DeskService::encode(height));
     }
 }
 
@@ -75,7 +74,7 @@ void PresetHandler::setLow(float height)
 {
     if (height <= ReferenceHeight::heightHigh && height >= ReferenceHeight::heightLow)
     {
-        setLow(DeskService::encode(height));
+        PresetHandler::setLow(DeskService::encode(height));
     }
 }
 
