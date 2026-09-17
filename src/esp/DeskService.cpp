@@ -37,8 +37,6 @@ void DeskService::begin()
     {
         nvs_get_u16(handle, "8", &encoder8);
         nvs_get_u16(handle, "9", &encoder9);
-        nvs_get_u16(handle, "h", &presetHigh);
-        nvs_get_u16(handle, "l", &presetLow);
 #ifdef PIN_OE
         uint8_t _enable{};
         if (nvs_get_u8(handle, "oe", &_enable) == ESP_OK)
@@ -51,6 +49,7 @@ void DeskService::begin()
         saved = true;
     }
     button.begin();
+    preset.begin();
     attachInterrupt(PIN_RST, onReset, CHANGE);
     digitalWrite(PIN_RST, HIGH);
     status.begin();
@@ -82,6 +81,7 @@ void DeskService::handle()
         return;
     }
     console.handle();
+    preset.handle();
     tone.handle();
     mqtt.handle();
     if (pending || millis() - lastMillis > 0b1U << 16U)
@@ -136,7 +136,7 @@ void DeskService::safeMode()
 }
 
 /**
- * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
+ * @brief Persists encoder and output-enable state to non-volatile storage.
  */
 void DeskService::save()
 {
@@ -146,8 +146,6 @@ void DeskService::save()
         saved = true;
         nvs_set_u16(handle, "8", encoder8);
         nvs_set_u16(handle, "9", encoder9);
-        nvs_set_u16(handle, "h", presetHigh);
-        nvs_set_u16(handle, "l", presetLow);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable)); // NOLINT(readability-implicit-bool-conversion)
         if (nvs_commit(handle) != ESP_OK)
         {
@@ -185,21 +183,19 @@ void DeskService::request(JsonObjectConst doc)
     }
     if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
     {
-        console.send(ConsoleHandler::Command::PRESET_HIGH);
+        preset.setHigh();
     }
-    if (doc["preset"]["high"].is<float>() && doc["preset"]["high"].as<float>() <= ReferenceHeight::heightHigh &&
-        doc["preset"]["high"].as<float>() >= ReferenceHeight::heightLow)
+    else if (doc["preset"]["high"].is<float>())
     {
-        console.send(ConsoleHandler::Command::PRESET_HIGH, encode(doc["preset"]["high"].as<float>()));
+        preset.setHigh(doc["preset"]["high"].as<float>());
     }
     if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
     {
-        console.send(ConsoleHandler::Command::PRESET_LOW);
+        preset.setLow();
     }
-    if (doc["preset"]["low"].is<float>() && doc["preset"]["low"].as<float>() <= ReferenceHeight::heightHigh &&
-        doc["preset"]["low"].as<float>() >= ReferenceHeight::heightLow)
+    else if (doc["preset"]["low"].is<float>())
     {
-        console.send(ConsoleHandler::Command::PRESET_LOW, encode(doc["preset"]["low"].as<float>()));
+        preset.setLow(doc["preset"]["low"].as<float>());
     }
     if (doc["reset"].is<bool>())
     {
@@ -243,13 +239,15 @@ void DeskService::transmit(JsonDocument &doc)
     doc["oe"].set(enable);
 #endif // PIN_OE
     doc["offset"].set(leg8 - leg9);
-    if (presetHigh <= ReferenceHeight::encoderHigh && presetHigh >= ReferenceHeight::encoderLow)
+    const float presetHigh{preset.getHigh()};
+    if (presetHigh >= ReferenceHeight::heightLow && presetHigh <= ReferenceHeight::heightHigh)
     {
-        doc["preset"]["high"].set(decode(static_cast<float>(presetHigh)));
+        doc["preset"]["high"].set(presetHigh);
     }
-    if (presetLow <= ReferenceHeight::encoderHigh && presetLow >= ReferenceHeight::encoderLow)
+    const float presetLow{preset.getLow()};
+    if (presetLow >= ReferenceHeight::heightLow && presetLow <= ReferenceHeight::heightHigh)
     {
-        doc["preset"]["low"].set(decode(static_cast<float>(presetLow)));
+        doc["preset"]["low"].set(presetLow);
     }
     doc["reset"].set(reset);
     doc["rssi"].set(WiFi.RSSI());
@@ -422,54 +420,6 @@ void DeskService::setOutputEnable(bool state)
  * @brief Requests device-state publication on the next service cycle.
  */
 void DeskService::setPending() { pending = true; }
-
-/**
- * @brief Reconciles the high desk-height preset reported by the AVR.
- *
- * When the AVR reports the empty-EEPROM value `0xFFFF` and the ESP32's stored
- * preset is within the reference encoder range, sends the stored value back to
- * the AVR. Otherwise, stores a changed reported value and marks the device
- * state for persistence and publication.
- *
- * @param preset Preset encoder value reported by the AVR; `0xFFFF` denotes empty EEPROM.
- */
-void DeskService::setPresetHigh(uint16_t preset)
-{
-    if (preset == 0xFFFFU && presetHigh <= ReferenceHeight::encoderHigh && presetHigh >= ReferenceHeight::encoderLow)
-    {
-        console.send(ConsoleHandler::Command::PRESET_HIGH, presetHigh);
-    }
-    else if (preset != presetHigh)
-    {
-        presetHigh = preset;
-        saved = false;
-        pending = true;
-    }
-}
-
-/**
- * @brief Reconciles the low desk-height preset reported by the AVR.
- *
- * When the AVR reports the empty-EEPROM value `0xFFFF` and the ESP32's stored
- * preset is within the reference encoder range, sends the stored value back to
- * the AVR. Otherwise, stores a changed reported value and marks the device
- * state for persistence and publication.
- *
- * @param preset Preset encoder value reported by the AVR; `0xFFFF` denotes empty EEPROM.
- */
-void DeskService::setPresetLow(uint16_t preset)
-{
-    if (preset == 0xFFFFU && presetLow <= ReferenceHeight::encoderHigh && presetLow >= ReferenceHeight::encoderLow)
-    {
-        console.send(ConsoleHandler::Command::PRESET_LOW, presetLow);
-    }
-    else if (preset != presetLow)
-    {
-        presetLow = preset;
-        saved = false;
-        pending = true;
-    }
-}
 
 /**
  * @brief Sets the desk reset output state.

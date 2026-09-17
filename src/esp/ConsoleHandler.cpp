@@ -119,13 +119,15 @@ void ConsoleHandler::parse()
     }
     else if (stateRx == State::PRESET_HIGH && lengthRx == 2U)
     {
-        desk.setPresetHigh(static_cast<uint16_t>(bufferRx.at(1U)) |
-                           static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        PresetHandler::setHigh(
+            static_cast<uint16_t>(static_cast<unsigned int>(bufferRx.at(1U)) |
+                                  static_cast<unsigned int>(static_cast<unsigned int>(bufferRx.at(2U)) << 8U)));
     }
     else if (stateRx == State::PRESET_LOW && lengthRx == 2U)
     {
-        desk.setPresetLow(static_cast<uint16_t>(bufferRx.at(1U)) |
-                          static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U));
+        PresetHandler::setLow(
+            static_cast<uint16_t>(static_cast<unsigned int>(bufferRx.at(1U)) |
+                                  static_cast<unsigned int>(static_cast<unsigned int>(bufferRx.at(2U)) << 8U)));
     }
     else if (stateRx == State::RESET_REASON && lengthRx == 1U)
     {
