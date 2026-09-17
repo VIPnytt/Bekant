@@ -23,6 +23,11 @@ void IssueHandler::getIssues(JsonArray &list)
     }
 }
 
+/**
+ * @brief Appends recorded USART and ESP32 UART errors.
+ *
+ * @param list JSON array to append to.
+ */
 void IssueHandler::getComs(JsonArray &list)
 {
     if ((legsRx & 0b1U) != 0U)
@@ -71,6 +76,11 @@ void IssueHandler::getComs(JsonArray &list)
     }
 }
 
+/**
+ * @brief Appends recorded desk-leg node and initialization probe errors.
+ *
+ * @param list JSON array to append to.
+ */
 void IssueHandler::getLegs(JsonArray &list)
 {
     if ((node8 & 0b1U) != 0U)
@@ -107,10 +117,25 @@ void IssueHandler::getLegs(JsonArray &list)
     }
 }
 
+/**
+ * @brief Reports whether node 8 has no recorded communication errors.
+ *
+ * @return `true` when no node 8 communication errors are recorded; otherwise, `false`.
+ */
 bool IssueHandler::getNode8() { return node8 == 0U; }
 
+/**
+ * @brief Reports whether node 9 has no recorded communication errors.
+ *
+ * @return `true` when no node 9 communication errors are recorded; otherwise, `false`.
+ */
 bool IssueHandler::getNode9() { return node9 == 0U; }
 
+/**
+ * @brief Appends recorded AVR and ESP32 reset causes that indicate failures.
+ *
+ * @param list JSON array to append to.
+ */
 void IssueHandler::getResets(JsonArray &list)
 {
     if ((resetReason & (0b1U << 2U)) != 0U)
@@ -168,6 +193,11 @@ void IssueHandler::onReceiveError(hardwareSerial_error_t error)
     }
 }
 
+/**
+ * @brief Clears recorded communication, initialization, node, and AVR reset issues.
+ *
+ * The stored firmware fingerprint is retained.
+ */
 void IssueHandler::clear()
 {
     node8 = 0U;
