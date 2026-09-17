@@ -169,10 +169,11 @@ void ConsoleHandler::send(Command command, uint16_t value)
 }
 
 /**
- * @brief Sends a command with a 32-bit value.
+ * @brief Sends a command with two little-endian 16-bit values.
  *
  * @param command Command to transmit.
- * @param value Value associated with the command.
+ * @param value1 First value associated with the command.
+ * @param value2 Second value associated with the command.
  */
 void ConsoleHandler::send(Command command, uint16_t value1, uint16_t value2)
 {
