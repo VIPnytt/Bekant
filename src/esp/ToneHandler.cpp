@@ -25,13 +25,8 @@ void ToneHandler::handle()
         nvs_handle_t handle{};
         if (nvs_open("tone", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
         {
-            saved = true;
-            nvs_set_u16(handle, "duration", duration);
-            nvs_set_u16(handle, "frequency", frequency);
-            if (nvs_commit(handle) != ESP_OK)
-            {
-                saved = false;
-            }
+            saved = nvs_set_u16(handle, "duration", duration) == ESP_OK &&
+                    nvs_set_u16(handle, "frequency", frequency) == ESP_OK && nvs_commit(handle) == ESP_OK;
             nvs_close(handle);
         }
         lastMillis = millis();
