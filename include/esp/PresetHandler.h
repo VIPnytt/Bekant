@@ -19,7 +19,11 @@ public:
 
     void handle();
 
+    void setHigh();
+
     void setHigh(float height);
+
+    void setLow();
 
     void setLow(float height);
 

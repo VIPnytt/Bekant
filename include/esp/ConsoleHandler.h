@@ -46,7 +46,7 @@ public:
      */
     void forward();
 
-    void send(Command command);
+    static void send(Command command);
 
     static void send(Command command, uint16_t value);
 

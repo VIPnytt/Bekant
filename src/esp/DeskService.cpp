@@ -183,7 +183,7 @@ void DeskService::request(JsonObjectConst doc)
     }
     if (doc["preset"]["high"].is<bool>() && doc["preset"]["high"].as<bool>())
     {
-        console.send(ConsoleHandler::Command::PRESET_HIGH);
+        preset.setHigh();
     }
     if (doc["preset"]["high"].is<float>())
     {
@@ -191,7 +191,7 @@ void DeskService::request(JsonObjectConst doc)
     }
     if (doc["preset"]["low"].is<bool>() && doc["preset"]["low"].as<bool>())
     {
-        console.send(ConsoleHandler::Command::PRESET_LOW);
+        preset.setLow();
     }
     if (doc["preset"]["low"].is<float>())
     {

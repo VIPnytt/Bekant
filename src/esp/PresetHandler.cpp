@@ -37,11 +37,13 @@ float PresetHandler::getHigh() const { return DeskService::decode(high); }
 
 float PresetHandler::getLow() const { return DeskService::decode(low); }
 
+void PresetHandler::setHigh() { ConsoleHandler::send(ConsoleHandler::Command::PRESET_HIGH); }
+
 void PresetHandler::setHigh(float height)
 {
     if (height <= ReferenceHeight::heightHigh && height >= ReferenceHeight::heightLow)
     {
-        PresetHandler::setHigh(DeskService::encode(height));
+        ConsoleHandler::send(ConsoleHandler::Command::PRESET_HIGH, DeskService::encode(height));
     }
 }
 
@@ -70,11 +72,13 @@ void PresetHandler::setHigh(uint16_t encoder)
     }
 }
 
+void PresetHandler::setLow() { ConsoleHandler::send(ConsoleHandler::Command::PRESET_LOW); }
+
 void PresetHandler::setLow(float height)
 {
     if (height <= ReferenceHeight::heightHigh && height >= ReferenceHeight::heightLow)
     {
-        PresetHandler::setLow(DeskService::encode(height));
+        ConsoleHandler::send(ConsoleHandler::Command::PRESET_LOW, DeskService::encode(height));
     }
 }
 
