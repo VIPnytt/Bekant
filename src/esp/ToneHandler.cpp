@@ -6,6 +6,9 @@
 
 #include <nvs.h>
 
+/**
+ * @brief Restores stored tone duration and frequency settings when available.
+ */
 void ToneHandler::begin()
 {
     nvs_handle_t handle{};
@@ -18,6 +21,11 @@ void ToneHandler::begin()
     }
 }
 
+/**
+ * @brief Persists changed tone settings after the deferred save interval.
+ *
+ * Failed storage operations leave the settings pending for a later retry.
+ */
 void ToneHandler::handle()
 {
     if (!saved && millis() - lastMillis > 0b1U << 16U)
@@ -33,8 +41,18 @@ void ToneHandler::handle()
     }
 }
 
+/**
+ * @brief Returns the configured tone duration.
+ *
+ * @return Duration in milliseconds.
+ */
 uint16_t ToneHandler::getDuration() const { return duration; }
 
+/**
+ * @brief Returns the configured tone frequency.
+ *
+ * @return Frequency in hertz.
+ */
 uint16_t ToneHandler::getFrequency() const { return frequency; }
 
 /**
