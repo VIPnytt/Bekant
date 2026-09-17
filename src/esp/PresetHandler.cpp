@@ -7,6 +7,9 @@
 
 #include <nvs.h>
 
+/**
+ * @brief Restores stored high and low desk-height presets when available.
+ */
 void PresetHandler::begin()
 {
     nvs_handle_t handle{};
@@ -18,6 +21,11 @@ void PresetHandler::begin()
     }
 }
 
+/**
+ * @brief Persists changed presets after the deferred save interval.
+ *
+ * Failed storage operations leave the presets pending for a later retry.
+ */
 void PresetHandler::handle()
 {
     if (!saved && millis() - lastMillis > 0b1U << 16U)
@@ -33,12 +41,32 @@ void PresetHandler::handle()
     }
 }
 
+/**
+ * @brief Converts the stored high preset encoder value to a desk height.
+ *
+ * @return Converted high preset height in centimeters.
+ */
 float PresetHandler::getHigh() const { return DeskService::decode(high); }
 
+/**
+ * @brief Converts the stored low preset encoder value to a desk height.
+ *
+ * @return Converted low preset height in centimeters.
+ */
 float PresetHandler::getLow() const { return DeskService::decode(low); }
 
+/**
+ * @brief Requests movement to the high desk-height preset stored by the AVR.
+ */
 void PresetHandler::setHigh() { ConsoleHandler::send(ConsoleHandler::Command::PRESET_HIGH); }
 
+/**
+ * @brief Requests that the AVR store a high desk-height preset.
+ *
+ * Heights outside the configured reference range are ignored.
+ *
+ * @param height Preset height in centimeters.
+ */
 void PresetHandler::setHigh(float height)
 {
     if (height <= ReferenceHeight::heightHigh && height >= ReferenceHeight::heightLow)
@@ -72,8 +100,18 @@ void PresetHandler::setHigh(uint16_t encoder)
     }
 }
 
+/**
+ * @brief Requests movement to the low desk-height preset stored by the AVR.
+ */
 void PresetHandler::setLow() { ConsoleHandler::send(ConsoleHandler::Command::PRESET_LOW); }
 
+/**
+ * @brief Requests that the AVR store a low desk-height preset.
+ *
+ * Heights outside the configured reference range are ignored.
+ *
+ * @param height Preset height in centimeters.
+ */
 void PresetHandler::setLow(float height)
 {
     if (height <= ReferenceHeight::heightHigh && height >= ReferenceHeight::heightLow)

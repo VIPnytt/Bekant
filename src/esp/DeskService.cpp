@@ -136,7 +136,7 @@ void DeskService::safeMode()
 }
 
 /**
- * @brief Persists encoder, preset, and output-enable state to non-volatile storage.
+ * @brief Persists encoder and output-enable state to non-volatile storage.
  */
 void DeskService::save()
 {
