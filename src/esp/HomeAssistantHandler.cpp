@@ -430,7 +430,7 @@ void HomeAssistantHandler::diagnostic()
         issues[ComponentAbbreviations::platform].set("sensor");
         issues[ComponentAbbreviations::state_topic].set(stateTopic);
         issues[ComponentAbbreviations::unique_id].set("issues");
-        issues[ComponentAbbreviations::value_template].set("{{value_json.issues|join(', ')}}");
+        issues[ComponentAbbreviations::value_template].set("{{value_json.issues|sort|join(', ')}}");
     }
     {
         JsonObject offset{discovery[ComponentAbbreviations::components]["offset"].to<JsonObject>()};

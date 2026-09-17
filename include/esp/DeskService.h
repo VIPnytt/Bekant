@@ -4,6 +4,7 @@
 
 #include "esp/ConsoleHandler.h"
 #include "esp/IspHandler.h"
+#include "esp/IssueHandler.h"
 #include "esp/MqttHandler.h"
 #include "esp/OtaHandler.h"
 #include "esp/StatusHandler.h"
@@ -15,23 +16,6 @@
 class DeskService
 {
 private:
-    /**
-     * Computes the fingerprint used to compare firmware versions.
-     *
-     * @param characters Version characters to fingerprint.
-     * @return The 8-bit firmware fingerprint.
-     */
-    [[nodiscard]] constexpr uint8_t fingerprint(std::string_view characters)
-    {
-        uint8_t hash{0U}; // NOLINT(misc-const-correctness)
-        for (const char character : characters)
-        {
-            hash ^= static_cast<uint8_t>(character);
-            hash = static_cast<uint8_t>((hash << 3U) | (hash >> 5U));
-        }
-        return hash;
-    }
-
     bool enable{true};
     bool pending{true};
     bool process{true};
@@ -39,13 +23,8 @@ private:
     bool saved{true};
 
     uint8_t buttons{0U};
-    uint8_t error8{0U};
-    uint8_t error9{0U};
-    uint8_t errorInit{0U};
-    uint8_t resetReason{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
-    uint8_t versionAvr{0U};
 
     uint16_t encoder8{0U};
     uint16_t encoder9{0U};
@@ -59,8 +38,6 @@ private:
     size_t lengthRx{0U};
     size_t lengthTx{0U};
 
-    hardwareSerial_error_t errorRx{hardwareSerial_error_t::UART_NO_ERROR};
-
     std::string versionLatest{};
 
     std::array<uint8_t, 0b1U << 4U> payloadRx{};
@@ -73,6 +50,8 @@ private:
 
     IspHandler isp{};
 
+    IssueHandler issue{};
+
     MqttHandler mqtt{};
 
     OtaHandler ota{};
@@ -80,8 +59,6 @@ private:
     StatusHandler status{};
 
     WifiHandler wifi{};
-
-    void getIssues(JsonArray &list);
 
     void parseAction(std::string_view action);
 
@@ -116,21 +93,15 @@ public:
 
     void begin();
 
-    void fetchRelease();
-
     void handle();
+
+    void fetchRelease();
 
     void request(JsonObjectConst doc);
 
     void safeMode();
 
     void setButtons(uint8_t flags);
-
-    void setError8(uint8_t flags);
-
-    void setError9(uint8_t flags);
-
-    void setErrorInit(uint8_t flags);
 
     void setNode8(uint16_t position, uint8_t state);
 
@@ -142,13 +113,9 @@ public:
 
     void setPresetLow(uint16_t encoder);
 
-    void setResetReason(uint8_t flags);
-
     void setRx(std::span<const uint8_t> payload);
 
     void setTx(std::span<const uint8_t> payload);
-
-    void setVersion(uint8_t hash);
 
     void transmit(JsonDocument &doc);
 

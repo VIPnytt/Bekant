@@ -64,10 +64,10 @@ void DeskService::begin()
 #ifdef PIN_TPUP
     digitalWrite(PIN_TPUP, HIGH);
 #endif // PIN_TPUP
-    attachInterrupt(PIN_RST, onReset, CHANGE);
 #ifdef PIN_TPDN
     attachInterrupt(PIN_TPDN, onDown, CHANGE);
 #endif // PIN_TPDN
+    attachInterrupt(PIN_RST, onReset, CHANGE);
 #ifdef PIN_TPUP
     attachInterrupt(PIN_TPUP, onUp, CHANGE);
 #endif // PIN_TPUP
@@ -299,8 +299,7 @@ void DeskService::transmit(JsonDocument &doc)
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
     JsonArray issues{doc["issues"].to<JsonArray>()};
-    getIssues(issues);
-    console.getIssues(issues);
+    issue.getIssues(issues);
     const float leg8{decode(static_cast<float>(encoder8))};
     const float leg9{decode(static_cast<float>(encoder9))};
     doc["legs"][0U].set(leg8);
@@ -381,86 +380,6 @@ uint16_t DeskService::encode(float height)
 }
 
 /**
- * @brief Appends descriptions of a firmware mismatch, reset causes, and recorded initialization or communication
- * errors.
- *
- * @param list JSON array to append to.
- */
-void DeskService::getIssues(JsonArray &list)
-{
-    if (versionAvr != fingerprint(version))
-    {
-        list.add("AVR: version mismatch");
-    }
-    if ((error8 & 0b1U) != 0U)
-    {
-        list.add("node 8: no response");
-    }
-    if ((error8 & (0b1U << 1U)) != 0U)
-    {
-        list.add("node 8: checksum mismatch");
-    }
-    if ((error9 & 0b1U) != 0U)
-    {
-        list.add("node 9: no response");
-    }
-    if ((error9 & (0b1U << 1U)) != 0U)
-    {
-        list.add("node 9: checksum mismatch");
-    }
-    if ((errorInit & 0b1U) != 0U)
-    {
-        list.add("probe A: no response");
-    }
-    if ((errorInit & (0b1U << 1U)) != 0U)
-    {
-        list.add("probe A: checksum mismatch");
-    }
-    if ((errorInit & (0b1U << 2U)) != 0U)
-    {
-        list.add("probe B: no response");
-    }
-    if ((errorInit & (0b1U << 3U)) != 0U)
-    {
-        list.add("probe B: checksum mismatch");
-    }
-    if ((resetReason & (0b1U << 2U)) != 0U)
-    {
-        list.add("MCUSR: brown-out reset");
-    }
-    if ((resetReason & (0b1U << 3U)) != 0U)
-    {
-        list.add("MCUSR: watchdog reset");
-    }
-    switch (esp_reset_reason())
-    {
-    case esp_reset_reason_t::ESP_RST_PANIC:
-        list.add("ESP32: panic reset");
-        break;
-    case esp_reset_reason_t::ESP_RST_INT_WDT:
-        list.add("ESP32: interrupt watchdog reset");
-        break;
-    case esp_reset_reason_t::ESP_RST_TASK_WDT:
-        list.add("ESP32: task watchdog reset");
-        break;
-    case esp_reset_reason_t::ESP_RST_WDT:
-        list.add("ESP32: watchdog reset");
-        break;
-    case esp_reset_reason_t::ESP_RST_BROWNOUT:
-        list.add("ESP32: brown-out reset");
-        break;
-    case esp_reset_reason_t::ESP_RST_PWR_GLITCH:
-        list.add("ESP32: power glitch reset");
-        break;
-    case esp_reset_reason_t::ESP_RST_CPU_LOCKUP:
-        list.add("ESP32: CPU lock-up reset");
-        break;
-    default:
-        break;
-    }
-}
-
-/**
  * @brief Updates the physical button states and requests state publication when they change.
  *
  * @param flags Button-state bitmask with up, down, button 3, and button 4 in bits 0 through 3, respectively.
@@ -473,52 +392,6 @@ void DeskService::setButtons(uint8_t flags)
         StatusHandler::setWhite();
         pending = true;
     }
-}
-
-/**
- * @brief Records node 8 communication errors and signals an error state.
- *
- * @param flags Error bitmask with bit 0 for no response and bit 1 for a checksum mismatch.
- */
-void DeskService::setError8(uint8_t flags)
-{
-    if (flags != error8)
-    {
-        error8 = flags;
-        pending = true;
-    }
-    StatusHandler::setRed();
-}
-
-/**
- * @brief Records node 9 communication errors and signals an error state.
- *
- * @param flags Error bitmask with bit 0 for no response and bit 1 for a checksum mismatch.
- */
-void DeskService::setError9(uint8_t flags)
-{
-    if (flags != error9)
-    {
-        error9 = flags;
-        pending = true;
-    }
-    StatusHandler::setRed();
-}
-
-/**
- * @brief Records leg initialization errors and signals an error state.
- *
- * @param flags Error bitmask with response and checksum failures in bits 0 and 1 for probe A and bits 2 and 3 for
- * probe B.
- */
-void DeskService::setErrorInit(uint8_t flags)
-{
-    if (flags != errorInit)
-    {
-        errorInit = flags;
-        pending = true;
-    }
-    StatusHandler::setRed();
 }
 
 /**
@@ -535,7 +408,7 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     {
         encoder8 = position;
         state8 = state;
-        error8 = 0U;
+        IssueHandler::setNode8(0U);
         saved = false;
         pending = true;
         statusNode();
@@ -543,7 +416,7 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     else if (position != encoder8)
     {
         encoder8 = position;
-        error8 = 0U;
+        IssueHandler::setNode8(0U);
         saved = false;
         pending = true;
         statusNode();
@@ -551,13 +424,13 @@ void DeskService::setNode8(uint16_t position, uint8_t state)
     else if (state != state8)
     {
         state8 = state;
-        error8 = 0U;
+        IssueHandler::setNode8(0U);
         pending = true;
         statusNode();
     }
-    else if (error8 != 0U)
+    else if (!issue.getNode8())
     {
-        error8 = 0U;
+        IssueHandler::setNode8(0U);
         pending = true;
     }
 }
@@ -576,7 +449,7 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     {
         encoder9 = position;
         state9 = state;
-        error9 = 0U;
+        IssueHandler::setNode9(0U);
         saved = false;
         pending = true;
         statusNode();
@@ -584,7 +457,7 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     else if (position != encoder9)
     {
         encoder9 = position;
-        error9 = 0U;
+        IssueHandler::setNode9(0U);
         saved = false;
         pending = true;
         statusNode();
@@ -592,13 +465,13 @@ void DeskService::setNode9(uint16_t position, uint8_t state)
     else if (state != state9)
     {
         state9 = state;
-        error9 = 0U;
+        IssueHandler::setNode9(0U);
         pending = true;
         statusNode();
     }
-    else if (error9 != 0U)
+    else if (!issue.getNode9())
     {
-        error9 = 0U;
+        IssueHandler::setNode9(0U);
         pending = true;
     }
 }
@@ -686,20 +559,6 @@ void DeskService::setPresetLow(uint16_t preset)
 void DeskService::setReset(bool state) { digitalWrite(PIN_RST, state ? LOW : HIGH); }
 
 /**
- * @brief Stores the AVR reset-cause flags and requests state publication when they change.
- *
- * @param flags AVR MCUSR reset-cause bitmask.
- */
-void DeskService::setResetReason(uint8_t flags)
-{
-    if (flags != resetReason)
-    {
-        resetReason = flags;
-        pending = true;
-    }
-}
-
-/**
  * @brief Stores a newly received serial payload for publication.
  *
  * @param payload Serial payload bytes to store.
@@ -767,27 +626,6 @@ void DeskService::setTx(std::span<const uint8_t> payload)
         lengthTx = payload.size();
         std::copy(payload.begin(), payload.end(), payloadTx.begin());
         pending = true;
-    }
-}
-
-/**
- * @brief Records the AVR firmware fingerprint and signals a version mismatch.
- *
- * Marks the device state for publication when the fingerprint changes and sets the status
- * indicator to red when the AVR and ESP32 firmware fingerprints differ.
- *
- * @param hash AVR firmware fingerprint.
- */
-void DeskService::setVersion(uint8_t hash)
-{
-    if (hash != versionAvr)
-    {
-        versionAvr = hash;
-        pending = true;
-    }
-    if (versionAvr != fingerprint(version))
-    {
-        StatusHandler::setRed();
     }
 }
 
@@ -934,13 +772,9 @@ void DeskService::onReset()
     desk.reset = digitalRead(PIN_RST) == LOW;
     if (desk.reset)
     {
-        desk.error8 = 0U;
-        desk.error9 = 0U;
-        desk.errorInit = 0U;
         desk.lengthRx = 0U;
         desk.lengthTx = 0U;
-        desk.resetReason = 0U;
-        desk.console.clear();
+        desk.issue.clear();
         StatusHandler::setNone(true);
     }
     else
