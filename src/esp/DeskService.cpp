@@ -32,12 +32,6 @@ void DeskService::begin()
     pinMode(PIN_OE, OUTPUT);
 #endif // PIN_OE
     pinMode(PIN_RST, OUTPUT_OPEN_DRAIN);
-#ifdef PIN_TPDN
-    pinMode(PIN_TPDN, OUTPUT_OPEN_DRAIN);
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
-    pinMode(PIN_TPUP, OUTPUT_OPEN_DRAIN);
-#endif // PIN_TPUP
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
@@ -56,19 +50,8 @@ void DeskService::begin()
         nvs_close(handle);
         saved = true;
     }
-#ifdef PIN_TPDN
-    digitalWrite(PIN_TPDN, HIGH);
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
-    digitalWrite(PIN_TPUP, HIGH);
-#endif // PIN_TPUP
-#ifdef PIN_TPDN
-    attachInterrupt(PIN_TPDN, onDown, CHANGE);
-#endif // PIN_TPDN
+    button.begin();
     attachInterrupt(PIN_RST, onReset, CHANGE);
-#ifdef PIN_TPUP
-    attachInterrupt(PIN_TPUP, onUp, CHANGE);
-#endif // PIN_TPUP
     digitalWrite(PIN_RST, HIGH);
     status.begin();
     console.begin();
@@ -103,20 +86,10 @@ void DeskService::handle()
     mqtt.handle();
     if (pending || millis() - lastMillis > 0b1U << 16U)
     {
-#ifdef PIN_TPDN
-        if (simulateDown.first && !pending)
+        if (!pending)
         {
-            digitalWrite(PIN_TPDN, HIGH);
-            simulateDown.first = false;
+            button.resetSimulation();
         }
-#endif // PIN_TPDN
-#ifdef PIN_TPUP
-        if (simulateUp.first && !pending)
-        {
-            digitalWrite(PIN_TPUP, HIGH);
-            simulateUp.first = false;
-        }
-#endif // PIN_TPUP
         if (!saved && !pending)
         {
             save();
@@ -234,11 +207,11 @@ void DeskService::request(JsonObjectConst doc)
     }
     if (doc["simulate"]["down"].is<bool>())
     {
-        desk.setSimulateDown(doc["simulate"]["down"].as<bool>());
+        button.setSimulateDown(doc["simulate"]["down"].as<bool>());
     }
     if (doc["simulate"]["up"].is<bool>())
     {
-        desk.setSimulateUp(doc["simulate"]["up"].as<bool>());
+        button.setSimulateUp(doc["simulate"]["up"].as<bool>());
     }
     if (doc["tone"].is<JsonObjectConst>())
     {
@@ -253,10 +226,10 @@ void DeskService::request(JsonObjectConst doc)
  */
 void DeskService::transmit(JsonDocument &doc)
 {
-    doc["button"]["3"].set((buttons & (0b1U << 2U)) != 0U);
-    doc["button"]["4"].set((buttons & (0b1U << 3U)) != 0U);
-    doc["button"]["down"].set((buttons & (0b1U << 1U)) != 0U);
-    doc["button"]["up"].set((buttons & 0b1U) != 0U);
+    doc["button"]["3"].set(button.getState3());
+    doc["button"]["4"].set(button.getState4());
+    doc["button"]["down"].set(button.getDown());
+    doc["button"]["up"].set(button.getUp());
     doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
     doc["encoders"][0U].set(encoder8);
     doc["encoders"][1U].set(encoder9);
@@ -285,10 +258,10 @@ void DeskService::transmit(JsonDocument &doc)
         doc["rx"].set(toHex(std::span<const uint8_t>(payloadRx).subspan(0U, lengthRx)));
     }
 #ifdef PIN_TPDN
-    doc["simulate"]["down"].set(simulateDown.first);
+    doc["simulate"]["down"].set(button.getDownSimulation());
 #endif // PIN_TPDN
 #ifdef PIN_TPUP
-    doc["simulate"]["up"].set(simulateUp.first);
+    doc["simulate"]["up"].set(button.getUpSimulation());
 #endif // PIN_TPUP
     doc["states"][0U].set(state8);
     doc["states"][1U].set(state9);
@@ -339,21 +312,6 @@ uint16_t DeskService::encode(float height)
                  static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
                  (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
                 static_cast<float>(ReferenceHeight::encoderLow)));
-}
-
-/**
- * @brief Updates the physical button states and requests state publication when they change.
- *
- * @param flags Button-state bitmask with up, down, button 3, and button 4 in bits 0 through 3, respectively.
- */
-void DeskService::setButtons(uint8_t flags)
-{
-    if (flags != buttons)
-    {
-        buttons = flags;
-        StatusHandler::setWhite();
-        pending = true;
-    }
 }
 
 /**
@@ -536,46 +494,6 @@ void DeskService::setRx(std::span<const uint8_t> payload)
 }
 
 /**
- * @brief Controls the optional output that simulates pressing the desk's down button.
- *
- * Marks the status as an error when activation is requested but the observed
- * output state is not active. Has no effect when down-button simulation is not configured.
- *
- * @param state Whether to activate the simulated down-button press.
- */
-void DeskService::setSimulateDown(bool state)
-{
-#ifdef PIN_TPDN
-    simulateDown.first = state;
-    if (simulateDown.first && simulateDown.first != simulateDown.second)
-    {
-        StatusHandler::setRed();
-    }
-    digitalWrite(PIN_TPDN, state ? LOW : HIGH);
-#endif // PIN_TPDN
-}
-
-/**
- * @brief Controls the optional output that simulates pressing the desk's up button.
- *
- * Marks the status as an error when activation is requested but the observed
- * output state is not active. Has no effect when up-button simulation is not configured.
- *
- * @param state Whether to activate the simulated up-button press.
- */
-void DeskService::setSimulateUp(bool state)
-{
-#ifdef PIN_TPUP
-    simulateUp.first = state;
-    if (simulateUp.first && simulateUp.first != simulateUp.second)
-    {
-        StatusHandler::setRed();
-    }
-    digitalWrite(PIN_TPUP, simulateUp.first ? LOW : HIGH);
-#endif // PIN_TPUP
-}
-
-/**
  * @brief Updates the stored transmitted serial payload.
  *
  * @param payload Bytes to store as the transmitted payload.
@@ -597,21 +515,11 @@ void DeskService::setTx(std::span<const uint8_t> payload)
  * @details Uses white for idle motor states, green for exclusive manual button activity
  * without drive output activity, and blue for all other states.
  */
-void DeskService::statusNode() // NOLINT(readability-make-member-function-const)
+void DeskService::statusNode() const
 {
-    if ((state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U))
-    {
-        StatusHandler::setWhite(true);
-    }
-    else if (((buttons & (0b1U << 1U)) != 0U && (buttons & 0b1U) == 0U && !simulateDown.first && !simulateUp.first) ||
-             ((buttons & 0b1U) != 0U && (buttons & (0b1U << 1U)) == 0U && !simulateDown.first && !simulateUp.first))
-    {
-        StatusHandler::setGreen();
-    }
-    else
-    {
-        StatusHandler::setBlue();
-    }
+    (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U)
+        ? StatusHandler::setWhite(true)
+        : button.setStatus();
 }
 
 /**
@@ -706,24 +614,6 @@ void DeskService::fetchRelease()
 }
 
 /**
- * @brief Updates the down-drive state from its input pin.
- *
- * Records the physical down-drive state, updates the status indicator for an
- * active down-drive request, and marks the device state for publication.
- */
-void DeskService::onDown()
-{
-#ifdef PIN_TPDN
-    desk.simulateDown.second = digitalRead(PIN_TPDN) == LOW;
-    if (desk.simulateDown.first)
-    {
-        desk.simulateDown.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
-    }
-    desk.pending = true;
-#endif // PIN_TPDN
-}
-
-/**
  * @brief Updates the reset state and status indicator from the reset input.
  *
  * Clears recorded communication errors, the AVR reset cause, and captured serial payloads from subsequent publications
@@ -744,24 +634,6 @@ void DeskService::onReset()
         StatusHandler::setWhite();
     }
     desk.pending = true;
-}
-
-/**
- * @brief Updates the upward drive state after a hardware interrupt.
- *
- * Records the active state of the upward drive input, updates the status indicator
- * when upward driving is requested, and marks the device state for publication.
- */
-void DeskService::onUp()
-{
-#ifdef PIN_TPUP
-    desk.simulateUp.second = digitalRead(PIN_TPUP) == LOW;
-    if (desk.simulateUp.first)
-    {
-        desk.simulateUp.second ? StatusHandler::setWhite(true) : StatusHandler::setRed();
-    }
-    desk.pending = true;
-#endif // PIN_TPUP
 }
 
 /**

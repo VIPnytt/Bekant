@@ -2,6 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
+#include "esp/ButtonHandler.h"
 #include "esp/ConsoleHandler.h"
 #include "esp/IspHandler.h"
 #include "esp/IssueHandler.h"
@@ -23,7 +24,6 @@ private:
     bool reset{false};
     bool saved{true};
 
-    uint8_t buttons{0U};
     uint8_t state8{0U};
     uint8_t state9{0U};
 
@@ -42,8 +42,7 @@ private:
     std::array<uint8_t, 0b1U << 4U> payloadRx{};
     std::array<uint8_t, 0b1U << 4U> payloadTx{};
 
-    std::pair<bool, bool> simulateDown{false, false};
-    std::pair<bool, bool> simulateUp{false, false};
+    ButtonHandler button{};
 
     ConsoleHandler console{};
 
@@ -69,11 +68,7 @@ private:
 
     void setReset(bool state);
 
-    void setSimulateDown(bool state);
-
-    void setSimulateUp(bool state);
-
-    void statusNode();
+    void statusNode() const;
 
     [[nodiscard]] float decode(float encoder);
 
@@ -81,11 +76,7 @@ private:
 
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
-    static void onDown();
-
     static void onReset();
-
-    static void onUp();
 
 public:
     static constexpr std::string_view version{"1.0.0"};
@@ -99,8 +90,6 @@ public:
     void request(JsonObjectConst doc);
 
     void safeMode();
-
-    void setButtons(uint8_t flags);
 
     void setNode8(uint16_t position, uint8_t state);
 

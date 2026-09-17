@@ -83,7 +83,7 @@ void ConsoleHandler::parse()
     desk.setRx(std::span{bufferRx}.subspan(0U, lengthRx + 1U));
     if (stateRx == State::BUTTONS && lengthRx == 1U)
     {
-        desk.setButtons(bufferRx.at(1U));
+        ButtonHandler::setStates(bufferRx.at(1U));
     }
     else if (stateRx == State::CONSOLE && lengthRx == 1U)
     {
