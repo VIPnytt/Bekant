@@ -169,19 +169,20 @@ void ConsoleHandler::send(Command command, uint16_t value)
 }
 
 /**
- * @brief Sends a command with a 32-bit value.
+ * @brief Sends a command with two little-endian 16-bit values.
  *
  * @param command Command to transmit.
- * @param value Value associated with the command.
+ * @param value1 First value associated with the command.
+ * @param value2 Second value associated with the command.
  */
-void ConsoleHandler::send(Command command, uint32_t value)
+void ConsoleHandler::send(Command command, uint16_t value1, uint16_t value2)
 {
     const std::array<uint8_t, 5U> payload{
         static_cast<uint8_t>((4U << 4U) | static_cast<uint8_t>(command)),
-        static_cast<uint8_t>(value & 0xFFU),
-        static_cast<uint8_t>(value >> 8U),
-        static_cast<uint8_t>(value >> 16U),
-        static_cast<uint8_t>(value >> 24U),
+        static_cast<uint8_t>(value1 & 0xFFU),
+        static_cast<uint8_t>(value1 >> 8U),
+        static_cast<uint8_t>(value2 & 0xFFU),
+        static_cast<uint8_t>(value2 >> 8U),
     };
     write(payload);
 }

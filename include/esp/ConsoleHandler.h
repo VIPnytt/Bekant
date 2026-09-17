@@ -50,7 +50,7 @@ public:
 
     void send(Command command, uint16_t value);
 
-    void send(Command command, uint32_t value);
+    static void send(Command command, uint16_t value1, uint16_t value2);
 
 private:
     size_t bytesRx{0U};
@@ -76,7 +76,7 @@ private:
      */
     void parse();
 
-    void write(std::span<const uint8_t> payload);
+    static void write(std::span<const uint8_t> payload);
 };
 
 #endif // ARDUINO_ARCH_ESP32
