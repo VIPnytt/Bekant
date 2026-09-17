@@ -6,6 +6,11 @@
 #include "esp/StatusHandler.h"
 #include "esp/secrets.h"
 
+/**
+ * @brief Initializes the optional down- and up-button simulation outputs.
+ *
+ * Releases each configured open-drain output and attaches its change interrupt.
+ */
 void ButtonHandler::begin()
 {
 #ifdef PIN_TPDN
@@ -28,18 +33,51 @@ void ButtonHandler::begin()
 #endif // PIN_TPUP
 }
 
+/**
+ * @brief Reports whether the AVR's latest button state has the down button pressed.
+ *
+ * @return `true` when the down-button bit is set.
+ */
 bool ButtonHandler::getDown() const { return (states & (0b1U << 1U)) != 0U; }
 
+/**
+ * @brief Reports whether down-button simulation is requested.
+ *
+ * @return `true` while the down-button simulation output is requested active.
+ */
 bool ButtonHandler::getDownSimulation() const { return simulateDown.first; }
 
+/**
+ * @brief Reports whether the AVR's latest button state has button 3 pressed.
+ *
+ * @return `true` when the button-3 bit is set.
+ */
 bool ButtonHandler::getState3() const { return (states & (0b1U << 2U)) != 0U; }
 
+/**
+ * @brief Reports whether the AVR's latest button state has button 4 pressed.
+ *
+ * @return `true` when the button-4 bit is set.
+ */
 bool ButtonHandler::getState4() const { return (states & (0b1U << 3U)) != 0U; }
 
+/**
+ * @brief Reports whether the AVR's latest button state has the up button pressed.
+ *
+ * @return `true` when the up-button bit is set.
+ */
 bool ButtonHandler::getUp() const { return (states & 0b1U) != 0U; }
 
+/**
+ * @brief Reports whether up-button simulation is requested.
+ *
+ * @return `true` while the up-button simulation output is requested active.
+ */
 bool ButtonHandler::getUpSimulation() const { return simulateUp.first; }
 
+/**
+ * @brief Releases requested button-simulation outputs and clears their requested states.
+ */
 void ButtonHandler::resetSimulation()
 {
 #ifdef PIN_TPDN
@@ -59,10 +97,10 @@ void ButtonHandler::resetSimulation()
 }
 
 /**
- * @brief Updates the down-drive state from its input pin.
+ * @brief Handles a change on the optional down-button simulation line.
  *
- * Records the physical down-drive state, updates the status indicator for an
- * active down-drive request, and marks the device state for publication.
+ * Records whether the line is asserted, updates the status indicator for an
+ * active simulation request, and marks the device state for publication.
  */
 void ButtonHandler::onDown()
 {
@@ -77,10 +115,10 @@ void ButtonHandler::onDown()
 }
 
 /**
- * @brief Updates the upward drive state after a hardware interrupt.
+ * @brief Handles a change on the optional up-button simulation line.
  *
- * Records the active state of the upward drive input, updates the status indicator
- * when upward driving is requested, and marks the device state for publication.
+ * Records whether the line is asserted, updates the status indicator for an
+ * active simulation request, and marks the device state for publication.
  */
 void ButtonHandler::onUp()
 {
@@ -149,6 +187,12 @@ void ButtonHandler::setStates(uint8_t flags)
     }
 }
 
+/**
+ * @brief Selects the status color from physical and simulated directional-button activity.
+ *
+ * Uses green when exactly one physical direction button is pressed without a
+ * simulation request, and blue otherwise.
+ */
 void ButtonHandler::setStatus() const
 {
     !getDownSimulation() && !getUpSimulation() && ((getDown() && !getUp()) || (getUp() && !getDown()))
