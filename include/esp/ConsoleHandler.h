@@ -43,10 +43,6 @@ public:
      */
     void handle();
 
-    void clear();
-
-    void getIssues(JsonArray &list);
-
     /**
      * Forwards buffered console data.
      */
@@ -59,9 +55,6 @@ public:
     void send(Command command, uint32_t value);
 
 private:
-    uint8_t errorLin{0U};
-    uint8_t errorTx{0U};
-
     size_t bytesRx{0U};
     size_t bytesTx{0U};
     size_t lengthRx{0U};
@@ -80,24 +73,12 @@ private:
      */
     State stateRx{};
 
-    static inline hardwareSerial_error_t errorRx{hardwareSerial_error_t::UART_NO_ERROR};
-
     /**
      * Parses a received console payload.
      */
     void parse();
 
-    void setErrorLin(uint8_t flags);
-
-    void setErrorTx(uint8_t flags);
-
     void write(std::span<const uint8_t> payload);
-
-    /**
-     * Records a hardware serial receive error.
-     * @param error Hardware serial error to record.
-     */
-    static void onReceiveError(hardwareSerial_error_t error);
 };
 
 #endif // ARDUINO_ARCH_ESP32
