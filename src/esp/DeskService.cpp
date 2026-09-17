@@ -515,7 +515,7 @@ void DeskService::setTx(std::span<const uint8_t> payload)
  * @details Uses white for idle motor states, green for exclusive manual button activity
  * without drive output activity, and blue for all other states.
  */
-void DeskService::statusNode() // NOLINT(readability-make-member-function-const)
+void DeskService::statusNode() const
 {
     (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U)
         ? StatusHandler::setWhite(true)

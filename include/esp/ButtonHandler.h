@@ -19,17 +19,17 @@ private:
 public:
     void begin();
 
-    bool getDown() const;
+    [[nodiscard]] bool getDown() const;
 
-    bool getDownSimulation() const;
+    [[nodiscard]] bool getDownSimulation() const;
 
-    bool getState3() const;
+    [[nodiscard]] bool getState3() const;
 
-    bool getState4() const;
+    [[nodiscard]] bool getState4() const;
 
-    bool getUp() const;
+    [[nodiscard]] bool getUp() const;
 
-    bool getUpSimulation() const;
+    [[nodiscard]] bool getUpSimulation() const;
 
     void resetSimulation();
 
@@ -37,7 +37,7 @@ public:
 
     void setSimulateUp(bool state);
 
-    void setStatus();
+    void setStatus() const;
 
     static void setStates(uint8_t flags);
 };

@@ -149,7 +149,7 @@ void ButtonHandler::setStates(uint8_t flags)
     }
 }
 
-void ButtonHandler::setStatus()
+void ButtonHandler::setStatus() const
 {
     !getDownSimulation() && !getUpSimulation() && ((getDown() && !getUp()) || (getUp() && !getDown()))
         ? StatusHandler::setGreen()

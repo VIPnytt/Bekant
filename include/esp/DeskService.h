@@ -68,7 +68,7 @@ private:
 
     void setReset(bool state);
 
-    void statusNode();
+    void statusNode() const;
 
     [[nodiscard]] float decode(float encoder);
 
