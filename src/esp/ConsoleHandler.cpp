@@ -2,7 +2,6 @@
 
 #include "esp/ConsoleHandler.h"
 
-#include "esp/ButtonHandler.h"
 #include "esp/DeskService.h"
 #include "esp/IssueHandler.h"
 #include "esp/secrets.h"
