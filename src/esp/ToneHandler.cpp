@@ -2,7 +2,6 @@
 
 #include "esp/ToneHandler.h"
 
-#include "esp/ConsoleHandler.h"
 #include "esp/DeskService.h"
 
 #include <nvs.h>

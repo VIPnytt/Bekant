@@ -19,9 +19,9 @@ public:
 
     void handle();
 
-    uint16_t getDuration() const;
+    [[nodiscard]] uint16_t getDuration() const;
 
-    uint16_t getFrequency() const;
+    [[nodiscard]] uint16_t getFrequency() const;
 
     static void parse(const JsonObjectConst &doc);
 };

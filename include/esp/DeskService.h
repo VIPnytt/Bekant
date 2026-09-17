@@ -7,8 +7,8 @@
 #include "esp/IssueHandler.h"
 #include "esp/MqttHandler.h"
 #include "esp/OtaHandler.h"
-#include "esp/ToneHandler.h"
 #include "esp/StatusHandler.h"
+#include "esp/ToneHandler.h"
 #include "esp/WifiHandler.h"
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
