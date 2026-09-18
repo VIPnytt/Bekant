@@ -19,27 +19,27 @@ private:
 public:
     void begin();
 
-    [[nodiscard]] bool getDown() const;
-
-    [[nodiscard]] bool getDownSimulation() const;
-
-    [[nodiscard]] bool getState3() const;
-
-    [[nodiscard]] bool getState4() const;
-
-    [[nodiscard]] bool getUp() const;
-
-    [[nodiscard]] bool getUpSimulation() const;
-
     void resetSimulation();
 
     void setSimulateDown(bool state);
 
     void setSimulateUp(bool state);
 
-    void setStatus() const;
+    [[nodiscard]] bool getState3() const;
+
+    [[nodiscard]] bool getState4() const;
 
     static void setStates(uint8_t flags);
+
+    static void setStatus();
+
+    [[nodiscard]] static bool getDown();
+
+    [[nodiscard]] static bool getDownSimulation();
+
+    [[nodiscard]] static bool getUp();
+
+    [[nodiscard]] static bool getUpSimulation();
 };
 
 #endif // ARDUINO_ARCH_ESP32

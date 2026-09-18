@@ -32,23 +32,21 @@ void DeskService::begin()
     pinMode(PIN_OE, OUTPUT);
 #endif // PIN_OE
     pinMode(PIN_RST, OUTPUT_OPEN_DRAIN);
+#ifdef PIN_OE
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        nvs_get_u16(handle, "8", &encoder8);
-        nvs_get_u16(handle, "9", &encoder9);
-#ifdef PIN_OE
         uint8_t _enable{};
         if (nvs_get_u8(handle, "oe", &_enable) == ESP_OK)
         {
             enable = static_cast<bool>(_enable);
             digitalWrite(PIN_OE, enable ? HIGH : LOW);
         }
-#endif // PIN_OE
         nvs_close(handle);
-        saved = true;
     }
+#endif // PIN_OE
     button.begin();
+    leg.begin();
     preset.begin();
     attachInterrupt(PIN_RST, onReset, CHANGE);
     digitalWrite(PIN_RST, HIGH);
@@ -81,6 +79,7 @@ void DeskService::handle()
         return;
     }
     console.handle();
+    leg.handle();
     preset.handle();
     tone.handle();
     mqtt.handle();
@@ -136,7 +135,7 @@ void DeskService::safeMode()
 }
 
 /**
- * @brief Persists encoder and output-enable state to non-volatile storage.
+ * @brief Persists the output-enable state to non-volatile storage.
  */
 void DeskService::save()
 {
@@ -144,8 +143,6 @@ void DeskService::save()
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
     {
         saved = true;
-        nvs_set_u16(handle, "8", encoder8);
-        nvs_set_u16(handle, "9", encoder9);
         nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable)); // NOLINT(readability-implicit-bool-conversion)
         if (nvs_commit(handle) != ESP_OK)
         {
@@ -226,19 +223,19 @@ void DeskService::transmit(JsonDocument &doc)
     doc["button"]["4"].set(button.getState4());
     doc["button"]["down"].set(button.getDown());
     doc["button"]["up"].set(button.getUp());
-    doc["desk"].set(decode(static_cast<float>(encoder8 + encoder9) / 2.0F));
-    doc["encoders"][0U].set(encoder8);
-    doc["encoders"][1U].set(encoder9);
+    const std::pair<uint16_t, uint16_t> encoders{leg.getEncoders()};
+    doc["desk"].set(decode(static_cast<float>(encoders.first + encoders.second) / 2.0F));
+    doc["encoders"][0U].set(encoders.first);
+    doc["encoders"][1U].set(encoders.second);
     JsonArray issues{doc["issues"].to<JsonArray>()};
     issue.getIssues(issues);
-    const float leg8{decode(static_cast<float>(encoder8))};
-    const float leg9{decode(static_cast<float>(encoder9))};
-    doc["legs"][0U].set(leg8);
-    doc["legs"][1U].set(leg9);
+    const std::pair<float, float> legs{leg.getLegs()};
+    doc["legs"][0U].set(legs.first);
+    doc["legs"][1U].set(legs.second);
 #ifdef PIN_OE
     doc["oe"].set(enable);
 #endif // PIN_OE
-    doc["offset"].set(leg8 - leg9);
+    doc["offset"].set(legs.first - legs.second);
     const float presetHigh{preset.getHigh()};
     if (presetHigh >= ReferenceHeight::heightLow && presetHigh <= ReferenceHeight::heightHigh)
     {
@@ -261,8 +258,9 @@ void DeskService::transmit(JsonDocument &doc)
 #ifdef PIN_TPUP
     doc["simulate"]["up"].set(button.getUpSimulation());
 #endif // PIN_TPUP
-    doc["states"][0U].set(state8);
-    doc["states"][1U].set(state9);
+    const std::pair<uint8_t, uint8_t> states{leg.getStates()};
+    doc["states"][0U].set(states.first);
+    doc["states"][1U].set(states.second);
     doc["temperature"].set(temperatureRead());
     doc["tone"]["duration"].set(tone.getDuration());
     doc["tone"]["frequency"].set(tone.getFrequency());
@@ -310,88 +308,6 @@ uint16_t DeskService::encode(float height)
                  static_cast<float>(ReferenceHeight::encoderHigh - ReferenceHeight::encoderLow) /
                  (ReferenceHeight::heightHigh - ReferenceHeight::heightLow)) +
                 static_cast<float>(ReferenceHeight::encoderLow)));
-}
-
-/**
- * @brief Updates node 8 data and clears its communication error.
- *
- * Changes are marked for publication, and position changes are also marked for persistence.
- *
- * @param position Encoder position reported by the node.
- * @param state State reported by the node.
- */
-void DeskService::setNode8(uint16_t position, uint8_t state)
-{
-    if (position != encoder8 && state != state8)
-    {
-        encoder8 = position;
-        state8 = state;
-        IssueHandler::setNode8(0U);
-        saved = false;
-        pending = true;
-        statusNode();
-    }
-    else if (position != encoder8)
-    {
-        encoder8 = position;
-        IssueHandler::setNode8(0U);
-        saved = false;
-        pending = true;
-        statusNode();
-    }
-    else if (state != state8)
-    {
-        state8 = state;
-        IssueHandler::setNode8(0U);
-        pending = true;
-        statusNode();
-    }
-    else if (!issue.getNode8())
-    {
-        IssueHandler::setNode8(0U);
-        pending = true;
-    }
-}
-
-/**
- * @brief Updates node 9 data and clears its communication error.
- *
- * Changes are marked for publication, and position changes are also marked for persistence.
- *
- * @param position Encoder position reported by the node.
- * @param state State reported by the node.
- */
-void DeskService::setNode9(uint16_t position, uint8_t state)
-{
-    if (position != encoder9 && state != state9)
-    {
-        encoder9 = position;
-        state9 = state;
-        IssueHandler::setNode9(0U);
-        saved = false;
-        pending = true;
-        statusNode();
-    }
-    else if (position != encoder9)
-    {
-        encoder9 = position;
-        IssueHandler::setNode9(0U);
-        saved = false;
-        pending = true;
-        statusNode();
-    }
-    else if (state != state9)
-    {
-        state9 = state;
-        IssueHandler::setNode9(0U);
-        pending = true;
-        statusNode();
-    }
-    else if (!issue.getNode9())
-    {
-        IssueHandler::setNode9(0U);
-        pending = true;
-    }
 }
 
 /**
@@ -457,19 +373,6 @@ void DeskService::setTx(std::span<const uint8_t> payload)
         std::copy(payload.begin(), payload.end(), payloadTx.begin());
         pending = true;
     }
-}
-
-/**
- * @brief Selects the status indicator color from motor, button, and drive activity.
- *
- * @details Uses white for idle motor states, green for exclusive manual button activity
- * without drive output activity, and blue for all other states.
- */
-void DeskService::statusNode() const
-{
-    (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U)
-        ? StatusHandler::setWhite(true)
-        : button.setStatus();
 }
 
 /**

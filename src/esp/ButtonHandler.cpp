@@ -38,14 +38,14 @@ void ButtonHandler::begin()
  *
  * @return `true` when the down-button bit is set.
  */
-bool ButtonHandler::getDown() const { return (states & (0b1U << 1U)) != 0U; }
+bool ButtonHandler::getDown() { return (states & (0b1U << 1U)) != 0U; }
 
 /**
  * @brief Reports whether down-button simulation is requested.
  *
  * @return `true` while the down-button simulation output is requested active.
  */
-bool ButtonHandler::getDownSimulation() const { return simulateDown.first; }
+bool ButtonHandler::getDownSimulation() { return simulateDown.first; }
 
 /**
  * @brief Reports whether the AVR's latest button state has button 3 pressed.
@@ -66,14 +66,14 @@ bool ButtonHandler::getState4() const { return (states & (0b1U << 3U)) != 0U; }
  *
  * @return `true` when the up-button bit is set.
  */
-bool ButtonHandler::getUp() const { return (states & 0b1U) != 0U; }
+bool ButtonHandler::getUp() { return (states & 0b1U) != 0U; }
 
 /**
  * @brief Reports whether up-button simulation is requested.
  *
  * @return `true` while the up-button simulation output is requested active.
  */
-bool ButtonHandler::getUpSimulation() const { return simulateUp.first; }
+bool ButtonHandler::getUpSimulation() { return simulateUp.first; }
 
 /**
  * @brief Releases requested button-simulation outputs and clears their requested states.
@@ -193,7 +193,7 @@ void ButtonHandler::setStates(uint8_t flags)
  * Uses green when exactly one physical direction button is pressed without a
  * simulation request, and blue otherwise.
  */
-void ButtonHandler::setStatus() const
+void ButtonHandler::setStatus()
 {
     !getDownSimulation() && !getUpSimulation() && ((getDown() && !getUp()) || (getUp() && !getDown()))
         ? StatusHandler::setGreen()

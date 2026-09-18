@@ -226,7 +226,7 @@ void HomeAssistantHandler::sensors()
         desk[ComponentAbbreviations::suggested_display_precision].set(1U);
         desk[ComponentAbbreviations::unique_id].set("desk");
         desk[ComponentAbbreviations::unit_of_measurement].set(ReferenceHeight::heightUnit);
-        desk[ComponentAbbreviations::value_template].set(R"({{value_json.desk}})");
+        desk[ComponentAbbreviations::value_template].set("{{value_json.desk}}");
     }
     {
         JsonObject presetHigh{discovery[ComponentAbbreviations::components]["high_sensor"].to<JsonObject>()};

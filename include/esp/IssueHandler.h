@@ -45,10 +45,6 @@ public:
 
     void getIssues(JsonArray &list);
 
-    bool getNode8();
-
-    bool getNode9();
-
     /**
      * Records a hardware serial receive error.
      * @param error Hardware serial error to record.

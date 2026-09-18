@@ -118,20 +118,6 @@ void IssueHandler::getLegs(JsonArray &list)
 }
 
 /**
- * @brief Reports whether node 8 has no recorded communication errors.
- *
- * @return `true` when no node 8 communication errors are recorded; otherwise, `false`.
- */
-bool IssueHandler::getNode8() { return node8 == 0U; }
-
-/**
- * @brief Reports whether node 9 has no recorded communication errors.
- *
- * @return `true` when no node 9 communication errors are recorded; otherwise, `false`.
- */
-bool IssueHandler::getNode9() { return node9 == 0U; }
-
-/**
  * @brief Appends recorded AVR and ESP32 reset causes that indicate failures.
  *
  * @param list JSON array to append to.
