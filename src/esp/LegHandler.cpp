@@ -11,7 +11,7 @@
 void LegHandler::begin()
 {
     nvs_handle_t handle{};
-    if (nvs_open("tone", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
+    if (nvs_open("leg", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
         nvs_get_u16(handle, "encoder8", &encoder8);
         nvs_get_u16(handle, "encoder9", &encoder9);
@@ -77,10 +77,9 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
         desk.setPending();
         setStatus();
     }
-    else if (!IssueHandler::getNode8())
+    else
     {
         IssueHandler::setNode8(0U);
-        desk.setPending();
     }
 }
 
@@ -118,10 +117,9 @@ void LegHandler::setNode9(uint16_t position, uint8_t state)
         desk.setPending();
         setStatus();
     }
-    else if (!IssueHandler::getNode9())
+    else
     {
         IssueHandler::setNode9(0U);
-        desk.setPending();
     }
 }
 
