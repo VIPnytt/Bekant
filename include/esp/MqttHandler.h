@@ -10,7 +10,7 @@ class MqttHandler
 private:
     static constexpr std::array<uint8_t, 1U> will{0U};
 
-    unsigned long lastMillis{0U};
+    unsigned long lastMillis{0UL};
 
     static inline espMqttClient client{espMqttClientTypes::UseInternalTask::NO};
 

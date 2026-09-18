@@ -27,7 +27,7 @@ void IspHandler::handle()
 {
     if (active)
     {
-        if (client.available())
+        if (client.available() != 0)
         {
             switch (getChar())
             {
@@ -126,7 +126,7 @@ void IspHandler::handle()
                 client.print(getChar() == stkCrcEop ? '\x12' : stkNoSync);
             }
         }
-        else if (!client.connected())
+        else if (client.connected() == 0U)
         {
             SPI.end();
             client.stop();
@@ -200,7 +200,7 @@ void IspHandler::enterProgrammingMode()
  *
  * @param length Number of EEPROM bytes to read.
  */
-void IspHandler::eepromReadPage(size_t length) // NOLINT(readability-make-member-function-const)
+void IspHandler::eepromReadPage(size_t length) const
 {
     std::vector<uint8_t> data(length + 1U);
     const size_t start{here * 2U};
@@ -248,7 +248,7 @@ void IspHandler::flashReadPage(size_t length)
  */
 uint8_t IspHandler::getChar()
 {
-    while (!client.available())
+    while (client.available() == 0)
     {
         vTaskDelay(1U);
     }

@@ -2,7 +2,6 @@
 
 #include "esp/LegHandler.h"
 
-#include "esp/ButtonHandler.h"
 #include "esp/DeskService.h"
 
 #include <nvs.h>
@@ -49,6 +48,16 @@ void LegHandler::handle()
 std::pair<uint16_t, uint16_t> LegHandler::getEncoders() const { return {encoder8, encoder9}; }
 
 /**
+ * @brief Reports whether both leg nodes are idle.
+ *
+ * @return `true` when both latest node states indicate an idle condition.
+ */
+bool LegHandler::getIdle() const
+{
+    return (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U);
+}
+
+/**
  * @brief Converts the latest leg encoder positions to physical heights.
  *
  * @return Node 8's height followed by node 9's height, in centimeters.
@@ -66,9 +75,9 @@ std::pair<float, float> LegHandler::getLegs() const
 std::pair<uint8_t, uint8_t> LegHandler::getStates() const { return {state8, state9}; }
 
 /**
- * @brief Updates node 8 data and clears its communication error.
+ * @brief Updates node 8's encoder position and state.
  *
- * Changes are marked for publication, and position changes are also marked for persistence.
+ * Changes update the status indicator and are marked for publication. Position changes are also marked for persistence.
  *
  * @param position Encoder position reported by the node.
  * @param state State reported by the node.
@@ -81,28 +90,27 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
         state8 = state;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (position != encoder8)
     {
         encoder8 = position;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (state != state8)
     {
         state8 = state;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
-    IssueHandler::setNode8(0U);
 }
 
 /**
- * @brief Updates node 9 data and clears its communication error.
+ * @brief Updates node 9's encoder position and state.
  *
- * Changes are marked for publication, and position changes are also marked for persistence.
+ * Changes update the status indicator and are marked for publication. Position changes are also marked for persistence.
  *
  * @param position Encoder position reported by the node.
  * @param state State reported by the node.
@@ -115,35 +123,21 @@ void LegHandler::setNode9(uint16_t position, uint8_t state)
         state9 = state;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (position != encoder9)
     {
         encoder9 = position;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (state != state9)
     {
         state9 = state;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
-    IssueHandler::setNode9(0U);
-}
-
-/**
- * @brief Selects the status indicator color from motor, button, and drive activity.
- *
- * @details Uses white for idle motor states, green for exclusive manual button activity
- * without drive output activity, and blue for all other states.
- */
-void LegHandler::setStatus()
-{
-    (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U)
-        ? StatusHandler::setWhite(true)
-        : ButtonHandler::setStatus();
 }
 
 #endif // ARDUINO_ARCH_ESP32

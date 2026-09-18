@@ -24,13 +24,13 @@ private:
         return hash;
     }
 
-    static inline uint8_t consoleTx{0U};
-    static inline uint8_t initialization{0U};
-    static inline uint8_t legsRx{0U};
-    static inline uint8_t node8{0U};
-    static inline uint8_t node9{0U};
-    static inline uint8_t resetReason{0U};
-    static inline uint8_t version{0U};
+    uint8_t consoleTx{0U};
+    uint8_t initialization{0U};
+    uint8_t legsRx{0U};
+    uint8_t node8{0U};
+    uint8_t node9{0U};
+    uint8_t resetReason{0U};
+    uint8_t version{0U};
 
     static inline hardwareSerial_error_t consoleRx{hardwareSerial_error_t::UART_NO_ERROR};
 
@@ -45,25 +45,25 @@ public:
 
     void getIssues(JsonArray &list);
 
+    void setConsoleTx(uint8_t flags);
+
+    void setInitialization(uint8_t flags);
+
+    void setLegsRx(uint8_t flags);
+
+    void setNode8(uint8_t flags);
+
+    void setNode9(uint8_t flags);
+
+    void setResetReason(uint8_t flags);
+
+    void setVersion(uint8_t hash);
+
     /**
      * Records a hardware serial receive error.
      * @param error Hardware serial error to record.
      */
     static void onReceiveError(hardwareSerial_error_t error);
-
-    static void setConsoleTx(uint8_t flags);
-
-    static void setInitialization(uint8_t flags);
-
-    static void setLegsRx(uint8_t flags);
-
-    static void setNode8(uint8_t flags);
-
-    static void setNode9(uint8_t flags);
-
-    static void setResetReason(uint8_t flags);
-
-    static void setVersion(uint8_t hash);
 };
 
 #endif // ARDUINO_ARCH_ESP32

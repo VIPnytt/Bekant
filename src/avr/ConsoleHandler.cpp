@@ -39,7 +39,7 @@ void ConsoleHandler::handle()
         if (lengthRx == 0U)
         {
             lengthRx = static_cast<unsigned char>(static_cast<unsigned char>(byte) >> 4U);
-            commandRx = static_cast<Command>(static_cast<unsigned char>(byte) & 0b1111U);
+            commandRx = static_cast<Command>(static_cast<unsigned char>(byte) & 0xFU);
             bytesRx = 0U;
         }
         bufferRx[bytesRx++] = static_cast<unsigned char>(byte);

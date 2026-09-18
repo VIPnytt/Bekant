@@ -3,11 +3,12 @@
 #ifdef ARDUINO_ARCH_ESP32
 
 #include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <utility>
 
 class ButtonHandler
 {
 private:
-    static inline uint8_t states{0U};
+    uint8_t states{0U};
 
     static inline std::pair<bool, bool> simulateDown{false, false};
     static inline std::pair<bool, bool> simulateUp{false, false};
@@ -25,21 +26,21 @@ public:
 
     void setSimulateUp(bool state);
 
+    void setStates(uint8_t flags);
+
+    void setStatus();
+
+    [[nodiscard]] bool getDown() const;
+
+    [[nodiscard]] bool getDownSimulation();
+
     [[nodiscard]] bool getState3() const;
 
     [[nodiscard]] bool getState4() const;
 
-    static void setStates(uint8_t flags);
+    [[nodiscard]] bool getUp() const;
 
-    static void setStatus();
-
-    [[nodiscard]] static bool getDown();
-
-    [[nodiscard]] static bool getDownSimulation();
-
-    [[nodiscard]] static bool getUp();
-
-    [[nodiscard]] static bool getUpSimulation();
+    [[nodiscard]] bool getUpSimulation();
 };
 
 #endif // ARDUINO_ARCH_ESP32

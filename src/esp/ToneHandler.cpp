@@ -17,7 +17,6 @@ void ToneHandler::begin()
         nvs_get_u16(handle, "duration", &duration);
         nvs_get_u16(handle, "frequency", &frequency);
         nvs_close(handle);
-        saved = true;
     }
 }
 
@@ -69,27 +68,27 @@ void ToneHandler::parse(const JsonObjectConst &doc)
 {
     if (doc["duration"].is<uint16_t>())
     {
-        const uint16_t duration{doc["duration"].as<uint16_t>()};
-        if (duration != ToneHandler::duration && duration != 0U)
+        const uint16_t _duration{doc["duration"].as<uint16_t>()};
+        if (_duration != duration && _duration != 0U)
         {
-            ToneHandler::duration = duration;
-            ToneHandler::lastMillis = millis();
-            ToneHandler::saved = false;
+            duration = _duration;
+            lastMillis = millis();
+            saved = false;
             desk.setPending();
         }
     }
     if (doc["frequency"].is<uint16_t>())
     {
-        const uint16_t frequency{doc["frequency"].as<uint16_t>()};
-        if (frequency != ToneHandler::frequency && frequency != 0U)
+        const uint16_t _frequency{doc["frequency"].as<uint16_t>()};
+        if (_frequency != frequency && _frequency != 0U)
         {
-            ToneHandler::frequency = frequency;
-            ToneHandler::lastMillis = millis();
-            ToneHandler::saved = false;
+            frequency = _frequency;
+            lastMillis = millis();
+            saved = false;
             desk.setPending();
         }
     }
-    ConsoleHandler::send(ConsoleHandler::Command::TONE, ToneHandler::frequency, ToneHandler::duration);
+    ConsoleHandler::send(ConsoleHandler::Command::TONE, frequency, duration);
 }
 
 #endif // ARDUINO_ARCH_ESP32

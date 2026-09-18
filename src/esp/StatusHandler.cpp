@@ -7,11 +7,12 @@
 #include <FastLED.h>
 
 /**
- * @brief Registers the configured status LED with FastLED.
+ * @brief Configures the optional status LED output and registers it with FastLED.
  */
 void StatusHandler::begin()
 {
 #ifdef PIN_LED
+    pinMode(PIN_LED, OUTPUT);
     FastLED.addLeds<WS2812, PIN_LED, fl::EOrder::GRB>(&color, 1);
 #endif // PIN_LED
 }

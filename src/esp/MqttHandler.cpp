@@ -143,7 +143,7 @@ void MqttHandler::onMessage(const espMqttClientTypes::MessageProperties &propert
     JsonDocument doc{}; // NOLINT(misc-const-correctness)
     if (index == 0U && len == total && deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
     {
-        desk.request(doc.as<JsonObjectConst>());
+        desk.parse(doc.as<JsonObjectConst>());
     }
 }
 

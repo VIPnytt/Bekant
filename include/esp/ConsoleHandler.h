@@ -71,11 +71,6 @@ private:
      */
     State stateRx{};
 
-    /**
-     * Parses a received console payload.
-     */
-    void parse();
-
     static void write(std::span<const uint8_t> payload);
 };
 

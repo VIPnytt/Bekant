@@ -30,14 +30,14 @@ void ConsoleHandler::handle()
         ESP_LOGV("RX", "0x%X", byte);
         if (lengthRx == 0U)
         {
-            lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);   // NOLINT(hicpp-signed-bitwise)
-            stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0b1111U); // NOLINT(hicpp-signed-bitwise)
+            lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U); // NOLINT(hicpp-signed-bitwise)
+            stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0xFU);  // NOLINT(hicpp-signed-bitwise)
             bytesRx = 0U;
         }
         bufferRx.at(bytesRx++) = static_cast<uint8_t>(byte);
         if (bytesRx == lengthRx + 1U)
         {
-            parse();
+            desk.parse(stateRx, std::span{bufferRx}.first(lengthRx + 1U));
             lengthRx = 0U;
         }
     }
@@ -70,76 +70,6 @@ void ConsoleHandler::forward()
             write(std::span{bufferTx}.subspan(0U, lengthTx + 1U));
             lengthTx = 0U;
         }
-    }
-}
-
-/**
- * @brief Applies the buffered console frame to the corresponding device state.
- *
- * Invalid command and payload-length combinations set the device status to red.
- */
-void ConsoleHandler::parse()
-{
-    desk.setRx(std::span{bufferRx}.subspan(0U, lengthRx + 1U));
-    if (stateRx == State::BUTTONS && lengthRx == 1U)
-    {
-        ButtonHandler::setStates(bufferRx.at(1U));
-    }
-    else if (stateRx == State::CONSOLE && lengthRx == 1U)
-    {
-        IssueHandler::setConsoleTx(bufferRx.at(1U));
-    }
-    else if (stateRx == State::INITIALIZATION && lengthRx == 1U)
-    {
-        IssueHandler::setInitialization(bufferRx.at(1U));
-    }
-    else if (stateRx == State::LIN && lengthRx == 1U)
-    {
-        IssueHandler::setLegsRx(bufferRx.at(1U));
-    }
-    else if (stateRx == State::NODE8 && lengthRx == 1U)
-    {
-        IssueHandler::setNode8(bufferRx.at(1U));
-    }
-    else if (stateRx == State::NODE8 && lengthRx == 3U)
-    {
-        LegHandler::setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                                   static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
-                             bufferRx.at(3U));
-    }
-    else if (stateRx == State::NODE9 && lengthRx == 1U)
-    {
-        IssueHandler::setNode9(bufferRx.at(1U));
-    }
-    else if (stateRx == State::NODE9 && lengthRx == 3U)
-    {
-        LegHandler::setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                                   static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
-                             bufferRx.at(3U));
-    }
-    else if (stateRx == State::PRESET_HIGH && lengthRx == 2U)
-    {
-        PresetHandler::setHigh(
-            static_cast<uint16_t>(static_cast<unsigned int>(bufferRx.at(1U)) |
-                                  static_cast<unsigned int>(static_cast<unsigned int>(bufferRx.at(2U)) << 8U)));
-    }
-    else if (stateRx == State::PRESET_LOW && lengthRx == 2U)
-    {
-        PresetHandler::setLow(
-            static_cast<uint16_t>(static_cast<unsigned int>(bufferRx.at(1U)) |
-                                  static_cast<unsigned int>(static_cast<unsigned int>(bufferRx.at(2U)) << 8U)));
-    }
-    else if (stateRx == State::RESET_REASON && lengthRx == 1U)
-    {
-        IssueHandler::setResetReason(bufferRx.at(1U));
-    }
-    else if (stateRx == State::VERSION && lengthRx == 1U)
-    {
-        IssueHandler::setVersion(bufferRx.at(1U));
-    }
-    else
-    {
-        StatusHandler::setRed();
     }
 }
 
