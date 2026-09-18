@@ -47,6 +47,11 @@ void LegHandler::handle()
  */
 std::pair<uint16_t, uint16_t> LegHandler::getEncoders() const { return {encoder8, encoder9}; }
 
+/**
+ * @brief Reports whether both leg nodes are idle.
+ *
+ * @return `true` when both latest node states indicate an idle condition.
+ */
 bool LegHandler::getIdle() const
 {
     return (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U);
@@ -70,9 +75,9 @@ std::pair<float, float> LegHandler::getLegs() const
 std::pair<uint8_t, uint8_t> LegHandler::getStates() const { return {state8, state9}; }
 
 /**
- * @brief Updates node 8 data and clears its communication error.
+ * @brief Updates node 8's encoder position and state.
  *
- * Changes are marked for publication, and position changes are also marked for persistence.
+ * Changes update the status indicator and are marked for publication. Position changes are also marked for persistence.
  *
  * @param position Encoder position reported by the node.
  * @param state State reported by the node.
@@ -103,9 +108,9 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
 }
 
 /**
- * @brief Updates node 9 data and clears its communication error.
+ * @brief Updates node 9's encoder position and state.
  *
- * Changes are marked for publication, and position changes are also marked for persistence.
+ * Changes update the status indicator and are marked for publication. Position changes are also marked for persistence.
  *
  * @param position Encoder position reported by the node.
  * @param state State reported by the node.

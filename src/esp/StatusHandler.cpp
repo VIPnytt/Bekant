@@ -7,7 +7,7 @@
 #include <FastLED.h>
 
 /**
- * @brief Registers the configured status LED with FastLED.
+ * @brief Configures the optional status LED output and registers it with FastLED.
  */
 void StatusHandler::begin()
 {
