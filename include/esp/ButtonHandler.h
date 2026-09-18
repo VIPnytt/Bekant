@@ -30,7 +30,7 @@ public:
 
     void setStatus();
 
-    [[nodiscard]] bool getDown();
+    [[nodiscard]] bool getDown() const;
 
     [[nodiscard]] bool getDownSimulation();
 
@@ -38,7 +38,7 @@ public:
 
     [[nodiscard]] bool getState4() const;
 
-    [[nodiscard]] bool getUp();
+    [[nodiscard]] bool getUp() const;
 
     [[nodiscard]] bool getUpSimulation();
 };

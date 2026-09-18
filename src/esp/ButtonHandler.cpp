@@ -38,7 +38,7 @@ void ButtonHandler::begin()
  *
  * @return `true` when the down-button bit is set.
  */
-bool ButtonHandler::getDown() { return (states & (0b1U << 1U)) != 0U; }
+bool ButtonHandler::getDown() const { return (states & (0b1U << 1U)) != 0U; }
 
 /**
  * @brief Reports whether down-button simulation is requested.
@@ -66,7 +66,7 @@ bool ButtonHandler::getState4() const { return (states & (0b1U << 3U)) != 0U; }
  *
  * @return `true` when the up-button bit is set.
  */
-bool ButtonHandler::getUp() { return (states & 0b1U) != 0U; }
+bool ButtonHandler::getUp() const { return (states & 0b1U) != 0U; }
 
 /**
  * @brief Reports whether up-button simulation is requested.

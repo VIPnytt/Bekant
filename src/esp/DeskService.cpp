@@ -251,8 +251,8 @@ void DeskService::parse(ConsoleHandler::State state, std::span<const uint8_t> pa
     }
     else if (state == ConsoleHandler::State::NODE8 && payload.size() == 4U)
     {
-        leg.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(payload[1U]) |
-                                           static_cast<uint16_t>(static_cast<uint16_t>(payload[2U]) << 8U)),
+        leg.setNode8(static_cast<uint16_t>(static_cast<unsigned int>(payload[1U]) |
+                                           static_cast<unsigned int>(payload[2U]) << 8U),
                      payload[3U]);
         issue.setNode8(0U);
     }
@@ -262,20 +262,20 @@ void DeskService::parse(ConsoleHandler::State state, std::span<const uint8_t> pa
     }
     else if (state == ConsoleHandler::State::NODE9 && payload.size() == 4U)
     {
-        leg.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(payload[1U]) |
-                                           static_cast<uint16_t>(static_cast<uint16_t>(payload[2U]) << 8U)),
+        leg.setNode9(static_cast<uint16_t>(static_cast<unsigned int>(payload[1U]) |
+                                           static_cast<unsigned int>(payload[2U]) << 8U),
                      payload[3U]);
         issue.setNode9(0U);
     }
     else if (state == ConsoleHandler::State::PRESET_HIGH && payload.size() == 3U)
     {
         preset.setHigh(static_cast<uint16_t>(static_cast<unsigned int>(payload[1U]) |
-                                             static_cast<unsigned int>(static_cast<unsigned int>(payload[2U]) << 8U)));
+                                             static_cast<unsigned int>(payload[2U]) << 8U));
     }
     else if (state == ConsoleHandler::State::PRESET_LOW && payload.size() == 3U)
     {
         preset.setLow(static_cast<uint16_t>(static_cast<unsigned int>(payload[1U]) |
-                                            static_cast<unsigned int>(static_cast<unsigned int>(payload[2U]) << 8U)));
+                                            static_cast<unsigned int>(payload[2U]) << 8U));
     }
     else if (state == ConsoleHandler::State::RESET_REASON && payload.size() == 2U)
     {

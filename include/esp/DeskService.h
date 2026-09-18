@@ -66,6 +66,8 @@ private:
 
     void setReset(bool state);
 
+    void setRx(std::span<const uint8_t> payload);
+
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
     static void onReset();
@@ -86,8 +88,6 @@ public:
     void safeMode();
 
     void setPending();
-
-    void setRx(std::span<const uint8_t> payload);
 
     void setStatus();
 

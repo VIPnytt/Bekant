@@ -2,7 +2,6 @@
 
 #include "esp/LegHandler.h"
 
-#include "esp/ButtonHandler.h"
 #include "esp/DeskService.h"
 
 #include <nvs.h>
