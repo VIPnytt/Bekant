@@ -6,6 +6,7 @@
 #include "esp/ConsoleHandler.h"
 #include "esp/IspHandler.h"
 #include "esp/IssueHandler.h"
+#include "esp/LegHandler.h"
 #include "esp/MqttHandler.h"
 #include "esp/OtaHandler.h"
 #include "esp/PresetHandler.h"
@@ -25,12 +26,6 @@ private:
     bool reset{false};
     bool saved{true};
 
-    uint8_t state8{0U};
-    uint8_t state9{0U};
-
-    uint16_t encoder8{0U};
-    uint16_t encoder9{0U};
-
     unsigned long lastMillis{0UL};
 
     size_t lengthRx{0U};
@@ -48,6 +43,8 @@ private:
     IspHandler isp{};
 
     IssueHandler issue{};
+
+    LegHandler leg{};
 
     MqttHandler mqtt{};
 
@@ -69,8 +66,6 @@ private:
 
     void setReset(bool state);
 
-    void statusNode() const;
-
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
     static void onReset();
@@ -87,10 +82,6 @@ public:
     void request(JsonObjectConst doc);
 
     void safeMode();
-
-    void setNode8(uint16_t position, uint8_t state);
-
-    void setNode9(uint16_t position, uint8_t state);
 
     void setPending();
 

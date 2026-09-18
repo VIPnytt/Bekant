@@ -4,6 +4,7 @@
 
 #include "esp/DeskService.h"
 #include "esp/IssueHandler.h"
+#include "esp/LegHandler.h"
 #include "esp/secrets.h"
 
 #include <string_view>
@@ -103,9 +104,9 @@ void ConsoleHandler::parse()
     }
     else if (stateRx == State::NODE8 && lengthRx == 3U)
     {
-        desk.setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
-                      bufferRx.at(3U));
+        LegHandler::setNode8(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                                   static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
+                             bufferRx.at(3U));
     }
     else if (stateRx == State::NODE9 && lengthRx == 1U)
     {
@@ -113,9 +114,9 @@ void ConsoleHandler::parse()
     }
     else if (stateRx == State::NODE9 && lengthRx == 3U)
     {
-        desk.setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
-                                            static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
-                      bufferRx.at(3U));
+        LegHandler::setNode9(static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(1U)) |
+                                                   static_cast<uint16_t>(static_cast<uint16_t>(bufferRx.at(2U)) << 8U)),
+                             bufferRx.at(3U));
     }
     else if (stateRx == State::PRESET_HIGH && lengthRx == 2U)
     {
