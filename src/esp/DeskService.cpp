@@ -60,9 +60,9 @@ void DeskService::begin()
 /**
  * @brief Advances service processing and publishes updated desk state.
  *
- * Processes connectivity and status services, handles console and MQTT activity when enabled,
- * releases completed drive outputs, persists unsaved state, and publishes pending or periodic
- * state updates.
+ * Processes connectivity and status services and handles console and MQTT activity when enabled.
+ * Periodic updates release completed button simulations and persist pending output-enable changes;
+ * state changes are published immediately.
  */
 void DeskService::handle()
 {
@@ -222,9 +222,12 @@ void DeskService::onReset()
 }
 
 /**
- * @brief Applies the buffered console frame to the corresponding device state.
+ * @brief Applies a received console frame to the corresponding device state.
  *
  * Invalid command and payload-length combinations set the device status to red.
+ *
+ * @param state Frame state decoded from the header.
+ * @param payload Complete frame, including its header byte.
  */
 void DeskService::parse(ConsoleHandler::State state, std::span<const uint8_t> payload)
 {
@@ -452,6 +455,11 @@ void DeskService::setRx(std::span<const uint8_t> payload)
     }
 }
 
+/**
+ * @brief Selects the status color from the current leg and button states.
+ *
+ * Uses white when both legs report idle; otherwise derives green or blue from button activity.
+ */
 void DeskService::setStatus() { leg.getIdle() ? StatusHandler::setWhite(true) : button.setStatus(); }
 
 /**
