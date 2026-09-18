@@ -4,7 +4,6 @@
 
 #include "esp/ButtonHandler.h"
 #include "esp/DeskService.h"
-#include "esp/IssueHandler.h"
 
 #include <nvs.h>
 
@@ -80,7 +79,6 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
     {
         encoder8 = position;
         state8 = state;
-        IssueHandler::setNode8(0U);
         saved = false;
         desk.setPending();
         setStatus();
@@ -88,7 +86,6 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
     else if (position != encoder8)
     {
         encoder8 = position;
-        IssueHandler::setNode8(0U);
         saved = false;
         desk.setPending();
         setStatus();
@@ -96,14 +93,10 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
     else if (state != state8)
     {
         state8 = state;
-        IssueHandler::setNode8(0U);
         desk.setPending();
         setStatus();
     }
-    else
-    {
-        IssueHandler::setNode8(0U);
-    }
+    IssueHandler::setNode8(0U);
 }
 
 /**
@@ -120,7 +113,6 @@ void LegHandler::setNode9(uint16_t position, uint8_t state)
     {
         encoder9 = position;
         state9 = state;
-        IssueHandler::setNode9(0U);
         saved = false;
         desk.setPending();
         setStatus();
@@ -128,7 +120,6 @@ void LegHandler::setNode9(uint16_t position, uint8_t state)
     else if (position != encoder9)
     {
         encoder9 = position;
-        IssueHandler::setNode9(0U);
         saved = false;
         desk.setPending();
         setStatus();
@@ -136,14 +127,10 @@ void LegHandler::setNode9(uint16_t position, uint8_t state)
     else if (state != state9)
     {
         state9 = state;
-        IssueHandler::setNode9(0U);
         desk.setPending();
         setStatus();
     }
-    else
-    {
-        IssueHandler::setNode9(0U);
-    }
+    IssueHandler::setNode9(0U);
 }
 
 /**
