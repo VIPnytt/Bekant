@@ -4,7 +4,6 @@
 
 #include "esp/DeskService.h"
 #include "esp/IssueHandler.h"
-#include "esp/LegHandler.h"
 #include "esp/secrets.h"
 
 #include <string_view>
