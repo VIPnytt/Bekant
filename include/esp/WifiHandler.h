@@ -7,7 +7,7 @@
 class WifiHandler
 {
 private:
-    unsigned long lastMillis{0U};
+    unsigned long lastMillis{0UL};
 
     static void onConnected(arduino_event_id_t event);
 

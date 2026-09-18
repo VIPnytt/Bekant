@@ -7,7 +7,7 @@
 class StatusHandler
 {
 private:
-    unsigned long lastMillis{0U};
+    unsigned long lastMillis{0UL};
 
     static inline bool pending{true};
 

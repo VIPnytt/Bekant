@@ -23,9 +23,9 @@ private:
 
     std::array<uint8_t, 0b1U << 8U> buffer{0U};
 
-    NetworkClient client{};
-
     NetworkServer server{328U};
+
+    static inline NetworkClient client{};
 
     /**
      * Sends a single-byte protocol response.
@@ -42,7 +42,7 @@ private:
      * Reads an EEPROM page of the specified length.
      * @param length Number of bytes to read.
      */
-    void eepromReadPage(size_t length);
+    void eepromReadPage(size_t length) const;
 
     /**
      * Enters device programming mode.

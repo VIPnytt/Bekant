@@ -48,6 +48,11 @@ void LegHandler::handle()
  */
 std::pair<uint16_t, uint16_t> LegHandler::getEncoders() const { return {encoder8, encoder9}; }
 
+bool LegHandler::getIdle() const
+{
+    return (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U);
+}
+
 /**
  * @brief Converts the latest leg encoder positions to physical heights.
  *
@@ -81,22 +86,21 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
         state8 = state;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (position != encoder8)
     {
         encoder8 = position;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (state != state8)
     {
         state8 = state;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
-    IssueHandler::setNode8(0U);
 }
 
 /**
@@ -115,35 +119,21 @@ void LegHandler::setNode9(uint16_t position, uint8_t state)
         state9 = state;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (position != encoder9)
     {
         encoder9 = position;
         saved = false;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
     else if (state != state9)
     {
         state9 = state;
         desk.setPending();
-        setStatus();
+        desk.setStatus();
     }
-    IssueHandler::setNode9(0U);
-}
-
-/**
- * @brief Selects the status indicator color from motor, button, and drive activity.
- *
- * @details Uses white for idle motor states, green for exclusive manual button activity
- * without drive output activity, and blue for all other states.
- */
-void LegHandler::setStatus()
-{
-    (state8 == 0U || state8 == 0x25U || state8 == 0x60U) && (state9 == 0U || state9 == 0x25U || state9 == 0x60U)
-        ? StatusHandler::setWhite(true)
-        : ButtonHandler::setStatus();
 }
 
 #endif // ARDUINO_ARCH_ESP32

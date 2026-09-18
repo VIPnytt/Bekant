@@ -7,23 +7,23 @@
 class ToneHandler
 {
 private:
-    static inline bool saved{true};
+    bool saved{true};
 
-    static inline uint16_t duration{0b1U << 9U};
-    static inline uint16_t frequency{0b1U << 12U};
+    uint16_t duration{0b1U << 9U};
+    uint16_t frequency{0b1U << 12U};
 
-    static inline unsigned long lastMillis{0UL};
+    unsigned long lastMillis{0UL};
 
 public:
     void begin();
 
     void handle();
 
+    void parse(const JsonObjectConst &doc);
+
     [[nodiscard]] uint16_t getDuration() const;
 
     [[nodiscard]] uint16_t getFrequency() const;
-
-    static void parse(const JsonObjectConst &doc);
 };
 
 #endif // ARDUINO_ARCH_ESP32

@@ -30,7 +30,7 @@ private:
      */
     signed char count{0};
 
-    unsigned long lastMillis{0U};
+    unsigned long lastMillis{0UL};
 
     void incrementDown();
 

@@ -77,15 +77,19 @@ public:
 
     void handle();
 
-    void fetchRelease();
+    void getRelease();
 
-    void request(JsonObjectConst doc);
+    void parse(ConsoleHandler::State stateRx, std::span<const uint8_t> payload);
+
+    void parse(JsonObjectConst doc);
 
     void safeMode();
 
     void setPending();
 
     void setRx(std::span<const uint8_t> payload);
+
+    void setStatus();
 
     void setTx(std::span<const uint8_t> payload);
 

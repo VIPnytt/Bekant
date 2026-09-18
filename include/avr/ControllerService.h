@@ -78,7 +78,7 @@ private:
     unsigned int presetHigh{0xFFFFU};
     unsigned int presetLow{0xFFFFU};
 
-    unsigned long lastMillis{0U};
+    unsigned long lastMillis{0UL};
 
     ButtonHandler button{};
 

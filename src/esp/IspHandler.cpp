@@ -200,7 +200,7 @@ void IspHandler::enterProgrammingMode()
  *
  * @param length Number of EEPROM bytes to read.
  */
-void IspHandler::eepromReadPage(size_t length) // NOLINT(readability-make-member-function-const)
+void IspHandler::eepromReadPage(size_t length) const
 {
     std::vector<uint8_t> data(length + 1U);
     const size_t start{here * 2U};
