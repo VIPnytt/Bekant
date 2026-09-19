@@ -29,102 +29,7 @@ void IspHandler::handle()
     {
         if (client.available() != 0)
         {
-            switch (getChar())
-            {
-            case 0x20U:
-                client.print(stkNoSync);
-                break;
-            case 0x30U:
-                emptyReply();
-                break;
-            case 0x31U:
-                if (getChar() == stkCrcEop)
-                {
-                    client.print(stkInSync);
-                    client.print(F("AVR ISP"));
-                    client.print(stkOk);
-                }
-                break;
-            case 0x41U:
-            {
-                switch (getChar())
-                {
-                case 0x80U:
-                    byteReply(2U);
-                    break;
-                case 0x81U:
-                    byteReply(1U);
-                    break;
-                case 0x82U:
-                    byteReply(18U);
-                    break;
-                case 0x93U:
-                    byteReply(static_cast<uint8_t>('S'));
-                    break;
-                default:
-                    byteReply(0U);
-                }
-            }
-            break;
-            case 0x42U:
-            {
-                for (size_t idx{0U}; idx < 20U; ++idx)
-                {
-                    buffer.at(idx) = getChar();
-                }
-                pageSize = static_cast<uint16_t>((static_cast<uint16_t>(buffer.at(12U)) << 8U) | buffer.at(13U));
-                eepromSize = static_cast<uint16_t>((static_cast<uint16_t>(buffer.at(14U)) << 8U) | buffer.at(15U));
-                emptyReply();
-            }
-            break;
-            case 0x45U:
-            {
-                for (size_t idx{0U}; idx < 5U; ++idx)
-                {
-                    buffer.at(idx) = getChar();
-                }
-                emptyReply();
-            }
-            break;
-            case 0x50U:
-                enterProgrammingMode();
-                emptyReply();
-                break;
-            case 0x51U:
-                SPI.end();
-                emptyReply();
-                vTaskDelay(5U);
-                client.stop();
-                break;
-            case 0x55U:
-                here = getChar();
-                here += (0b1U << 8U) * getChar();
-                emptyReply();
-                break;
-            case 0x56U:
-                universal();
-                break;
-            case 0x60U:
-                static_cast<void>(getChar());
-                static_cast<void>(getChar());
-                emptyReply();
-                break;
-            case 0x61U:
-                static_cast<void>(getChar());
-                emptyReply();
-                break;
-            case 0x64U:
-                programPage();
-                break;
-            case 0x74U:
-                readPage();
-                break;
-            case 0x75:
-                readSignature();
-                break;
-            default:
-                client.print(getChar() == stkCrcEop ? '\x12' : stkNoSync);
-            }
+            process();
         }
         else if (client.connected() == 0U)
         {
@@ -144,20 +49,124 @@ void IspHandler::handle()
 }
 
 /**
+ * @brief Processes the next STK500v1 command from the connected client.
+ */
+void IspHandler::process()
+{
+    switch (getChar())
+    {
+    case STK500v1::CRC_EOP:
+        client.write(STK500v1::STK_NOSYNC);
+        break;
+    case STK500v1::STK_GET_SYNC:
+        emptyReply();
+        break;
+    case STK500v1::STK_GET_SIGN_ON:
+        if (getChar() == STK500v1::CRC_EOP)
+        {
+            client.write(STK500v1::STK_INSYNC);
+            client.print("AVR ISP");
+            client.write(STK500v1::STK_OK);
+        }
+        break;
+    case STK500v1::STK_GET_PARAMETER:
+    {
+        switch (getChar())
+        {
+        case STK500v1::PARAM_HW_VER:
+            byteReply(2U);
+            break;
+        case STK500v1::PARAM_SW_MAJOR:
+            byteReply(1U);
+            break;
+        case STK500v1::PARAM_SW_MINOR:
+            byteReply(18U);
+            break;
+        case STK500v1::PARAM_PROGMODE:
+            byteReply(static_cast<uint8_t>('S'));
+            break;
+        default:
+            byteReply(0U);
+        }
+    }
+    break;
+    case STK500v1::STK_SET_DEVICE:
+    {
+        for (size_t idx{0U}; idx < 20U; ++idx)
+        {
+            buffer.at(idx) = getChar();
+        }
+        pageSize = static_cast<size_t>((static_cast<unsigned int>(buffer.at(12U)) << 8U) | buffer.at(13U));
+        eepromSize = static_cast<size_t>((static_cast<unsigned int>(buffer.at(14U)) << 8U) | buffer.at(15U));
+        emptyReply();
+    }
+    break;
+    case STK500v1::STK_SET_DEVICE_EXT:
+    {
+        for (size_t idx{0U}; idx < 5U; ++idx)
+        {
+            buffer.at(idx) = getChar();
+        }
+        emptyReply();
+    }
+    break;
+    case STK500v1::STK_ENTER_PROGMODE:
+        enterProgrammingMode();
+        emptyReply();
+        break;
+    case STK500v1::STK_LEAVE_PROGMODE:
+        SPI.end();
+        emptyReply();
+        vTaskDelay(0b1U << 3U);
+        client.stop();
+        break;
+    case STK500v1::STK_LOAD_ADDRESS:
+        address = getChar();
+        address += (0b1U << 8U) * getChar();
+        emptyReply();
+        break;
+    case STK500v1::STK_UNIVERSAL:
+        universal();
+        break;
+    case STK500v1::STK_PROG_FLASH:
+        static_cast<void>(getChar());
+        static_cast<void>(getChar());
+        emptyReply();
+        break;
+    case STK500v1::STK_PROG_DATA:
+        static_cast<void>(getChar());
+        emptyReply();
+        break;
+    case STK500v1::STK_PROG_PAGE:
+        programPage();
+        break;
+    case STK500v1::STK_READ_PAGE:
+        readPage();
+        break;
+    case STK500v1::STK_READ_SIGN:
+        readSignature();
+        break;
+    default:
+        client.write(getChar() == STK500v1::CRC_EOP ? STK500v1::STK_UNKNOWN : STK500v1::STK_NOSYNC);
+    }
+}
+
+/**
  * @brief Sends a synchronized response containing one byte.
  *
  * @param byte Byte to include in the response.
  */
 void IspHandler::byteReply(uint8_t byte)
 {
-    if (getChar() == stkCrcEop)
+    if (getChar() == STK500v1::CRC_EOP)
     {
-        const std::array<uint8_t, 3U> response{stkInSync, byte, stkOk};
-        client.write(response.data(), response.size());
+        client.write(STK500v1::STK_INSYNC);
+        client.write(byte);
+        client.write(STK500v1::STK_OK);
     }
     else
     {
-        client.print(stkNoSync);
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -166,14 +175,14 @@ void IspHandler::byteReply(uint8_t byte)
  */
 void IspHandler::emptyReply()
 {
-    if (getChar() == stkCrcEop)
+    if (getChar() == STK500v1::CRC_EOP)
     {
-        client.print(stkInSync);
-        client.print(stkOk);
+        client.write(STK500v1::STK_INSYNC);
+        client.write(STK500v1::STK_OK);
     }
     else
     {
-        client.print(stkNoSync);
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -184,11 +193,10 @@ void IspHandler::emptyReply()
  */
 void IspHandler::enterProgrammingMode()
 {
-    SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, GPIO_NUM_NC);
-    SPI.setFrequency(300'000UL);
-    SPI.setHwCs(false);
+    SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
+    SPI.setFrequency(spiFrequency);
     digitalWrite(PIN_RST, LOW);
-    vTaskDelay(0b1U << 5U);
+    delay(0b1U << 5U);
     SPI.transfer(0xACU);
     SPI.transfer(0x53U);
     SPI.transfer(0U);
@@ -203,16 +211,16 @@ void IspHandler::enterProgrammingMode()
 void IspHandler::eepromReadPage(size_t length) const
 {
     std::vector<uint8_t> data(length + 1U);
-    const size_t start{here * 2U};
+    const size_t start{address * 2U};
     for (size_t idx{0U}; idx < length; ++idx)
     {
-        const size_t addr{start + idx};
+        const size_t _address{start + idx};
         SPI.transfer(0xA0U);
-        SPI.transfer((addr >> 8U) & 0xFFU);
-        SPI.transfer(addr & 0xFFU);
+        SPI.transfer((_address >> 8U) & 0xFFU);
+        SPI.transfer(_address & 0xFFU);
         data.at(idx) = SPI.transfer(0xFFU);
     }
-    data.at(length) = stkOk;
+    data.at(length) = STK500v1::STK_OK;
     client.write(data.data(), data.size());
 }
 
@@ -226,19 +234,16 @@ void IspHandler::flashReadPage(size_t length)
     for (size_t idx{0U}; idx < length; idx += 2U)
     {
         SPI.transfer(0x20U);
-        SPI.transfer((here >> 8U) & 0xFFU);
-        SPI.transfer(here & 0xFFU);
-        const uint8_t low{SPI.transfer(0U)};
+        SPI.transfer((address >> 8U) & 0xFFU);
+        SPI.transfer(address & 0xFFU);
+        client.write(SPI.transfer(0U));
         SPI.transfer(0x28U);
-        SPI.transfer((here >> 8U) & 0xFFU);
-        SPI.transfer(here & 0xFFU);
-        const uint8_t high{SPI.transfer(0U)};
-        const std::array<uint8_t, 2U> data{low, high};
-        client.write(data.data(), data.size());
-        ++here;
+        SPI.transfer((address >> 8U) & 0xFFU);
+        SPI.transfer(address & 0xFFU);
+        client.write(SPI.transfer(0U));
+        ++address;
     }
-    const uint8_t status{static_cast<uint8_t>(stkOk)};
-    client.write(&status, sizeof(status));
+    client.write(STK500v1::STK_OK);
 }
 
 /**
@@ -256,57 +261,56 @@ uint8_t IspHandler::getChar()
 }
 
 /**
- * @brief Programs EEPROM or flash memory using the current ISP address.
+ * @brief Programs one EEPROM or flash request using the current ISP address.
  *
- * @param length The number of bytes to program.
+ * Reads the byte count and memory type from the connected client, dispatches
+ * EEPROM or flash programming, and sends the protocol response.
  */
 void IspHandler::programPage()
 {
     const size_t length{((0b1U << 8U) * getChar()) + getChar()};
-    const char memtype{getChar()};
-    if (memtype == 'E')
+    const uint8_t memoryType{getChar()};
+    if (memoryType == static_cast<uint8_t>('E'))
     {
         const bool result{writeEeprom(length)};
-        if (getChar() == stkCrcEop)
+        if (getChar() == STK500v1::CRC_EOP)
         {
-            client.print(stkInSync);
-            client.print(result ? stkOk : stkFail);
+            client.write(STK500v1::STK_INSYNC);
+            client.write(result ? STK500v1::STK_OK : STK500v1::STK_FAILED);
         }
         else
         {
-            client.print(stkNoSync);
+            client.write(STK500v1::STK_NOSYNC);
         }
     }
-    else if (memtype == 'F')
+    else if (memoryType == static_cast<uint8_t>('F'))
     {
         writeFlash(length);
     }
     else
     {
-        client.print(stkFail);
+        client.write(STK500v1::STK_FAILED);
     }
 }
 
 /**
  * @brief Reads a requested EEPROM or flash memory range and sends the result to the client.
- *
- * @return void
  */
 void IspHandler::readPage()
 {
     const size_t length{((0b1U << 8U) * getChar()) + getChar()};
-    const char memtype{getChar()};
-    if (getChar() != stkCrcEop)
+    const uint8_t memoryType{getChar()};
+    if (getChar() != STK500v1::CRC_EOP)
     {
-        client.print(stkNoSync);
+        client.write(STK500v1::STK_NOSYNC);
         return;
     }
-    client.print(stkInSync);
-    if (memtype == 'E')
+    client.write(STK500v1::STK_INSYNC);
+    if (memoryType == static_cast<uint8_t>('E'))
     {
         eepromReadPage(length);
     }
-    else if (memtype == 'F')
+    else if (memoryType == static_cast<uint8_t>('F'))
     {
         flashReadPage(length);
     }
@@ -319,25 +323,25 @@ void IspHandler::readPage()
  */
 void IspHandler::readSignature()
 {
-    if (getChar() != stkCrcEop)
+    if (getChar() != STK500v1::CRC_EOP)
     {
-        client.print(stkNoSync);
+        client.write(STK500v1::STK_NOSYNC);
         return;
     }
-    client.print(stkInSync);
+    client.write(STK500v1::STK_INSYNC);
     SPI.transfer(0x30U);
     SPI.transfer(0U);
     SPI.transfer(0U);
-    client.print(static_cast<char>(SPI.transfer(0U)));
+    client.write(SPI.transfer(0U));
     SPI.transfer(0x30U);
     SPI.transfer(0U);
-    SPI.transfer(0x1U);
-    client.print(static_cast<char>(SPI.transfer(0U)));
+    SPI.transfer(1U);
+    client.write(SPI.transfer(0U));
     SPI.transfer(0x30U);
     SPI.transfer(0U);
-    SPI.transfer(0x2U);
-    client.print(static_cast<char>(SPI.transfer(0U)));
-    client.print(stkOk);
+    SPI.transfer(2U);
+    client.write(SPI.transfer(0U));
+    client.write(STK500v1::STK_OK);
 }
 
 /**
@@ -369,14 +373,17 @@ bool IspHandler::writeEeprom(size_t length)
     {
         return false;
     }
-    size_t start{here * 2U};
-    while (length > 32U)
+    const size_t start{address * 2U};
+    const size_t remainder{length % 32U};
+    const size_t end{start + (length - remainder)};
+    for (size_t _address{start}; _address < end; _address += 32U)
     {
-        writeEepromChunk(start, 32U);
-        start += 32U;
-        length -= 32U;
+        writeEepromChunk(_address, 32U);
     }
-    writeEepromChunk(start, length);
+    if (remainder != 0U)
+    {
+        writeEepromChunk(end, remainder);
+    }
     return true;
 }
 
@@ -394,12 +401,12 @@ void IspHandler::writeEepromChunk(size_t start, size_t length)
     }
     for (size_t idx{0U}; idx < length; ++idx)
     {
-        const size_t address{start + idx};
+        const size_t _address{start + idx};
         SPI.transfer(0xC0U);
-        SPI.transfer(address >> 8U);
-        SPI.transfer(address & 0xFFU);
+        SPI.transfer(_address >> 8U);
+        SPI.transfer(_address & 0xFFU);
         SPI.transfer(buffer.at(idx));
-        vTaskDelay(45U);
+        delay(0b1U << 3U);
     }
 }
 
@@ -418,42 +425,41 @@ void IspHandler::writeFlash(size_t length)
     {
         buffer.at(idx) = getChar();
     }
-    if (getChar() == stkCrcEop && (length & 1U) == 0U)
+    if (getChar() == STK500v1::CRC_EOP && (length & 1U) == 0U)
     {
-        client.print(stkInSync);
-        size_t page{here & ~((pageSize / 2U) - 1U)};
+        client.write(STK500v1::STK_INSYNC);
+        size_t page{address & ~((pageSize / 2U) - 1U)};
         for (size_t idx{0U}; idx < length; idx += 2U)
         {
-            vTaskDelay(1U);
-            if (page != (here & ~((pageSize / 2U) - 1U)))
+            if (page != (address & ~((pageSize / 2U) - 1U)))
             {
                 SPI.transfer(0x4CU);
                 SPI.transfer((page >> 8U) & 0xFFU);
                 SPI.transfer(page & 0xFFU);
                 SPI.transfer(0U);
-                vTaskDelay(0b1U << 4U);
-                page = here & ~((pageSize / 2U) - 1U);
+                delay(0b1U << 3U);
+                page = address & ~((pageSize / 2U) - 1U);
             }
             SPI.transfer(0x40U);
-            SPI.transfer((here >> 8U) & 0xFFU);
-            SPI.transfer(here & 0xFFU);
+            SPI.transfer((address >> 8U) & 0xFFU);
+            SPI.transfer(address & 0xFFU);
             SPI.transfer(buffer.at(idx));
             SPI.transfer(0x48U);
-            SPI.transfer((here >> 8U) & 0xFFU);
-            SPI.transfer(here & 0xFFU);
+            SPI.transfer((address >> 8U) & 0xFFU);
+            SPI.transfer(address & 0xFFU);
             SPI.transfer(buffer.at(idx + 1U));
-            ++here;
+            ++address;
         }
         SPI.transfer(0x4CU);
         SPI.transfer((page >> 8U) & 0xFFU);
         SPI.transfer(page & 0xFFU);
         SPI.transfer(0U);
-        vTaskDelay(0b1U << 4U);
-        client.print(stkOk);
+        delay(0b1U << 3U);
+        client.write(STK500v1::STK_OK);
     }
     else
     {
-        client.print(stkNoSync);
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
