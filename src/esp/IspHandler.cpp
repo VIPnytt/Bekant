@@ -48,6 +48,9 @@ void IspHandler::handle()
     }
 }
 
+/**
+ * @brief Processes the next STK500v1 command from the connected client.
+ */
 void IspHandler::process()
 {
     switch (getChar())
@@ -258,9 +261,10 @@ uint8_t IspHandler::getChar()
 }
 
 /**
- * @brief Programs EEPROM or flash memory using the current ISP address.
+ * @brief Programs one EEPROM or flash request using the current ISP address.
  *
- * @param length The number of bytes to program.
+ * Reads the byte count and memory type from the connected client, dispatches
+ * EEPROM or flash programming, and sends the protocol response.
  */
 void IspHandler::programPage()
 {
@@ -291,8 +295,6 @@ void IspHandler::programPage()
 
 /**
  * @brief Reads a requested EEPROM or flash memory range and sends the result to the client.
- *
- * @return void
  */
 void IspHandler::readPage()
 {
