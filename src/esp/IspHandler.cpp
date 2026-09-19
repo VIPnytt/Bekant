@@ -329,18 +329,13 @@ void IspHandler::readSignature()
         return;
     }
     client.write(STK500v1::STK_INSYNC);
-    SPI.transfer(0x30U);
-    SPI.transfer(0U);
-    SPI.transfer(0U);
-    client.write(SPI.transfer(0U));
-    SPI.transfer(0x30U);
-    SPI.transfer(0U);
-    SPI.transfer(1U);
-    client.write(SPI.transfer(0U));
-    SPI.transfer(0x30U);
-    SPI.transfer(0U);
-    SPI.transfer(2U);
-    client.write(SPI.transfer(0U));
+    for (uint8_t idx{0U}; idx < 3U; ++idx)
+    {
+        SPI.transfer(0x30U);
+        SPI.transfer(0U);
+        SPI.transfer(idx);
+        client.write(SPI.transfer(0U));
+    }
     client.write(STK500v1::STK_OK);
 }
 
@@ -355,9 +350,10 @@ void IspHandler::universal()
     {
         buffer.at(idx) = getChar();
     }
-    SPI.transfer(buffer.at(0U));
-    SPI.transfer(buffer.at(1U));
-    SPI.transfer(buffer.at(2U));
+    for (size_t idx{0U}; idx < 3U; ++idx)
+    {
+        SPI.transfer(buffer.at(idx));
+    }
     byteReply(SPI.transfer(buffer.at(3U)));
 }
 

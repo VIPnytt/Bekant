@@ -19,7 +19,7 @@ public:
     void handle();
 
 private:
-    static constexpr uint32_t spiFrequency{0b1UL << 17U};
+    static constexpr uint32_t spiFrequency{225'000UL};
 
     bool active{false};
 
