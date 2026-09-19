@@ -61,6 +61,9 @@ private:
      */
     void flashReadPage(size_t length);
 
+    /**
+     * Processes the next STK500v1 command from the connected client.
+     */
     void process();
 
     /**
