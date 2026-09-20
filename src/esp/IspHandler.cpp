@@ -178,7 +178,18 @@ void IspHandler::process()
         readSignature();
         break;
     default:
-        client.write(readClient() == STK500v1::CRC_EOP ? STK500v1::STK_UNKNOWN : STK500v1::STK_NOSYNC);
+        if (readClient() == STK500v1::CRC_EOP)
+        {
+            constexpr std::array<uint8_t, 2U> response{
+                STK500v1::STK_INSYNC,
+                STK500v1::STK_UNKNOWN,
+            };
+            client.write(response.data(), response.size());
+        }
+        else
+        {
+            client.write(STK500v1::STK_NOSYNC);
+        }
     }
 }
 
@@ -209,13 +220,17 @@ void IspHandler::eepromReadPage(size_t length)
 {
     if (readClient() == STK500v1::CRC_EOP)
     {
-        client.write(STK500v1::STK_INSYNC);
-        std::array<uint8_t, (0b1U << 8U) + 1U> response{};
         if (length >= buffer.size())
         {
-            client.write(STK500v1::STK_FAILED);
+            constexpr std::array<uint8_t, 2U> response{
+                STK500v1::STK_INSYNC,
+                STK500v1::STK_FAILED,
+            };
+            client.write(response.data(), response.size());
             return;
         }
+        client.write(STK500v1::STK_INSYNC);
+        std::array<uint8_t, (0b1U << 8U) + 1U> response{};
         const size_t start{address * 2U};
         for (size_t idx{0U}; idx < length; ++idx)
         {
@@ -274,8 +289,8 @@ void IspHandler::flashReadPage(size_t length)
 {
     if (readClient() == STK500v1::CRC_EOP)
     {
-        std::array<uint8_t, (0b1U << 8U) + 1U> response{};
         client.write(STK500v1::STK_INSYNC);
+        std::array<uint8_t, (0b1U << 8U) + 1U> response{};
         for (size_t idx{0U}; idx < length; idx += 2U)
         {
             SPI.transfer(0x20U);
@@ -329,13 +344,21 @@ void IspHandler::leaveProgrammingMode()
 {
     if (readClient() == STK500v1::CRC_EOP)
     {
-        client.write(STK500v1::STK_INSYNC);
         if (state == State::PROGMODE)
         {
+            client.write(STK500v1::STK_INSYNC);
             SPI.end();
             state = State::COMPLETE;
+            client.write(STK500v1::STK_OK);
         }
-        client.write(STK500v1::STK_OK);
+        else
+        {
+            constexpr std::array<uint8_t, 2U> response{
+                STK500v1::STK_INSYNC,
+                STK500v1::STK_OK,
+            };
+            client.write(response.data(), response.size());
+        }
     }
     else
     {
@@ -361,9 +384,17 @@ void IspHandler::programPage()
     {
         writeFlash(length);
     }
+    else if (readClient() == STK500v1::CRC_EOP)
+    {
+        constexpr std::array<uint8_t, 2U> response{
+            STK500v1::STK_INSYNC,
+            STK500v1::STK_FAILED,
+        };
+        client.write(response.data(), response.size());
+    }
     else
     {
-        client.write(STK500v1::STK_UNKNOWN);
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -406,9 +437,17 @@ void IspHandler::readPage()
     {
         flashReadPage(length);
     }
+    else if (readClient() == STK500v1::CRC_EOP)
+    {
+        constexpr std::array<uint8_t, 2U> response{
+            STK500v1::STK_INSYNC,
+            STK500v1::STK_FAILED,
+        };
+        client.write(response.data(), response.size());
+    }
     else
     {
-        client.write(STK500v1::STK_UNKNOWN);
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -546,9 +585,25 @@ void IspHandler::validateAndAcknowledge(uint8_t byte)
  */
 void IspHandler::writeEeprom(size_t length)
 {
-    if (length > eepromSize || length >= buffer.size())
+    if (length > eepromSize || length > buffer.size())
     {
-        client.write(STK500v1::STK_FAILED);
+        for (size_t idx{0U}; idx < length; ++idx)
+        {
+            static_cast<void>(readClient());
+        }
+        if (readClient() == STK500v1::CRC_EOP)
+        {
+            constexpr std::array<uint8_t, 2U> response{
+                STK500v1::STK_INSYNC,
+                STK500v1::STK_FAILED,
+            };
+            client.write(response.data(), response.size());
+        }
+        else
+        {
+            client.write(STK500v1::STK_NOSYNC);
+        }
+        return;
     }
     for (size_t idx{0U}; idx < length; ++idx)
     {
