@@ -220,17 +220,13 @@ void IspHandler::eepromReadPage(size_t length)
 {
     if (readClient() == STK500v1::CRC_EOP)
     {
-        if (length >= buffer.size())
-        {
-            constexpr std::array<uint8_t, 2U> response{
-                STK500v1::STK_INSYNC,
-                STK500v1::STK_FAILED,
-            };
-            client.write(response.data(), response.size());
-            return;
-        }
         client.write(STK500v1::STK_INSYNC);
         std::array<uint8_t, (0b1U << 8U) + 1U> response{};
+        if (length >= response.size())
+        {
+            client.write(STK500v1::STK_FAILED);
+            return;
+        }
         const size_t start{address * 2U};
         for (size_t idx{0U}; idx < length; ++idx)
         {
@@ -291,6 +287,11 @@ void IspHandler::flashReadPage(size_t length)
     {
         client.write(STK500v1::STK_INSYNC);
         std::array<uint8_t, (0b1U << 8U) + 1U> response{};
+        if (length >= response.size())
+        {
+            client.write(STK500v1::STK_FAILED);
+            return;
+        }
         for (size_t idx{0U}; idx < length; idx += 2U)
         {
             SPI.transfer(0x20U);
@@ -344,21 +345,13 @@ void IspHandler::leaveProgrammingMode()
 {
     if (readClient() == STK500v1::CRC_EOP)
     {
+        client.write(STK500v1::STK_INSYNC);
         if (state == State::PROGMODE)
         {
-            client.write(STK500v1::STK_INSYNC);
             SPI.end();
             state = State::COMPLETE;
-            client.write(STK500v1::STK_OK);
         }
-        else
-        {
-            constexpr std::array<uint8_t, 2U> response{
-                STK500v1::STK_INSYNC,
-                STK500v1::STK_OK,
-            };
-            client.write(response.data(), response.size());
-        }
+        client.write(STK500v1::STK_OK);
     }
     else
     {
@@ -645,9 +638,14 @@ void IspHandler::writeFlash(size_t length)
     {
         buffer.at(idx) = readClient();
     }
-    if (readClient() == STK500v1::CRC_EOP && (length & 1U) == 0U)
+    if (readClient() == STK500v1::CRC_EOP)
     {
         client.write(STK500v1::STK_INSYNC);
+        if ((length & 1U) != 0U)
+        {
+            client.write(STK500v1::STK_FAILED);
+            return;
+        }
         size_t page{address & ~((pageSize / 2U) - 1U)};
         for (size_t idx{0U}; idx < length; idx += 2U)
         {
