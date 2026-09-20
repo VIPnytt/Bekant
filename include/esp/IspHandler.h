@@ -9,12 +9,12 @@ class IspHandler
 {
 public:
     /**
-     * Initializes network-based ISP handling.
+     * Starts network-based ISP handling when the reset reason permits it.
      */
     void begin();
 
     /**
-     * Processes available network activity and ISP commands.
+     * Advances the ISP server and programming-session state.
      */
     void handle();
 
@@ -57,7 +57,7 @@ private:
     void eepromReadPage(size_t length) const;
 
     /**
-     * Enters device programming mode.
+     * Enters device programming mode after validating the request and connection state.
      */
     void enterProgMode();
 
@@ -67,6 +67,9 @@ private:
      */
     void flashReadPage(size_t length);
 
+    /**
+     * Ends a valid programming session and schedules an ESP32 restart.
+     */
     void leaveProgMode();
 
     /**
@@ -116,6 +119,9 @@ private:
 
     /**
      * Waits for and receives a byte from the connected client.
+     *
+     * Aborts the ESP32 if the client disconnects before a byte arrives.
+     *
      * @return The received byte.
      */
     [[nodiscard]] uint8_t getChar();

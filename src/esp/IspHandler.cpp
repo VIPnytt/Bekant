@@ -9,7 +9,9 @@
 #include <SPI.h>
 
 /**
- * @brief Starts the ISP TCP server and registers its mDNS service.
+ * @brief Starts the ISP TCP server and registers its mDNS service when startup is allowed.
+ *
+ * When OTA authentication is configured, an abnormal reset leaves the server closed.
  */
 void IspHandler::begin()
 {
@@ -26,10 +28,11 @@ void IspHandler::begin()
 }
 
 /**
- * @brief Processes pending AVR ISP commands or accepts a new client connection.
+ * @brief Advances the ISP server and programming-session state.
  *
- * Handles protocol commands for programming and reading the target device, and
- * restarts the ESP32 when the active client disconnects.
+ * When OTA authentication is configured, the server stops accepting new clients after the startup window while an
+ * active programming session is allowed to finish. Completing that session, or disconnecting during it, restarts the
+ * ESP32.
  */
 void IspHandler::handle()
 {
@@ -233,7 +236,8 @@ void IspHandler::emptyReply()
 /**
  * @brief Enters the target device's programming mode.
  *
- * Initializes SPI and sends the programming-enable command to the target.
+ * A valid command terminator from a connected client initializes SPI and sends the programming-enable command to the
+ * target. Other requests receive a no-sync response.
  */
 void IspHandler::enterProgMode()
 {
@@ -303,7 +307,9 @@ void IspHandler::flashReadPage(size_t length)
 /**
  * @brief Waits for and reads the next byte from the connected client.
  *
- * @return uint8_t The byte read from the client.
+ * Aborts the ESP32 if the client disconnects before a byte arrives.
+ *
+ * @return The byte read from the client.
  */
 uint8_t IspHandler::getChar()
 {
@@ -318,6 +324,11 @@ uint8_t IspHandler::getChar()
     return static_cast<uint8_t>(client.read());
 }
 
+/**
+ * @brief Ends a valid programming session and schedules an ESP32 restart.
+ *
+ * Requests with an invalid terminator or outside programming mode receive a no-sync response.
+ */
 void IspHandler::leaveProgMode()
 {
     if (getChar() == STK500v1::CRC_EOP && state == State::PROGMODE)
