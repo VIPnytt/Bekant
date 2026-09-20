@@ -39,27 +39,18 @@ private:
 
     static inline NetworkClient client{};
 
-    /**
-     * Sends a single-byte protocol response.
-     * @param byte Response byte to send.
-     */
-    void byteReply(uint8_t byte);
-
-    /**
-     * Sends an empty protocol response.
-     */
-    void emptyReply();
+    void chipErase();
 
     /**
      * Reads an EEPROM page of the specified length.
      * @param length Number of bytes to read.
      */
-    void eepromReadPage(size_t length) const;
+    void eepromReadPage(size_t length);
 
     /**
      * Enters device programming mode after validating the request and connection state.
      */
-    void enterProgMode();
+    void enterProgrammingMode();
 
     /**
      * Reads a flash page of the specified length.
@@ -67,10 +58,12 @@ private:
      */
     void flashReadPage(size_t length);
 
+    void getSignOn();
+
     /**
      * Ends a valid programming session and schedules an ESP32 restart.
      */
-    void leaveProgMode();
+    void leaveProgrammingMode();
 
     /**
      * Processes the next STK500v1 command from the connected client.
@@ -92,17 +85,32 @@ private:
      */
     void readSignature();
 
+    void setDevice();
+
+    void setDeviceExtended();
+
     /**
      * Processes a universal ISP command.
      */
     void universal();
 
     /**
-     * Writes a chunk of data to EEPROM.
-     * @param start Starting EEPROM address.
-     * @param length Number of bytes to write.
+     * Sends an empty protocol response.
      */
-    void writeEepromChunk(size_t start, size_t length);
+    void validateAndAcknowledge();
+
+    /**
+     * Sends a single-byte protocol response.
+     * @param byte Response byte to send.
+     */
+    void validateAndAcknowledge(uint8_t byte);
+
+    /**
+     * Writes data to EEPROM.
+     * @param length Number of bytes to write.
+     * @return `true` if the write succeeds, `false` otherwise.
+     */
+    void writeEeprom(size_t length);
 
     /**
      * Writes data to flash memory.
@@ -111,20 +119,13 @@ private:
     void writeFlash(size_t length);
 
     /**
-     * Writes data to EEPROM.
-     * @param length Number of bytes to write.
-     * @return `true` if the write succeeds, `false` otherwise.
-     */
-    [[nodiscard]] bool writeEeprom(size_t length);
-
-    /**
      * Waits for and receives a byte from the connected client.
      *
      * Aborts the ESP32 if the client disconnects before a byte arrives.
      *
      * @return The received byte.
      */
-    [[nodiscard]] uint8_t getChar();
+    [[nodiscard]] uint8_t readClient();
 };
 
 namespace STK500v1

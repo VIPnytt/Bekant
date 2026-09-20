@@ -77,14 +77,14 @@ void IspHandler::handle()
         }
         break;
     case State::PROGMODE:
-        if (client.available() != 0)
-        {
-            process();
-        }
-        else if (client.connected() == 0U)
+        if (client.connected() == 0U)
         {
             SPI.end();
             ESP.restart();
+        }
+        else if (client.available() != 0)
+        {
+            process();
         }
         break;
     case State::COMPLETE:
@@ -104,85 +104,69 @@ void IspHandler::handle()
  */
 void IspHandler::process()
 {
-    switch (getChar())
+    switch (readClient())
     {
     case STK500v1::CRC_EOP:
         client.write(STK500v1::STK_NOSYNC);
         break;
     case STK500v1::STK_GET_SYNC:
-        emptyReply();
+        validateAndAcknowledge();
         break;
     case STK500v1::STK_GET_SIGN_ON:
-        if (getChar() == STK500v1::CRC_EOP)
-        {
-            client.write(STK500v1::STK_INSYNC);
-            client.print("AVR ISP");
-            client.write(STK500v1::STK_OK);
-        }
+        getSignOn();
         break;
     case STK500v1::STK_GET_PARAMETER:
     {
-        switch (getChar())
+        switch (readClient())
         {
         case STK500v1::PARAM_HW_VER:
-            byteReply(2U);
+            validateAndAcknowledge(2U);
             break;
         case STK500v1::PARAM_SW_MAJOR:
-            byteReply(1U);
+            validateAndAcknowledge(1U);
             break;
         case STK500v1::PARAM_SW_MINOR:
-            byteReply(18U);
+            validateAndAcknowledge(18U);
             break;
         case STK500v1::PARAM_PROGMODE:
-            byteReply(static_cast<uint8_t>('S'));
+            validateAndAcknowledge(static_cast<uint8_t>('S'));
             break;
         default:
-            byteReply(0U);
+            validateAndAcknowledge(0U);
         }
     }
     break;
     case STK500v1::STK_SET_DEVICE:
-    {
-        for (size_t idx{0U}; idx < 20U; ++idx)
-        {
-            buffer.at(idx) = getChar();
-        }
-        pageSize = static_cast<size_t>((static_cast<unsigned int>(buffer.at(12U)) << 8U) | buffer.at(13U));
-        eepromSize = static_cast<size_t>((static_cast<unsigned int>(buffer.at(14U)) << 8U) | buffer.at(15U));
-        emptyReply();
-    }
-    break;
+        setDevice();
+        break;
     case STK500v1::STK_SET_DEVICE_EXT:
-    {
-        for (size_t idx{0U}; idx < 5U; ++idx)
-        {
-            buffer.at(idx) = getChar();
-        }
-        emptyReply();
-    }
-    break;
+        setDeviceExtended();
+        break;
     case STK500v1::STK_ENTER_PROGMODE:
-        enterProgMode();
+        enterProgrammingMode();
         break;
     case STK500v1::STK_LEAVE_PROGMODE:
-        leaveProgMode();
+        leaveProgrammingMode();
+        break;
+    case STK500v1::STK_CHIP_ERASE:
+        chipErase();
         break;
     case STK500v1::STK_LOAD_ADDRESS:
-        address = getChar();
-        address += (0b1U << 8U) * getChar();
-        emptyReply();
+        address = readClient();
+        address += (0b1U << 8U) * readClient();
+        validateAndAcknowledge();
         break;
     case STK500v1::STK_UNIVERSAL:
         universal();
         break;
     case STK500v1::STK_PROG_FLASH:
-        static_cast<void>(getChar());
-        static_cast<void>(getChar());
-        emptyReply();
+        static_cast<void>(readClient());
+        static_cast<void>(readClient());
+        validateAndAcknowledge();
         break;
     case STK500v1::STK_PROG_DATA:
-        static_cast<void>(getChar());
-        emptyReply();
+        static_cast<void>(readClient());
+        validateAndAcknowledge();
         break;
     case STK500v1::STK_PROG_PAGE:
         programPage();
@@ -194,65 +178,20 @@ void IspHandler::process()
         readSignature();
         break;
     default:
-        client.write(getChar() == STK500v1::CRC_EOP ? STK500v1::STK_UNKNOWN : STK500v1::STK_NOSYNC);
+        client.write(readClient() == STK500v1::CRC_EOP ? STK500v1::STK_UNKNOWN : STK500v1::STK_NOSYNC);
     }
 }
 
-/**
- * @brief Sends a synchronized response containing one byte.
- *
- * @param byte Byte to include in the response.
- */
-void IspHandler::byteReply(uint8_t byte)
+void IspHandler::chipErase()
 {
-    if (getChar() == STK500v1::CRC_EOP)
+    if (readClient() == STK500v1::CRC_EOP)
     {
         client.write(STK500v1::STK_INSYNC);
-        client.write(byte);
-        client.write(STK500v1::STK_OK);
-    }
-    else
-    {
-        client.write(STK500v1::STK_NOSYNC);
-    }
-}
-
-/**
- * @brief Sends a successful empty ISP response when the command terminator is valid.
- */
-void IspHandler::emptyReply()
-{
-    if (getChar() == STK500v1::CRC_EOP)
-    {
-        client.write(STK500v1::STK_INSYNC);
-        client.write(STK500v1::STK_OK);
-    }
-    else
-    {
-        client.write(STK500v1::STK_NOSYNC);
-    }
-}
-
-/**
- * @brief Enters the target device's programming mode.
- *
- * A valid command terminator from a connected client initializes SPI and sends the programming-enable command to the
- * target. Other requests receive a no-sync response.
- */
-void IspHandler::enterProgMode()
-{
-    if (getChar() == STK500v1::CRC_EOP && state == State::CONNECTED)
-    {
-        state = State::PROGMODE;
-        SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
-        SPI.setFrequency(225'000UL);
-        digitalWrite(PIN_RST, LOW);
-        delay(0b1U << 5U);
         SPI.transfer(0xACU);
-        SPI.transfer(0x53U);
+        SPI.transfer(0x80U);
         SPI.transfer(0U);
         SPI.transfer(0U);
-        client.write(STK500v1::STK_INSYNC);
+        delay(0b1U << 5U);
         client.write(STK500v1::STK_OK);
     }
     else
@@ -266,20 +205,55 @@ void IspHandler::enterProgMode()
  *
  * @param length Number of EEPROM bytes to read.
  */
-void IspHandler::eepromReadPage(size_t length) const
+void IspHandler::eepromReadPage(size_t length)
 {
-    std::vector<uint8_t> data(length + 1U);
-    const size_t start{address * 2U};
-    for (size_t idx{0U}; idx < length; ++idx)
+    if (readClient() == STK500v1::CRC_EOP)
     {
-        const size_t _address{start + idx};
-        SPI.transfer(0xA0U);
-        SPI.transfer((_address >> 8U) & 0xFFU);
-        SPI.transfer(_address & 0xFFU);
-        data.at(idx) = SPI.transfer(0xFFU);
+        client.write(STK500v1::STK_INSYNC);
+        std::array<uint8_t, (0b1U << 8U) + 1U> response{};
+        const size_t start{address * 2U};
+        for (size_t idx{0U}; idx < length; ++idx)
+        {
+            const size_t _address{start + idx};
+            SPI.transfer(0xA0U);
+            SPI.transfer((_address >> 8U) & 0xFFU);
+            SPI.transfer(_address & 0xFFU);
+            response.at(idx) = SPI.transfer(0xFFU);
+        }
+        response.at(length) = STK500v1::STK_OK;
+        client.write(response.data(), length + 1U);
     }
-    data.at(length) = STK500v1::STK_OK;
-    client.write(data.data(), data.size());
+}
+
+/**
+ * @brief Enters the target device's programming mode.
+ *
+ * A valid command terminator from a connected client initializes SPI and sends the programming-enable command to the
+ * target. Other requests receive a no-sync response.
+ */
+void IspHandler::enterProgrammingMode()
+{
+    if (readClient() == STK500v1::CRC_EOP)
+    {
+        client.write(STK500v1::STK_INSYNC);
+        if (state == State::CONNECTED)
+        {
+            state = State::PROGMODE;
+            SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
+            SPI.setFrequency(225'000UL);
+            digitalWrite(PIN_RST, LOW);
+            delay(0b1U << 5U);
+        }
+        SPI.transfer(0xACU);
+        SPI.transfer(0x53U);
+        SPI.transfer(0U);
+        SPI.transfer(0U);
+        client.write(STK500v1::STK_OK);
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**
@@ -289,39 +263,52 @@ void IspHandler::eepromReadPage(size_t length) const
  */
 void IspHandler::flashReadPage(size_t length)
 {
-    for (size_t idx{0U}; idx < length; idx += 2U)
+    if (readClient() == STK500v1::CRC_EOP)
     {
-        SPI.transfer(0x20U);
-        SPI.transfer((address >> 8U) & 0xFFU);
-        SPI.transfer(address & 0xFFU);
-        client.write(SPI.transfer(0U));
-        SPI.transfer(0x28U);
-        SPI.transfer((address >> 8U) & 0xFFU);
-        SPI.transfer(address & 0xFFU);
-        client.write(SPI.transfer(0U));
-        ++address;
+        std::array<uint8_t, (0b1U << 8U) + 1U> response{};
+        client.write(STK500v1::STK_INSYNC);
+        for (size_t idx{0U}; idx < length; idx += 2U)
+        {
+            SPI.transfer(0x20U);
+            SPI.transfer((address >> 8U) & 0xFFU);
+            SPI.transfer(address & 0xFFU);
+            response.at(idx) = SPI.transfer(0U);
+            SPI.transfer(0x28U);
+            SPI.transfer((address >> 8U) & 0xFFU);
+            SPI.transfer(address & 0xFFU);
+            response.at(idx + 1U) = SPI.transfer(0U);
+            ++address;
+        }
+        response.at(length) = STK500v1::STK_OK;
+        client.write(response.data(), length + 1U);
     }
-    client.write(STK500v1::STK_OK);
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
-/**
- * @brief Waits for and reads the next byte from the connected client.
- *
- * Aborts the ESP32 if the client disconnects before a byte arrives.
- *
- * @return The byte read from the client.
- */
-uint8_t IspHandler::getChar()
+void IspHandler::getSignOn()
 {
-    while (client.available() == 0)
+    if (readClient() == STK500v1::CRC_EOP)
     {
-        if (client.connected() == 0U)
-        {
-            esp_system_abort("Client disconnected while waiting for data");
-        }
-        vTaskDelay(1U);
+        constexpr std::array<uint8_t, 9U> response{
+            STK500v1::STK_INSYNC,
+            static_cast<uint8_t>('A'),
+            static_cast<uint8_t>('V'),
+            static_cast<uint8_t>('R'),
+            0x20U,
+            static_cast<uint8_t>('I'),
+            static_cast<uint8_t>('S'),
+            static_cast<uint8_t>('P'),
+            STK500v1::STK_OK,
+        };
+        client.write(response.data(), response.size());
     }
-    return static_cast<uint8_t>(client.read());
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**
@@ -329,14 +316,17 @@ uint8_t IspHandler::getChar()
  *
  * Requests with an invalid terminator or outside programming mode receive a no-sync response.
  */
-void IspHandler::leaveProgMode()
+void IspHandler::leaveProgrammingMode()
 {
-    if (getChar() == STK500v1::CRC_EOP && state == State::PROGMODE)
+    if (readClient() == STK500v1::CRC_EOP)
     {
-        SPI.end();
         client.write(STK500v1::STK_INSYNC);
+        if (state == State::PROGMODE)
+        {
+            SPI.end();
+            state = State::COMPLETE;
+        }
         client.write(STK500v1::STK_OK);
-        state = State::COMPLETE;
     }
     else
     {
@@ -352,20 +342,11 @@ void IspHandler::leaveProgMode()
  */
 void IspHandler::programPage()
 {
-    const size_t length{((0b1U << 8U) * getChar()) + getChar()};
-    const uint8_t memoryType{getChar()};
+    const size_t length{((0b1U << 8U) * readClient()) + readClient()};
+    const uint8_t memoryType{readClient()};
     if (memoryType == static_cast<uint8_t>('E'))
     {
-        const bool result{writeEeprom(length)};
-        if (getChar() == STK500v1::CRC_EOP)
-        {
-            client.write(STK500v1::STK_INSYNC);
-            client.write(result ? STK500v1::STK_OK : STK500v1::STK_FAILED);
-        }
-        else
-        {
-            client.write(STK500v1::STK_NOSYNC);
-        }
+        writeEeprom(length);
     }
     else if (memoryType == static_cast<uint8_t>('F'))
     {
@@ -378,18 +359,32 @@ void IspHandler::programPage()
 }
 
 /**
+ * @brief Waits for and reads the next byte from the connected client.
+ *
+ * Aborts the ESP32 if the client disconnects before a byte arrives.
+ *
+ * @return The byte read from the client.
+ */
+uint8_t IspHandler::readClient()
+{
+    while (client.available() == 0)
+    {
+        if (client.connected() == 0U)
+        {
+            esp_system_abort("Client disconnected while waiting for data");
+        }
+        vTaskDelay(1U);
+    }
+    return static_cast<uint8_t>(client.read());
+}
+
+/**
  * @brief Reads a requested EEPROM or flash memory range and sends the result to the client.
  */
 void IspHandler::readPage()
 {
-    const size_t length{((0b1U << 8U) * getChar()) + getChar()};
-    const uint8_t memoryType{getChar()};
-    if (getChar() != STK500v1::CRC_EOP)
-    {
-        client.write(STK500v1::STK_NOSYNC);
-        return;
-    }
-    client.write(STK500v1::STK_INSYNC);
+    const size_t length{((0b1U << 8U) * readClient()) + readClient()};
+    const uint8_t memoryType{readClient()};
     if (memoryType == static_cast<uint8_t>('E'))
     {
         eepromReadPage(length);
@@ -397,6 +392,10 @@ void IspHandler::readPage()
     else if (memoryType == static_cast<uint8_t>('F'))
     {
         flashReadPage(length);
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -407,20 +406,52 @@ void IspHandler::readPage()
  */
 void IspHandler::readSignature()
 {
-    if (getChar() != STK500v1::CRC_EOP)
+    if (readClient() == STK500v1::CRC_EOP)
+    {
+        client.write(STK500v1::STK_INSYNC);
+        std::array<uint8_t, 4U> response{};
+        for (uint8_t idx{0U}; idx < 3U; ++idx)
+        {
+            SPI.transfer(0x30U);
+            SPI.transfer(0U);
+            SPI.transfer(idx);
+            response.at(idx) = SPI.transfer(0U);
+        }
+        response.at(3U) = STK500v1::STK_OK;
+        client.write(response.data(), response.size());
+    }
+    else
     {
         client.write(STK500v1::STK_NOSYNC);
-        return;
     }
-    client.write(STK500v1::STK_INSYNC);
-    for (uint8_t idx{0U}; idx < 3U; ++idx)
+}
+
+void IspHandler::setDevice()
+{
+    for (size_t idx{0U}; idx < 20U; ++idx)
     {
-        SPI.transfer(0x30U);
-        SPI.transfer(0U);
-        SPI.transfer(idx);
-        client.write(SPI.transfer(0U));
+        buffer.at(idx) = readClient();
     }
-    client.write(STK500v1::STK_OK);
+    if (readClient() == STK500v1::CRC_EOP)
+    {
+        client.write(STK500v1::STK_INSYNC);
+        pageSize = static_cast<size_t>((static_cast<unsigned int>(buffer.at(12U)) << 8U) | buffer.at(13U));
+        eepromSize = static_cast<size_t>((static_cast<unsigned int>(buffer.at(14U)) << 8U) | buffer.at(15U));
+        client.write(STK500v1::STK_OK);
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
+}
+
+void IspHandler::setDeviceExtended()
+{
+    for (size_t idx{0U}; idx < 5U; ++idx)
+    {
+        buffer.at(idx) = readClient();
+    }
+    validateAndAcknowledge();
 }
 
 /**
@@ -432,13 +463,66 @@ void IspHandler::universal()
 {
     for (size_t idx{0U}; idx < 4U; ++idx)
     {
-        buffer.at(idx) = getChar();
+        buffer.at(idx) = readClient();
     }
-    for (size_t idx{0U}; idx < 3U; ++idx)
+    if (readClient() == STK500v1::CRC_EOP)
     {
-        SPI.transfer(buffer.at(idx));
+        client.write(STK500v1::STK_INSYNC);
+        for (size_t idx{0U}; idx < 3U; ++idx)
+        {
+            SPI.transfer(buffer.at(idx));
+        }
+        const std::array<uint8_t, 2U> response{
+            SPI.transfer(buffer.at(3U)),
+            STK500v1::STK_OK,
+        };
+        client.write(response.data(), response.size());
     }
-    byteReply(SPI.transfer(buffer.at(3U)));
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
+}
+
+/**
+ * @brief Sends a successful empty ISP response when the command terminator is valid.
+ */
+void IspHandler::validateAndAcknowledge()
+{
+    if (readClient() == STK500v1::CRC_EOP)
+    {
+        constexpr std::array<uint8_t, 2U> response{
+            STK500v1::STK_INSYNC,
+            STK500v1::STK_OK,
+        };
+        client.write(response.data(), response.size());
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
+}
+
+/**
+ * @brief Sends a synchronized response containing one byte.
+ *
+ * @param byte Byte to include in the response.
+ */
+void IspHandler::validateAndAcknowledge(uint8_t byte)
+{
+    if (readClient() == STK500v1::CRC_EOP)
+    {
+        const std::array<uint8_t, 3U> response{
+            STK500v1::STK_INSYNC,
+            byte,
+            STK500v1::STK_OK,
+        };
+        client.write(response.data(), response.size());
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**
@@ -447,46 +531,34 @@ void IspHandler::universal()
  * @param length Number of bytes to write.
  * @return `true` if the requested length fits within the configured EEPROM size and is written; `false` otherwise.
  */
-bool IspHandler::writeEeprom(size_t length)
+void IspHandler::writeEeprom(size_t length)
 {
     if (length > eepromSize)
     {
-        return false;
-    }
-    const size_t start{address * 2U};
-    const size_t remainder{length % 32U};
-    const size_t end{start + (length - remainder)};
-    for (size_t _address{start}; _address < end; _address += 32U)
-    {
-        writeEepromChunk(_address, 32U);
-    }
-    if (remainder != 0U)
-    {
-        writeEepromChunk(end, remainder);
-    }
-    return true;
-}
-
-/**
- * @brief Writes a chunk of data to EEPROM.
- *
- * @param start EEPROM address at which to begin writing.
- * @param length Number of bytes to read and write.
- */
-void IspHandler::writeEepromChunk(size_t start, size_t length)
-{
-    for (size_t idx{0U}; idx < length; ++idx)
-    {
-        buffer.at(idx) = getChar();
+        client.write(STK500v1::STK_FAILED);
     }
     for (size_t idx{0U}; idx < length; ++idx)
     {
-        const size_t _address{start + idx};
-        SPI.transfer(0xC0U);
-        SPI.transfer(_address >> 8U);
-        SPI.transfer(_address & 0xFFU);
-        SPI.transfer(buffer.at(idx));
-        delay(0b1U << 3U);
+        buffer.at(idx) = readClient();
+    }
+    if (readClient() == STK500v1::CRC_EOP)
+    {
+        client.write(STK500v1::STK_INSYNC);
+        const size_t start{address * 2U};
+        for (size_t idx{0U}; idx < length; ++idx)
+        {
+            const size_t _address{start + idx};
+            SPI.transfer(0xC0U);
+            SPI.transfer(_address >> 8U);
+            SPI.transfer(_address & 0xFFU);
+            SPI.transfer(buffer.at(idx));
+            delay(0b1U << 3U);
+        }
+        client.write(STK500v1::STK_OK);
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -503,9 +575,9 @@ void IspHandler::writeFlash(size_t length)
 {
     for (size_t idx{0U}; idx < length; ++idx)
     {
-        buffer.at(idx) = getChar();
+        buffer.at(idx) = readClient();
     }
-    if (getChar() == STK500v1::CRC_EOP && (length & 1U) == 0U)
+    if (readClient() == STK500v1::CRC_EOP && (length & 1U) == 0U)
     {
         client.write(STK500v1::STK_INSYNC);
         size_t page{address & ~((pageSize / 2U) - 1U)};
