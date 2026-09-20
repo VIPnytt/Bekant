@@ -309,6 +309,10 @@ uint8_t IspHandler::getChar()
 {
     while (client.available() == 0)
     {
+        if (client.connected() == 0U)
+        {
+            esp_system_abort("Client disconnected while waiting for data");
+        }
         vTaskDelay(1U);
     }
     return static_cast<uint8_t>(client.read());
