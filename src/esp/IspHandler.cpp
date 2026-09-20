@@ -193,6 +193,12 @@ void IspHandler::process()
     }
 }
 
+/**
+ * @brief Issues a chip-erase command to the target device.
+ *
+ * A valid command terminator triggers the erase and receives a successful response; an invalid terminator receives a
+ * no-sync response.
+ */
 void IspHandler::chipErase()
 {
     if (readClient() == STK500v1::CRC_EOP)
@@ -248,8 +254,8 @@ void IspHandler::eepromReadPage(size_t length)
 /**
  * @brief Enters the target device's programming mode.
  *
- * A valid command terminator from a connected client initializes SPI and sends the programming-enable command to the
- * target. Other requests receive a no-sync response.
+ * A valid command terminator initializes SPI when entering from the connected state, sends the programming-enable
+ * command, and acknowledges the request. An invalid terminator receives a no-sync response.
  */
 void IspHandler::enterProgrammingMode()
 {
@@ -313,6 +319,11 @@ void IspHandler::flashReadPage(size_t length)
     }
 }
 
+/**
+ * @brief Sends the STK500v1 sign-on response.
+ *
+ * Sends a no-sync response when the command terminator is invalid.
+ */
 void IspHandler::getSignOn()
 {
     if (readClient() == STK500v1::CRC_EOP)
@@ -337,9 +348,10 @@ void IspHandler::getSignOn()
 }
 
 /**
- * @brief Ends a valid programming session and schedules an ESP32 restart.
+ * @brief Handles a request to leave device programming mode.
  *
- * Requests with an invalid terminator or outside programming mode receive a no-sync response.
+ * A valid request ends an active programming session and schedules an ESP32 restart. Valid requests outside
+ * programming mode are acknowledged without changing state; an invalid terminator receives a no-sync response.
  */
 void IspHandler::leaveProgrammingMode()
 {
@@ -394,7 +406,7 @@ void IspHandler::programPage()
 /**
  * @brief Waits for and reads the next byte from the connected client.
  *
- * Aborts the ESP32 if the client disconnects before a byte arrives.
+ * Restarts the ESP32 if the client disconnects before a byte arrives, ending SPI first during a programming session.
  *
  * @return The byte read from the client.
  */
@@ -471,6 +483,12 @@ void IspHandler::readSignature()
     }
 }
 
+/**
+ * @brief Receives the device parameter block and configures memory sizes.
+ *
+ * A valid command terminator applies the flash page and EEPROM sizes and acknowledges the request. An invalid
+ * terminator leaves the sizes unchanged and receives a no-sync response.
+ */
 void IspHandler::setDevice()
 {
     for (size_t idx{0U}; idx < 20U; ++idx)
@@ -490,6 +508,9 @@ void IspHandler::setDevice()
     }
 }
 
+/**
+ * @brief Receives and acknowledges the extended device parameter block.
+ */
 void IspHandler::setDeviceExtended()
 {
     for (size_t idx{0U}; idx < 5U; ++idx)
@@ -502,7 +523,7 @@ void IspHandler::setDeviceExtended()
 /**
  * @brief Processes a four-byte universal ISP command.
  *
- * @return The SPI response to the command's fourth byte through the standard byte response.
+ * For a valid request, sends the SPI response to the command's fourth byte in the protocol response.
  */
 void IspHandler::universal()
 {
@@ -574,7 +595,6 @@ void IspHandler::validateAndAcknowledge(uint8_t byte)
  * @brief Writes data from the client to EEPROM.
  *
  * @param length Number of bytes to write.
- * @return `true` if the requested length fits within the configured EEPROM size and is written; `false` otherwise.
  */
 void IspHandler::writeEeprom(size_t length)
 {
