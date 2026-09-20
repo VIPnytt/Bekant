@@ -237,7 +237,7 @@ void IspHandler::emptyReply()
  */
 void IspHandler::enterProgMode()
 {
-    if (state == State::CONNECTED)
+    if (getChar() == STK500v1::CRC_EOP && state == State::CONNECTED)
     {
         state = State::PROGMODE;
         SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
@@ -248,7 +248,8 @@ void IspHandler::enterProgMode()
         SPI.transfer(0x53U);
         SPI.transfer(0U);
         SPI.transfer(0U);
-        emptyReply();
+        client.write(STK500v1::STK_INSYNC);
+        client.write(STK500v1::STK_OK);
     }
     else
     {
@@ -315,10 +316,11 @@ uint8_t IspHandler::getChar()
 
 void IspHandler::leaveProgMode()
 {
-    if (state == State::PROGMODE)
+    if (getChar() == STK500v1::CRC_EOP && state == State::PROGMODE)
     {
         SPI.end();
-        emptyReply();
+        client.write(STK500v1::STK_INSYNC);
+        client.write(STK500v1::STK_OK);
         state = State::COMPLETE;
     }
     else
