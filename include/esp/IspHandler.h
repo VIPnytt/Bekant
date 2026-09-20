@@ -21,9 +21,9 @@ public:
 private:
     static constexpr uint32_t spiFrequency{225'000UL};
 
-    enum class State : uint8_t
+    enum class State : uint8_t // NOLINT(performance-enum-size)
     {
-        IDLE,
+        LISTENING,
         CONNECTED,
         PROGMODE,
         COMPLETE,
@@ -37,7 +37,7 @@ private:
 
     NetworkServer server{328U};
 
-    State state{State::IDLE};
+    State state{State::LISTENING};
 
     static inline NetworkClient client{};
 

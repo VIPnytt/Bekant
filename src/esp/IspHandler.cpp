@@ -38,49 +38,64 @@ void IspHandler::handle()
     {
         return;
     }
-    if (state == State::IDLE && millis() > 0b1UL << 22U)
-    {
-        server.end();
-        return;
-    }
-    if (state == State::CONNECTED && millis() > 0b1UL << 22U)
-    {
-        client.stop();
-        server.end();
-        return;
-    }
 #endif // OTA_KEY
-    if (state != State::IDLE)
+    switch (state)
     {
+    case State::LISTENING:
+#ifdef OTA_KEY
+        if (millis() > 0b1UL << 22U)
+        {
+            server.end();
+            return;
+        }
+#endif // OTA_KEY
+        if (server.hasClient())
+        {
+            state = State::CONNECTED;
+            desk.safeMode();
+            digitalWrite(PIN_RST, HIGH);
+            client = server.accept();
+            client.setNoDelay(true);
+        }
+        break;
+    case State::CONNECTED:
+#ifdef OTA_KEY
+        if (millis() > 0b1UL << 22U)
+        {
+            client.stop();
+            server.end();
+            return;
+        }
+#endif // OTA_KEY
         if (client.available() != 0)
         {
             process();
         }
         else if (client.connected() == 0U)
         {
-            switch (state)
-            {
-            case State::PROGMODE:
-                SPI.end();
-                ESP.restart();
-                break;
-            case State::COMPLETE:
-                ESP.restart();
-                break;
-            default:
-                client.stop();
-                state = State::IDLE;
-                break;
-            }
+            client.stop();
+            state = State::LISTENING;
         }
-    }
-    else if (server.hasClient())
-    {
-        state = State::CONNECTED;
-        desk.safeMode();
-        digitalWrite(PIN_RST, HIGH);
-        client = server.accept();
-        client.setNoDelay(true);
+        break;
+    case State::PROGMODE:
+        if (client.available() != 0)
+        {
+            process();
+        }
+        else if (client.connected() == 0U)
+        {
+            SPI.end();
+            ESP.restart();
+        }
+        break;
+    case State::COMPLETE:
+        if (client.connected() != 0U)
+        {
+            client.stop();
+            vTaskDelay(0b1U << 2U);
+        }
+        ESP.restart();
+        break;
     }
 }
 
@@ -154,7 +169,6 @@ void IspHandler::process()
         SPI.end();
         emptyReply();
         vTaskDelay(0b1U << 3U);
-        client.stop();
         state = State::COMPLETE;
         break;
     case STK500v1::STK_LOAD_ADDRESS:
