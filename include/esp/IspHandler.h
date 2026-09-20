@@ -21,7 +21,7 @@ public:
 private:
     static constexpr uint32_t spiFrequency{225'000UL};
 
-    enum class State
+    enum class State : uint8_t
     {
         IDLE,
         CONNECTED,
