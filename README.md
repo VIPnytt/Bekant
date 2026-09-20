@@ -220,9 +220,9 @@ The light fades out after a short period of inactivity.
 
 ## Home Assistant
 
-Home Assistant with MQTT is recommended for the best experience, but the desk works fully offline without it.
+While the desk operates fully offline, pairing it with Home Assistant via MQTT provides the best experience. Once the ESP32 connects to MQTT, Home Assistant will automatically discover the desk.
 
-When the ESP32 successfully connects to MQTT, the desk is automatically discovered in Home Assistant.
+To avoid interface clutter, only a handful of essential entities are enabled by default.
 
 ### Controls
 
@@ -274,4 +274,16 @@ When the ESP32 successfully connects to MQTT, the desk is automatically discover
 | Temperature  | Internal temperature of the ESP32 |             |
 | Wi-Fi signal | ESP32 Wi-Fi RSSI                  |             |
 
-Only a handful of entities are enabled by default to avoid cluttering the Home Assistant interface.
+## Troubleshooting
+
+### The desk is unresponsive
+
+If a communication error occurs, the desk may soft-lock and ignore movement commands. Restarting the AVR and ESP32 is not enough to clear this state; the desk itself must be power-cycled. Unplug the desk's power supply for at least 20 seconds, then plug it back in. If the desk still refuses to move, check the *Issues* diagnostic entity in Home Assistant for further insight.
+
+### The desk legs are misaligned
+
+If the desk legs are not moving in sync, the encoder sensors may have lost their reference position. Hold both the *up* and *down* buttons simultaneously for about 10 seconds, or use the **Recalibrate legs** configuration entity in Home Assistant to restore proper alignment. The desk will automatically lower itself to the bottom position to recalibrate the sensors. Ensure the area underneath the desk is clear of chairs and equipment before starting this routine.
+
+### AVRdude fails to flash the Megadesk
+
+When `OTA_KEY` is configured, it also acts as a security mechanism for the Arduino ISP server. The ESP32 will only allow AVR flashing for about an hour after a normal startup. If the ESP32 resets abnormally for any reason, the programming port is locked for security. To unlock it, simply trigger a manual restart using the *Reboot* configuration entity in Home Assistant, or power-cycle the desk.

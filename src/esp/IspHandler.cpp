@@ -13,6 +13,14 @@
  */
 void IspHandler::begin()
 {
+#ifdef OTA_KEY
+    const esp_reset_reason_t reason{esp_reset_reason()};
+    if (std::ranges::any_of(DeskService::resetAbnormalities,
+                            [&reason](esp_reset_reason_t _reason) { return _reason == reason; }))
+    {
+        return;
+    }
+#endif // OTA_KEY
     server.begin();
     MDNS.addService("avrisp", "tcp", 328U);
 }
@@ -25,6 +33,12 @@ void IspHandler::begin()
  */
 void IspHandler::handle()
 {
+#ifdef OTA_KEY
+    if (!server)
+    {
+        return;
+    }
+#endif // OTA_KEY
     if (active)
     {
         if (client.available() != 0)
@@ -46,6 +60,12 @@ void IspHandler::handle()
         client.setNoDelay(true);
         active = true;
     }
+#ifdef OTA_KEY
+    else if (server && millis() > 0b1UL << 22U)
+    {
+        server.end();
+    }
+#endif // OTA_KEY
 }
 
 /**

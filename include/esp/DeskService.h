@@ -73,6 +73,15 @@ private:
     static void onReset();
 
 public:
+    static constexpr std::array<esp_reset_reason_t, 6U> resetAbnormalities{
+        esp_reset_reason_t::ESP_RST_BROWNOUT,
+        esp_reset_reason_t::ESP_RST_CPU_LOCKUP,
+        esp_reset_reason_t::ESP_RST_INT_WDT,
+        esp_reset_reason_t::ESP_RST_PANIC,
+        esp_reset_reason_t::ESP_RST_TASK_WDT,
+        esp_reset_reason_t::ESP_RST_WDT,
+    };
+
     static constexpr std::string_view version{"1.0.0"};
 
     void begin();
