@@ -21,8 +21,13 @@ public:
 private:
     static constexpr uint32_t spiFrequency{225'000UL};
 
-    bool active{false};
-    bool programming{false};
+    enum class State
+    {
+        IDLE,
+        CONNECTED,
+        PROGMODE,
+        COMPLETE,
+    };
 
     size_t address{0U};
     size_t eepromSize{0U};
@@ -31,6 +36,8 @@ private:
     std::array<uint8_t, 0b1U << 8U> buffer{0U};
 
     NetworkServer server{328U};
+
+    State state{State::IDLE};
 
     static inline NetworkClient client{};
 

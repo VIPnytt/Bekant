@@ -38,16 +38,19 @@ void IspHandler::handle()
     {
         return;
     }
-    if (!programming && millis() > 0b1UL << 22U)
+    if (state == State::IDLE && millis() > 0b1UL << 22U)
     {
-        if (client.connected() == 1U)
-        {
-            client.stop();
-        }
         server.end();
+        return;
+    }
+    if (state == State::CONNECTED && millis() > 0b1UL << 22U)
+    {
+        client.stop();
+        server.end();
+        return;
     }
 #endif // OTA_KEY
-    if (active)
+    if (state != State::IDLE)
     {
         if (client.available() != 0)
         {
@@ -55,21 +58,29 @@ void IspHandler::handle()
         }
         else if (client.connected() == 0U)
         {
-            if (programming)
+            switch (state)
             {
+            case State::PROGMODE:
                 SPI.end();
+                ESP.restart();
+                break;
+            case State::COMPLETE:
+                ESP.restart();
+                break;
+            default:
                 client.stop();
+                state = State::IDLE;
+                break;
             }
-            ESP.restart();
         }
     }
     else if (server.hasClient())
     {
+        state = State::CONNECTED;
         desk.safeMode();
         digitalWrite(PIN_RST, HIGH);
         client = server.accept();
         client.setNoDelay(true);
-        active = true;
     }
 }
 
@@ -144,7 +155,7 @@ void IspHandler::process()
         emptyReply();
         vTaskDelay(0b1U << 3U);
         client.stop();
-        programming = false;
+        state = State::COMPLETE;
         break;
     case STK500v1::STK_LOAD_ADDRESS:
         address = getChar();
@@ -219,7 +230,7 @@ void IspHandler::emptyReply()
  */
 void IspHandler::enterProgrammingMode()
 {
-    programming = true;
+    state = State::PROGMODE;
     SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
     SPI.setFrequency(spiFrequency);
     digitalWrite(PIN_RST, LOW);
