@@ -34,18 +34,22 @@ void IspHandler::begin()
 void IspHandler::handle()
 {
 #ifdef OTA_KEY
-    if (!server)
+    if (server && millis() > 0b1UL << 22U)
     {
-        return;
+        server.end();
+        if (state != State::PROGMODE && client.connected() != 0U)
+        {
+            client.stop();
+            state = State::LISTENING;
+        }
     }
 #endif // OTA_KEY
     switch (state)
     {
     case State::LISTENING:
 #ifdef OTA_KEY
-        if (millis() > 0b1UL << 22U)
+        if (!server)
         {
-            server.end();
             return;
         }
 #endif // OTA_KEY
@@ -59,22 +63,14 @@ void IspHandler::handle()
         }
         break;
     case State::CONNECTED:
-#ifdef OTA_KEY
-        if (millis() > 0b1UL << 22U)
-        {
-            client.stop();
-            server.end();
-            return;
-        }
-#endif // OTA_KEY
-        if (client.available() != 0)
-        {
-            process();
-        }
-        else if (client.connected() == 0U)
+        if (client.connected() == 0U)
         {
             client.stop();
             state = State::LISTENING;
+        }
+        else if (client.available() != 0)
+        {
+            process();
         }
         break;
     case State::PROGMODE:
@@ -91,6 +87,7 @@ void IspHandler::handle()
     case State::COMPLETE:
         if (client.connected() != 0U)
         {
+            vTaskDelay(0b1U << 3U);
             client.stop();
             vTaskDelay(0b1U << 2U);
         }
@@ -162,14 +159,10 @@ void IspHandler::process()
     }
     break;
     case STK500v1::STK_ENTER_PROGMODE:
-        enterProgrammingMode();
-        emptyReply();
+        enterProgMode();
         break;
     case STK500v1::STK_LEAVE_PROGMODE:
-        SPI.end();
-        emptyReply();
-        vTaskDelay(0b1U << 3U);
-        state = State::COMPLETE;
+        leaveProgMode();
         break;
     case STK500v1::STK_LOAD_ADDRESS:
         address = getChar();
@@ -242,17 +235,25 @@ void IspHandler::emptyReply()
  *
  * Initializes SPI and sends the programming-enable command to the target.
  */
-void IspHandler::enterProgrammingMode()
+void IspHandler::enterProgMode()
 {
-    state = State::PROGMODE;
-    SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
-    SPI.setFrequency(spiFrequency);
-    digitalWrite(PIN_RST, LOW);
-    delay(0b1U << 5U);
-    SPI.transfer(0xACU);
-    SPI.transfer(0x53U);
-    SPI.transfer(0U);
-    SPI.transfer(0U);
+    if (state == State::CONNECTED)
+    {
+        state = State::PROGMODE;
+        SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
+        SPI.setFrequency(225'000UL);
+        digitalWrite(PIN_RST, LOW);
+        delay(0b1U << 5U);
+        SPI.transfer(0xACU);
+        SPI.transfer(0x53U);
+        SPI.transfer(0U);
+        SPI.transfer(0U);
+        emptyReply();
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**
@@ -310,6 +311,20 @@ uint8_t IspHandler::getChar()
         vTaskDelay(1U);
     }
     return static_cast<uint8_t>(client.read());
+}
+
+void IspHandler::leaveProgMode()
+{
+    if (state == State::PROGMODE)
+    {
+        SPI.end();
+        emptyReply();
+        state = State::COMPLETE;
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**

@@ -19,8 +19,6 @@ public:
     void handle();
 
 private:
-    static constexpr uint32_t spiFrequency{225'000UL};
-
     enum class State : uint8_t // NOLINT(performance-enum-size)
     {
         LISTENING,
@@ -61,13 +59,15 @@ private:
     /**
      * Enters device programming mode.
      */
-    void enterProgrammingMode();
+    void enterProgMode();
 
     /**
      * Reads a flash page of the specified length.
      * @param length Number of bytes to read.
      */
     void flashReadPage(size_t length);
+
+    void leaveProgMode();
 
     /**
      * Processes the next STK500v1 command from the connected client.
