@@ -211,6 +211,11 @@ void IspHandler::eepromReadPage(size_t length)
     {
         client.write(STK500v1::STK_INSYNC);
         std::array<uint8_t, (0b1U << 8U) + 1U> response{};
+        if (length >= buffer.size())
+        {
+            client.write(STK500v1::STK_FAILED);
+            return;
+        }
         const size_t start{address * 2U};
         for (size_t idx{0U}; idx < length; ++idx)
         {
@@ -222,6 +227,10 @@ void IspHandler::eepromReadPage(size_t length)
         }
         response.at(length) = STK500v1::STK_OK;
         client.write(response.data(), length + 1U);
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
     }
 }
 
@@ -354,7 +363,7 @@ void IspHandler::programPage()
     }
     else
     {
-        client.write(STK500v1::STK_FAILED);
+        client.write(STK500v1::STK_UNKNOWN);
     }
 }
 
@@ -371,7 +380,11 @@ uint8_t IspHandler::readClient()
     {
         if (client.connected() == 0U)
         {
-            esp_system_abort("Client disconnected while waiting for data");
+            if (state == State::PROGMODE)
+            {
+                SPI.end();
+            }
+            ESP.restart();
         }
         vTaskDelay(1U);
     }
@@ -395,7 +408,7 @@ void IspHandler::readPage()
     }
     else
     {
-        client.write(STK500v1::STK_NOSYNC);
+        client.write(STK500v1::STK_UNKNOWN);
     }
 }
 
@@ -533,7 +546,7 @@ void IspHandler::validateAndAcknowledge(uint8_t byte)
  */
 void IspHandler::writeEeprom(size_t length)
 {
-    if (length > eepromSize)
+    if (length > eepromSize || length >= buffer.size())
     {
         client.write(STK500v1::STK_FAILED);
     }
