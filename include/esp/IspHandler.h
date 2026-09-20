@@ -39,6 +39,9 @@ private:
 
     static inline NetworkClient client{};
 
+    /**
+     * Issues a chip-erase command to the target device.
+     */
     void chipErase();
 
     /**
@@ -48,7 +51,7 @@ private:
     void eepromReadPage(size_t length);
 
     /**
-     * Enters device programming mode after validating the request and connection state.
+     * Handles a request to enter device programming mode.
      */
     void enterProgrammingMode();
 
@@ -58,10 +61,13 @@ private:
      */
     void flashReadPage(size_t length);
 
+    /**
+     * Sends the STK500v1 sign-on response.
+     */
     void getSignOn();
 
     /**
-     * Ends a valid programming session and schedules an ESP32 restart.
+     * Handles a request to leave device programming mode.
      */
     void leaveProgrammingMode();
 
@@ -85,8 +91,14 @@ private:
      */
     void readSignature();
 
+    /**
+     * Applies the page and EEPROM sizes from the device parameter block.
+     */
     void setDevice();
 
+    /**
+     * Receives and acknowledges the extended device parameter block.
+     */
     void setDeviceExtended();
 
     /**
@@ -108,7 +120,6 @@ private:
     /**
      * Writes data to EEPROM.
      * @param length Number of bytes to write.
-     * @return `true` if the write succeeds, `false` otherwise.
      */
     void writeEeprom(size_t length);
 
@@ -121,7 +132,7 @@ private:
     /**
      * Waits for and receives a byte from the connected client.
      *
-     * Aborts the ESP32 if the client disconnects before a byte arrives.
+     * Restarts the ESP32 if the client disconnects before a byte arrives.
      *
      * @return The received byte.
      */
