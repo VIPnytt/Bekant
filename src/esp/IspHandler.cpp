@@ -38,6 +38,14 @@ void IspHandler::handle()
     {
         return;
     }
+    if (!programming && millis() > 0b1UL << 22U)
+    {
+        if (client.connected() == 1U)
+        {
+            client.stop();
+        }
+        server.end();
+    }
 #endif // OTA_KEY
     if (active)
     {
@@ -47,8 +55,11 @@ void IspHandler::handle()
         }
         else if (client.connected() == 0U)
         {
-            SPI.end();
-            client.stop();
+            if (programming)
+            {
+                SPI.end();
+                client.stop();
+            }
             ESP.restart();
         }
     }
@@ -60,12 +71,6 @@ void IspHandler::handle()
         client.setNoDelay(true);
         active = true;
     }
-#ifdef OTA_KEY
-    else if (server && millis() > 0b1UL << 22U)
-    {
-        server.end();
-    }
-#endif // OTA_KEY
 }
 
 /**
@@ -139,6 +144,7 @@ void IspHandler::process()
         emptyReply();
         vTaskDelay(0b1U << 3U);
         client.stop();
+        programming = false;
         break;
     case STK500v1::STK_LOAD_ADDRESS:
         address = getChar();
@@ -213,6 +219,7 @@ void IspHandler::emptyReply()
  */
 void IspHandler::enterProgrammingMode()
 {
+    programming = true;
     SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
     SPI.setFrequency(spiFrequency);
     digitalWrite(PIN_RST, LOW);

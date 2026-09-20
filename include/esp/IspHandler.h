@@ -22,6 +22,7 @@ private:
     static constexpr uint32_t spiFrequency{225'000UL};
 
     bool active{false};
+    bool programming{false};
 
     size_t address{0U};
     size_t eepromSize{0U};
