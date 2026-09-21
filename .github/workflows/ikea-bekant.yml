@@ -14,7 +14,7 @@ permissions:
 jobs:
   context:
     name: PlatformIO context
-    uses: .github/context.yml
+    uses: ./.github/context.yml
 
   full:
     name: Full
