@@ -18,6 +18,7 @@ void ButtonHandler::begin()
     pinMode(Pin::button4, INPUT_PULLUP);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
+    pinMode(Pin::mosi, INPUT);
 }
 
 /**
@@ -76,7 +77,8 @@ void ButtonHandler::handle()
     {
         ConsoleHandler::send(ConsoleHandler::State::BUTTONS,
                              static_cast<unsigned char>((stateUp ? 0b1U : 0U) | (stateDown ? 0b1U << 1U : 0U) |
-                                                        (state3 ? 0b1U << 2U : 0U) | (state4 ? 0b1U << 3U : 0U)));
+                                                        (state3 ? 0b1U << 2U : 0U) | (state4 ? 0b1U << 3U : 0U) |
+                                                        (digitalRead(Pin::mosi) == LOW ? 0U : 0b1U << 4U)));
     }
     process();
 }
