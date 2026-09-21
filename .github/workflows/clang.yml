@@ -8,27 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  platformio:
-    name: PlatformIO environments
-    runs-on: ubuntu-latest
-    outputs:
-      environments: ${{ steps.config.outputs.environments }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          python-version: 3.11
-          version: latest-known
-
-      - name: PlatformIO environments
-        id: config
-        run: echo "environments=$(uv run pio project config --json-output | jq -c '[.[] | .[0] | select(startswith("env:")) | sub("^env:"; "")]')" >> "$GITHUB_OUTPUT"
+  context:
+    name: PlatformIO context
+    uses: .github/context.yml
 
   format:
     name: Format
@@ -61,7 +43,7 @@ jobs:
 
   tidy:
     name: Tidy
-    needs: platformio
+    needs: context
     runs-on: ubuntu-latest
 
     strategy:
@@ -78,7 +60,7 @@ jobs:
         continue-on-error: true
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini') }}
+          key: ${{ needs.context.outputs.pio-cache }}
           path: .platformio/.cache
 
       - name: Set up uv
