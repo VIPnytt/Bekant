@@ -48,7 +48,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: ${{ fromJSON(needs.platformio.outputs.environments) }}
+        environment: ${{ fromJSON(needs.context.outputs.environments) }}
 
     steps:
       - name: Checkout
