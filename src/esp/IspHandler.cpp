@@ -204,6 +204,11 @@ void IspHandler::chipErase()
     if (readClient() == STK500v1::CRC_EOP)
     {
         client.write(STK500v1::STK_INSYNC);
+        if (state != State::PROGMODE)
+        {
+            client.write(STK500v1::STK_FAILED);
+            return;
+        }
         SPI.transfer(0xACU);
         SPI.transfer(0x80U);
         SPI.transfer(0U);
