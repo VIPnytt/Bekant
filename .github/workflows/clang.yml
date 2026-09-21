@@ -48,7 +48,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: ${{ fromJSON(needs.context.outputs.environments) }}
+        environment: ${{ fromJSON(needs.context.outputs.pio-environments) }}
 
     steps:
       - name: Checkout
