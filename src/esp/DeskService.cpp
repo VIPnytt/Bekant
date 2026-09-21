@@ -14,7 +14,7 @@
 /**
  * @brief Initializes hardware, restores persisted state, attaches input interrupts, and starts device services.
  *
- * Also checks the latest available firmware release.
+ * Also checks the latest available firmware release unless startup follows an abnormal reset.
  */
 void DeskService::begin()
 {
@@ -54,7 +54,11 @@ void DeskService::begin()
     ota.begin();
     isp.begin();
     mqtt.begin();
-    getRelease();
+    const esp_reset_reason_t reason{esp_reset_reason()};
+    if (std::ranges::none_of(resetAbnormalities, [&reason](esp_reset_reason_t _reason) { return _reason == reason; }))
+    {
+        getRelease();
+    }
 }
 
 /**
