@@ -22,7 +22,7 @@ void ButtonHandler::begin()
     gpio_hold_en(static_cast<gpio_num_t>(PIN_TPUP));
     gpio_deep_sleep_hold_en();
     esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(PIN_TPDN), LOW);
-    esp_sleep_enable_ext1_wakeup(1ULL << static_cast<uint8_t>(PIN_TPUP),
+    esp_sleep_enable_ext1_wakeup(1ULL << static_cast<unsigned int>(PIN_TPUP),
                                  esp_sleep_ext1_wakeup_mode_t::ESP_EXT1_WAKEUP_ALL_LOW);
 #elif SOC_GPIO_SUPPORT_DEEPSLEEP_WAKEUP
 #if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
@@ -35,8 +35,8 @@ void ButtonHandler::begin()
 #if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
     gpio_deep_sleep_hold_en();
 #endif // SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
-    esp_deep_sleep_enable_gpio_wakeup((1ULL << static_cast<uint8_t>(PIN_TPDN)) |
-                                          (1ULL << static_cast<uint8_t>(PIN_TPUP)),
+    esp_deep_sleep_enable_gpio_wakeup((1ULL << static_cast<unsigned int>(PIN_TPDN)) |
+                                          (1ULL << static_cast<unsigned int>(PIN_TPUP)),
                                       esp_deepsleep_gpio_wake_up_mode_t::ESP_GPIO_WAKEUP_GPIO_LOW);
 #endif // SOC_PM_SUPPORT_EXT_WAKEUP && CONFIG_IDF_TARGET_ESP32
 #endif // defined(PIN_TPDN) && defined(PIN_TPUP)
