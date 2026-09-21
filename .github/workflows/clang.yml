@@ -74,9 +74,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Cache for PlatformIO
+      - name: Restore Cache for PlatformIO
         continue-on-error: true
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini') }}
           path: .platformio/.cache
