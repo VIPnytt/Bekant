@@ -9,8 +9,8 @@ permissions:
 
 jobs:
   context:
-    name: PlatformIO context
-    uses: .github/workflows/context.yml
+    name: Context
+    uses: ./.github/workflows/context.yml
 
   format:
     name: Format

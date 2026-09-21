@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   context:
-    name: PlatformIO context
+    name: Context
     uses: ./.github/workflows/context.yml
 
   full:
