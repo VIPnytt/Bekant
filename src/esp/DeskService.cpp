@@ -364,6 +364,13 @@ void DeskService::parse(JsonObjectConst doc)
  */
 void DeskService::parseAction(std::string_view action)
 {
+    if (action == "power")
+    {
+        mqtt.disconnect();
+        StatusHandler::setNone();
+        vTaskDelay(1U);
+        esp_deep_sleep_start();
+    }
     if (action == "recalibrate")
     {
         console.send(ConsoleHandler::Command::RECALIBRATE);
