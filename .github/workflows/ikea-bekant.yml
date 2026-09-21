@@ -36,8 +36,9 @@ jobs:
       - name: Restore Cache for PlatformIO
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          key: ${{ needs.context.outputs.pio-cache }}
-          path: .platformio/.cache
+          fail-on-cache-miss: ${{ runner.environment == 'github-hosted' }}
+          key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini')
+          path: .platformio/.cache/downloads
 
       - name: Set up uv
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
@@ -91,8 +92,9 @@ jobs:
       - name: Restore Cache for PlatformIO
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          key: ${{ needs.context.outputs.pio-cache }}
-          path: .platformio/.cache
+          fail-on-cache-miss: ${{ runner.environment == 'github-hosted' }}
+          key: platformio-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platformio.ini')
+          path: .platformio/.cache/downloads
 
       - name: Set up uv
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
