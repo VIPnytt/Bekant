@@ -54,7 +54,11 @@ void DeskService::begin()
     ota.begin();
     isp.begin();
     mqtt.begin();
-    getRelease();
+    const esp_reset_reason_t reason{esp_reset_reason()};
+    if (std::ranges::none_of(resetAbnormalities, [&reason](esp_reset_reason_t _reason) { return _reason == reason; }))
+    {
+        getRelease();
+    }
 }
 
 /**
