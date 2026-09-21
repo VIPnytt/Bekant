@@ -9,24 +9,74 @@
 #include <SPI.h>
 
 /**
- * @brief Starts the ISP TCP server and registers its mDNS service.
+ * @brief Starts the ISP TCP server and registers its mDNS service when startup is allowed.
+ *
+ * When OTA authentication is configured, an abnormal reset leaves the server closed.
  */
 void IspHandler::begin()
 {
+#ifdef OTA_KEY
+    const esp_reset_reason_t reason{esp_reset_reason()};
+    if (std::ranges::any_of(DeskService::resetAbnormalities,
+                            [&reason](esp_reset_reason_t _reason) { return _reason == reason; }))
+    {
+        return;
+    }
+#endif // OTA_KEY
     server.begin();
     MDNS.addService("avrisp", "tcp", 328U);
 }
 
 /**
- * @brief Processes pending AVR ISP commands or accepts a new client connection.
+ * @brief Advances the ISP server and programming-session state.
  *
- * Handles protocol commands for programming and reading the target device, and
- * restarts the ESP32 when the active client disconnects.
+ * When OTA authentication is configured, the server stops accepting new clients after the startup window while an
+ * active programming session is allowed to finish. Completing that session, or disconnecting during it, restarts the
+ * ESP32.
  */
 void IspHandler::handle()
 {
-    if (active)
+#ifdef OTA_KEY
+    if (server && millis() > 0b1UL << 22U)
     {
+        server.end();
+        if (state != State::PROGMODE && client.connected() != 0U)
+        {
+            client.stop();
+            state = State::LISTENING;
+        }
+    }
+#endif // OTA_KEY
+    switch (state)
+    {
+    case State::LISTENING:
+#ifdef OTA_KEY
+        if (!server)
+        {
+            return;
+        }
+#endif // OTA_KEY
+        if (server.hasClient())
+        {
+            state = State::CONNECTED;
+            desk.safeMode();
+            digitalWrite(PIN_RST, HIGH);
+            client = server.accept();
+            client.setNoDelay(true);
+        }
+        break;
+    case State::CONNECTED:
+        if (client.connected() == 0U)
+        {
+            client.stop();
+            state = State::LISTENING;
+        }
+        else if (client.available() != 0)
+        {
+            process();
+        }
+        break;
+    case State::PROGMODE:
         if (client.available() != 0)
         {
             process();
@@ -34,17 +84,18 @@ void IspHandler::handle()
         else if (client.connected() == 0U)
         {
             SPI.end();
-            client.stop();
             ESP.restart();
         }
-    }
-    else if (server.hasClient())
-    {
-        desk.safeMode();
-        digitalWrite(PIN_RST, HIGH);
-        client = server.accept();
-        client.setNoDelay(true);
-        active = true;
+        break;
+    case State::COMPLETE:
+        if (client.connected() != 0U)
+        {
+            vTaskDelay(0b1U << 3U);
+            client.stop();
+            vTaskDelay(0b1U << 2U);
+        }
+        ESP.restart();
+        break;
     }
 }
 
@@ -111,14 +162,10 @@ void IspHandler::process()
     }
     break;
     case STK500v1::STK_ENTER_PROGMODE:
-        enterProgrammingMode();
-        emptyReply();
+        enterProgMode();
         break;
     case STK500v1::STK_LEAVE_PROGMODE:
-        SPI.end();
-        emptyReply();
-        vTaskDelay(0b1U << 3U);
-        client.stop();
+        leaveProgMode();
         break;
     case STK500v1::STK_LOAD_ADDRESS:
         address = getChar();
@@ -189,18 +236,29 @@ void IspHandler::emptyReply()
 /**
  * @brief Enters the target device's programming mode.
  *
- * Initializes SPI and sends the programming-enable command to the target.
+ * A valid command terminator from a connected client initializes SPI and sends the programming-enable command to the
+ * target. Other requests receive a no-sync response.
  */
-void IspHandler::enterProgrammingMode()
+void IspHandler::enterProgMode()
 {
-    SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
-    SPI.setFrequency(spiFrequency);
-    digitalWrite(PIN_RST, LOW);
-    delay(0b1U << 5U);
-    SPI.transfer(0xACU);
-    SPI.transfer(0x53U);
-    SPI.transfer(0U);
-    SPI.transfer(0U);
+    if (getChar() == STK500v1::CRC_EOP && state == State::CONNECTED)
+    {
+        state = State::PROGMODE;
+        SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, gpio_num_t::GPIO_NUM_NC);
+        SPI.setFrequency(225'000UL);
+        digitalWrite(PIN_RST, LOW);
+        delay(0b1U << 5U);
+        SPI.transfer(0xACU);
+        SPI.transfer(0x53U);
+        SPI.transfer(0U);
+        SPI.transfer(0U);
+        client.write(STK500v1::STK_INSYNC);
+        client.write(STK500v1::STK_OK);
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**
@@ -249,15 +307,41 @@ void IspHandler::flashReadPage(size_t length)
 /**
  * @brief Waits for and reads the next byte from the connected client.
  *
- * @return uint8_t The byte read from the client.
+ * Aborts the ESP32 if the client disconnects before a byte arrives.
+ *
+ * @return The byte read from the client.
  */
 uint8_t IspHandler::getChar()
 {
     while (client.available() == 0)
     {
+        if (client.connected() == 0U)
+        {
+            esp_system_abort("Client disconnected while waiting for data");
+        }
         vTaskDelay(1U);
     }
     return static_cast<uint8_t>(client.read());
+}
+
+/**
+ * @brief Ends a valid programming session and schedules an ESP32 restart.
+ *
+ * Requests with an invalid terminator or outside programming mode receive a no-sync response.
+ */
+void IspHandler::leaveProgMode()
+{
+    if (getChar() == STK500v1::CRC_EOP && state == State::PROGMODE)
+    {
+        SPI.end();
+        client.write(STK500v1::STK_INSYNC);
+        client.write(STK500v1::STK_OK);
+        state = State::COMPLETE;
+    }
+    else
+    {
+        client.write(STK500v1::STK_NOSYNC);
+    }
 }
 
 /**

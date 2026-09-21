@@ -9,19 +9,23 @@ class IspHandler
 {
 public:
     /**
-     * Initializes network-based ISP handling.
+     * Starts network-based ISP handling when the reset reason permits it.
      */
     void begin();
 
     /**
-     * Processes available network activity and ISP commands.
+     * Advances the ISP server and programming-session state.
      */
     void handle();
 
 private:
-    static constexpr uint32_t spiFrequency{225'000UL};
-
-    bool active{false};
+    enum class State : uint8_t // NOLINT(performance-enum-size)
+    {
+        LISTENING,
+        CONNECTED,
+        PROGMODE,
+        COMPLETE,
+    };
 
     size_t address{0U};
     size_t eepromSize{0U};
@@ -30,6 +34,8 @@ private:
     std::array<uint8_t, 0b1U << 8U> buffer{0U};
 
     NetworkServer server{328U};
+
+    State state{State::LISTENING};
 
     static inline NetworkClient client{};
 
@@ -51,15 +57,20 @@ private:
     void eepromReadPage(size_t length) const;
 
     /**
-     * Enters device programming mode.
+     * Enters device programming mode after validating the request and connection state.
      */
-    void enterProgrammingMode();
+    void enterProgMode();
 
     /**
      * Reads a flash page of the specified length.
      * @param length Number of bytes to read.
      */
     void flashReadPage(size_t length);
+
+    /**
+     * Ends a valid programming session and schedules an ESP32 restart.
+     */
+    void leaveProgMode();
 
     /**
      * Processes the next STK500v1 command from the connected client.
@@ -108,6 +119,9 @@ private:
 
     /**
      * Waits for and receives a byte from the connected client.
+     *
+     * Aborts the ESP32 if the client disconnects before a byte arrives.
+     *
      * @return The received byte.
      */
     [[nodiscard]] uint8_t getChar();
