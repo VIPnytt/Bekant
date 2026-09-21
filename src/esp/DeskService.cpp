@@ -14,7 +14,7 @@
 /**
  * @brief Initializes hardware, restores persisted state, attaches input interrupts, and starts device services.
  *
- * Also checks the latest available firmware release.
+ * Also checks the latest available firmware release unless startup follows an abnormal reset.
  */
 void DeskService::begin()
 {
