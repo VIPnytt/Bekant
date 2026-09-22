@@ -10,7 +10,7 @@
 #include <wiring.h>
 
 /**
- * @brief Configures the desk buttons as inputs with internal pull-ups.
+ * @brief Configures the desk buttons as pull-up inputs and the ESP32 simulation signal as an input.
  */
 void ButtonHandler::begin()
 {
@@ -18,14 +18,16 @@ void ButtonHandler::begin()
     pinMode(Pin::button4, INPUT_PULLUP);
     pinMode(Pin::buttonDown, INPUT_PULLUP);
     pinMode(Pin::buttonUp, INPUT_PULLUP);
+    pinMode(Pin::mosi, INPUT);
 }
 
 /**
  * @brief Handles button state changes and processes the resulting input.
  *
  * Updates the press sequence and timing state, cancels movement when a button
- * is released, reports all four button states over the serial interface when
- * any state changes, and processes the resulting button input.
+ * is released, reports all four button states and the ESP32 simulation signal
+ * over the serial interface when any button state changes, and processes the
+ * resulting button input.
  */
 void ButtonHandler::handle()
 {
@@ -76,7 +78,8 @@ void ButtonHandler::handle()
     {
         ConsoleHandler::send(ConsoleHandler::State::BUTTONS,
                              static_cast<unsigned char>((stateUp ? 0b1U : 0U) | (stateDown ? 0b1U << 1U : 0U) |
-                                                        (state3 ? 0b1U << 2U : 0U) | (state4 ? 0b1U << 3U : 0U)));
+                                                        (state3 ? 0b1U << 2U : 0U) | (state4 ? 0b1U << 3U : 0U) |
+                                                        (digitalRead(Pin::mosi) == LOW ? 0U : 0b1U << 4U)));
     }
     process();
 }

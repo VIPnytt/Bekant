@@ -76,7 +76,8 @@ bool ButtonHandler::getUp() const { return (states & 0b1U) != 0U; }
 bool ButtonHandler::getUpSimulation() { return simulateUp.first; }
 
 /**
- * @brief Releases requested button-simulation outputs and clears their requested states.
+ * @brief Releases requested button-simulation outputs, clears their requested states,
+ * and deasserts the signal to the AVR.
  */
 void ButtonHandler::resetSimulation()
 {
@@ -94,6 +95,7 @@ void ButtonHandler::resetSimulation()
         simulateUp.first = false;
     }
 #endif // PIN_TPUP
+    digitalWrite(PIN_MOSI, LOW);
 }
 
 /**
@@ -136,7 +138,9 @@ void ButtonHandler::onUp()
  * @brief Controls the optional output that simulates pressing the desk's down button.
  *
  * Marks the status as an error when activation is requested but the observed
- * output state is not active. Has no effect when down-button simulation is not configured.
+ * output state is not active. While either directional simulation is requested,
+ * keeps the AVR simulation signal asserted. Has no effect when down-button
+ * simulation is not configured.
  *
  * @param state Whether to activate the simulated down-button press.
  */
@@ -144,11 +148,23 @@ void ButtonHandler::setSimulateDown(bool state)
 {
 #ifdef PIN_TPDN
     simulateDown.first = state;
-    if (simulateDown.first && simulateDown.first != simulateDown.second)
+    if (simulateDown.first)
     {
-        StatusHandler::setRed();
+        if (simulateDown.first != simulateDown.second)
+        {
+            StatusHandler::setRed();
+        }
+        digitalWrite(PIN_MOSI, HIGH);
+        digitalWrite(PIN_TPDN, LOW);
     }
-    digitalWrite(PIN_TPDN, state ? LOW : HIGH);
+    else
+    {
+        if (!simulateUp.first)
+        {
+            digitalWrite(PIN_MOSI, LOW);
+        }
+        digitalWrite(PIN_TPDN, HIGH);
+    }
 #endif // PIN_TPDN
 }
 
@@ -156,7 +172,9 @@ void ButtonHandler::setSimulateDown(bool state)
  * @brief Controls the optional output that simulates pressing the desk's up button.
  *
  * Marks the status as an error when activation is requested but the observed
- * output state is not active. Has no effect when up-button simulation is not configured.
+ * output state is not active. While either directional simulation is requested,
+ * keeps the AVR simulation signal asserted. Has no effect when up-button
+ * simulation is not configured.
  *
  * @param state Whether to activate the simulated up-button press.
  */
@@ -164,11 +182,23 @@ void ButtonHandler::setSimulateUp(bool state)
 {
 #ifdef PIN_TPUP
     simulateUp.first = state;
-    if (simulateUp.first && simulateUp.first != simulateUp.second)
+    if (simulateUp.first)
     {
-        StatusHandler::setRed();
+        if (simulateUp.first != simulateUp.second)
+        {
+            StatusHandler::setRed();
+        }
+        digitalWrite(PIN_MOSI, HIGH);
+        digitalWrite(PIN_TPUP, LOW);
     }
-    digitalWrite(PIN_TPUP, simulateUp.first ? LOW : HIGH);
+    else
+    {
+        if (!simulateDown.first)
+        {
+            digitalWrite(PIN_MOSI, LOW);
+        }
+        digitalWrite(PIN_TPUP, HIGH);
+    }
 #endif // PIN_TPUP
 }
 
