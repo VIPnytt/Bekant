@@ -7,9 +7,11 @@
 #include "esp/secrets.h"
 
 /**
- * @brief Initializes the optional down- and up-button simulation outputs.
+ * @brief Initializes the optional down- and up-button simulation lines.
  *
- * Releases each configured open-drain output and attaches its change interrupt.
+ * When both lines are configured on a supported target, registers them as
+ * active-low deep-sleep wake sources. Releases each configured open-drain
+ * output and attaches its change interrupt.
  */
 void ButtonHandler::begin()
 {

@@ -359,12 +359,16 @@ void DeskService::parse(JsonObjectConst doc)
 }
 
 /**
- * @brief Applies a named maintenance action.
+ * @brief Applies a named device action.
  *
- * Supports recalibrating the leg encoder sensors and restarting the ESP32 after placing the AVR controller in reset.
- * Unsupported action names are ignored.
+ * The "power" action disconnects MQTT, preserves the optional output-enable
+ * level, and enters deep sleep. The "recalibrate" action requests leg encoder
+ * recalibration. The "restart" action disconnects MQTT, places the AVR
+ * controller in reset, and restarts the ESP32. Unsupported action names are
+ * ignored.
  *
- * @param action Action name from the JSON request; "recalibrate" and "restart" are supported.
+ * @param action Action name from the JSON request; "power", "recalibrate", and
+ * "restart" are supported.
  */
 void DeskService::parseAction(std::string_view action)
 {
