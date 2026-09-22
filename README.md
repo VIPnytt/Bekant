@@ -18,61 +18,47 @@ It combines an ESP32 with the AVR-based *Megadesk* replacement controller to add
 
 The recommended setup consists of:
 
-- An ATtiny841-based [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller
+- An ATtiny841-based [Megadesk](https://tinkertown.ca/products/megadesk?variant=43985640554635) replacement controller board
 - An ESP32 board
-- A suitable logic level shifter
+- A logic level shifter
 
-Megadesk uses 5 V logic. The ESP32 uses 3.3 V. A logic level shifter is required between them.
-
-The ESP32 also needs to be powered from the desk’s supply.
+Because the Megadesk uses 5 V logic and the ESP32 uses 3.3 V, a logic level shifter is required to bridge them safely. The ESP32 must also be powered directly from the desk’s supply.
 
 ### ESP32 power
 
-The desk uses a power supply rated for approximately 29–35 V DC, depending on which power supply was supplied with the desk.
+The desk uses a power supply rated for approximately 29–35 V DC, depending on the specific model.
 
-An ESP32 board rated for this input voltage is the preferred solution. The [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981) is one suitable option.
+An ESP32 board rated for this input voltage is the preferred solution, such as the [Waveshare ESP32-C6-Zero-B](https://www.waveshare.com/esp32-c6-zero-b.htm?sku=34981).
 
-Alternatively, a conventional ESP32 board can be used with a suitable buck converter, or the *Megadesk Companion* add-on board. Neither is recommended for new setups.
+Alternatively, a standard ESP32 board can be used with a suitable buck converter, or the *Megadesk Companion*, though neither is recommended for new setups.
 
 > [!WARNING]
 > Do not connect the desk’s 29–35 V supply directly to an ESP32 board unless it is specifically rated for that input voltage.
 
 ### Megadesk Companion
 
-The *Megadesk Companion* has a built-in ESP32 and level shifting. Its stock wiring supports normal operation, but does not include `MOSI` and `RST`, so the ESP32 cannot be used to flash the Megadesk AVR.
+The *Megadesk Companion* add-on board features a built-in ESP32 and level shifting. Its stock wiring supports normal operation but lacks `MOSI` and `RST`, meaning the ESP32 cannot be used to flash the Megadesk AVR out of the box.
 
-Spare soldering pads connected to the ESP32 can be used to add these connections. The additional connections require external level shifting.
+Spare soldering pads can be used to add these connections, but these additional lines require external level shifting.
 
 ### Logic level shifting
 
-Tested level-shifter families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E).
-
-Other level shifters may also be suitable. The selected device should support:
+Tested level-shifter families include the [TXS0104E](https://www.ti.com/product/TXS0104E) and [TXS0108E](https://www.ti.com/product/TXS0108E), both available as breakout boards. Other shifters may also work, provided they support:
 
 - UART communication
 - SPI programming
 - Open-drain control signals
 
-`RST`, `TPUP`, and `TPDN` are open-drain signals.
-
-The optional `ADC` connection requires a resistor divider to monitor the desk’s supply voltage.
+Note that `RST`, `TPUP`, and `TPDN` are open-drain signals. The optional `ADC` connection requires a resistor divider to safely monitor the desk’s supply voltage.
 
 > [!TIP]
-> The level-shifter breakout board can be soldered directly to the ESP32 to create a compact assembly.
->
-> A small opening can be made in the back of the controller case so the level shifter can sit inside the controller compartment while the ESP32 remains exposed next to the cable.
->
-> This keeps the USB port accessible for debugging and allows the RGB LED to provide visual feedback underneath the desk.
+> For a compact assembly, solder a level-shifter breakout board directly to the ESP32. Cut a narrow slot in the back of the controller case to let a small section of the level shifter protrude. Solder the ESP32 to this exposed portion so it sits flat against the tabletop’s underside, keeping the rest of the shifter enclosed. This secures the ESP32 firmly against the desk while leaving the USB port accessible for debugging and the RGB LED visible for status feedback.
 
 ## Installation
 
 ### 1. Wire the hardware
 
-Connect the ESP32 and logic level shifter to the Megadesk according to the connection diagrams below.
-
-If power-supply monitoring is wanted, connect `ADC` through a suitable resistor divider.
-
-The minimum connections are:
+Connect the ESP32 and logic level shifter to the Megadesk using the wiring diagrams below. For voltage monitoring, wire the `ADC` pin through a suitable resistor divider.
 
 | Pin    | Function               | Requirement |
 | ------ | ---------------------- | ----------- |
@@ -85,39 +71,25 @@ The minimum connections are:
 | `ADC`  | Supply voltage monitor | Optional    |
 | `OE`   | Level shifter control  | Optional    |
 
-- `MOSI` and `RST` are recommended because they allow the ESP32 to flash and reset the Megadesk AVR.
-- `TPUP` and `TPDN` are special-purpose connections for simulating the physical buttons.
-- `ADC` and `OE` provide optional functionality.
+`MOSI` and `RST` are highly recommended as they allow the ESP32 to flash and reset the Megadesk AVR.
 
 ### 2. Configure the firmware
 
-Configure the pin assignments and credentials in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h).
+The project uses [PlatformIO IDE](https://platformio.org/platformio-ide), which provides integrations for a wide range of code editors.
 
-### 3. Upload the ESP32
+Configure the pin assignments and network credentials in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h) before proceeding.
 
-Build and upload the ESP32 firmware using [PlatformIO IDE](https://platformio.org/platformio-ide).
+### 3. Flashing
 
-The ESP32 must be running before flashing the Megadesk AVR because the ESP32 acts as its programmer.
+Build and upload the ESP32 firmware using PlatformIO, then repeat the process for the ATtiny841 AVR. The ESP32 acts as the programmer for the Megadesk, so it must be running first.
 
-### 4. Flash the Megadesk
-
-Use PlatformIO to flash the Megadesk AVR firmware through the ESP32.
-
-If `MOSI` and `RST` are not connected, the AVR must be programmed separately using another programmer.
-
-### 5. Verify operation
-
-Once both firmware images have been installed, verify that the desk moves correctly.
+If `MOSI` and `RST` are not connected, the AVR must be flashed separately using a dedicated programmer.
 
 ## Connections
-
-The ESP32 GPIO assignments depend on the board and are configured in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h).
 
 ### Megadesk pinout
 
 On some revisions, `SCK` and `MISO` are also broken out to `RX` and `TX` through series resistors. Direct `SCK`/`MISO` wiring is preferred, as the resistors are best avoided for SPI and unnecessary for UART, though `RX`/`TX` should work just fine.
-
-Buttons 3 and 4 are optional macro buttons.
 
 ```text
                     ┌────────── Button 4
@@ -144,7 +116,7 @@ Buttons 3 and 4 are optional macro buttons.
 
 ### ESP32 connections
 
-Only for ESP32 boards rated for the desk’s supply voltage.
+Applicable for ESP32 boards natively rated for the desk’s supply voltage.
 
 ```text
 ┌────────────────┐
@@ -195,19 +167,9 @@ White ┼─ 0 V DC
 ──────┘
 ```
 
-## Software
-
-Bekant uses PlatformIO to build and upload the firmware.
-
-[PlatformIO IDE](https://platformio.org/platformio-ide) provides integrations for a wide range of editors, so use whichever environment you are most comfortable with.
-
-Configure the pin assignments and credentials in [`secrets.h`](https://github.com/VIPnytt/Bekant/blob/main/include/esp/secrets.h).
-
-The ESP32 firmware must be uploaded before the Megadesk AVR can be flashed.
-
 ## Status LED
 
-ESP32 boards with a WS2812 RGB LED can use the integrated status indication.
+ESP32 boards equipped with a WS2812 RGB LED can utilize it for visual status indication. The LED automatically fades out after a brief period of inactivity.
 
 | Color | Meaning                                                                    |
 | ----- | -------------------------------------------------------------------------- |
@@ -215,8 +177,6 @@ ESP32 boards with a WS2812 RGB LED can use the integrated status indication.
 | Green | Desk is moving in response to a physical button press                      |
 | Blue  | Desk is moving autonomously to a preset height or in response to a command |
 | Red   | An error has occurred                                                      |
-
-The light fades out after a short period of inactivity.
 
 ## Home Assistant
 
@@ -237,15 +197,15 @@ To avoid interface clutter, only a handful of essential entities are enabled by 
 
 ### Sensors
 
-| Name        | Description            | Requirement          |
-| ----------- | ---------------------- | -------------------- |
-| Button 3    | Macro button           | Custom control panel |
-| Button 4    | Macro button           | Custom control panel |
-| Button down | Button press state     |                      |
-| Button up   | Button press state     |                      |
-| Desk        | Current desk height    |                      |
-| Preset high | Configured high preset |                      |
-| Preset low  | Configured low preset  |                      |
+| Name        | Description               | Requirement  |
+| ----------- | ------------------------- | ------------ |
+| Button 3    | Programmable macro button | Custom panel |
+| Button 4    | Programmable macro button | Custom panel |
+| Button down | Button press state        |              |
+| Button up   | Button press state        |              |
+| Desk        | Current desk height       |              |
+| Preset high | Configured high preset    |              |
+| Preset low  | Configured low preset     |              |
 
 ### Configuration
 
@@ -283,7 +243,7 @@ If a communication error occurs, the desk may soft-lock and ignore movement comm
 
 ### The desk legs are misaligned
 
-If the desk legs are not moving in sync, the encoder sensors may have lost their reference position. Hold both the *up* and *down* buttons simultaneously for about 10 seconds, or use the **Recalibrate legs** configuration entity in Home Assistant to restore proper alignment. The desk will automatically lower itself to the bottom position to recalibrate the sensors. Ensure the area underneath the desk is clear of chairs and equipment before starting this routine.
+If the desk legs are not moving in sync, the encoder sensors may have lost their reference position. Hold both the *up* and *down* buttons simultaneously for about 10 seconds, or use the *Recalibrate legs* configuration entity in Home Assistant to restore proper alignment. The desk will automatically lower itself to the bottom position to recalibrate the sensors. Ensure the area underneath the desk is clear of chairs and equipment before starting this routine.
 
 ### AVRdude fails to flash the Megadesk
 
