@@ -281,6 +281,18 @@ void HomeAssistantHandler::configuration()
     }
 #endif // PIN_OE
     {
+        JsonObject powerOff{discovery[ComponentAbbreviations::components]["power"].to<JsonObject>()};
+        powerOff[ComponentAbbreviations::command_template].set(R"({"action":"{{value}}"})");
+        powerOff[ComponentAbbreviations::command_topic].set(commandTopic);
+        powerOff[ComponentAbbreviations::enabled_by_default].set(false);
+        powerOff[ComponentAbbreviations::entity_category].set(entityCategory);
+        powerOff[ComponentAbbreviations::icon].set("mdi:power");
+        powerOff[ComponentAbbreviations::name].set("Power off");
+        powerOff[ComponentAbbreviations::payload_press].set("power");
+        powerOff[ComponentAbbreviations::platform].set("button");
+        powerOff[ComponentAbbreviations::unique_id].set("power");
+    }
+    {
         JsonObject presetHigh{discovery[ComponentAbbreviations::components]["preset_high"].to<JsonObject>()};
         presetHigh[ComponentAbbreviations::command_template].set(R"({"preset":{"high":{{value}}}})");
         presetHigh[ComponentAbbreviations::command_topic].set(commandTopic);

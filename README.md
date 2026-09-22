@@ -252,6 +252,7 @@ To avoid interface clutter, only a handful of essential entities are enabled by 
 | Name             | Description                                | Requirement |
 | ---------------- | ------------------------------------------ | ----------- |
 | Output enable    | Control the logic level shifter’s `OE` pin | `PIN_OE`    |
+| Power off        | Put the ESP32 into deep sleep              |             |
 | Preset high      | Set the high preset                        |             |
 | Preset low       | Set the low preset                         |             |
 | Reboot           | Reboot the ESP32                           |             |

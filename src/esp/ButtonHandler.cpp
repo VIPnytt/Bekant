@@ -7,12 +7,23 @@
 #include "esp/secrets.h"
 
 /**
- * @brief Initializes the optional down- and up-button simulation outputs.
+ * @brief Initializes the optional down- and up-button simulation lines.
  *
- * Releases each configured open-drain output and attaches its change interrupt.
+ * When both lines are configured on a supported target, registers them as
+ * active-low deep-sleep wake sources. Releases each configured open-drain
+ * output and attaches its change interrupt.
  */
 void ButtonHandler::begin()
 {
+#if defined(PIN_TPDN) && defined(PIN_TPUP) && SOC_GPIO_SUPPORT_DEEPSLEEP_WAKEUP
+    esp_deep_sleep_enable_gpio_wakeup((1ULL << static_cast<unsigned int>(PIN_TPDN)) |
+                                          (1ULL << static_cast<unsigned int>(PIN_TPUP)),
+                                      esp_deepsleep_gpio_wake_up_mode_t::ESP_GPIO_WAKEUP_GPIO_LOW);
+#elif defined(PIN_TPDN) && defined(PIN_TPUP) && SOC_PM_SUPPORT_EXT_WAKEUP && CONFIG_IDF_TARGET_ESP32
+    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(PIN_TPDN), LOW);
+    esp_sleep_enable_ext1_wakeup(1ULL << static_cast<unsigned int>(PIN_TPUP),
+                                 esp_sleep_ext1_wakeup_mode_t::ESP_EXT1_WAKEUP_ALL_LOW);
+#endif // defined(PIN_TPDN) && defined(PIN_TPUP) && SOC_GPIO_SUPPORT_DEEPSLEEP_WAKEUP
 #ifdef PIN_TPDN
     pinMode(PIN_TPDN, OUTPUT_OPEN_DRAIN);
 #endif // PIN_TPDN

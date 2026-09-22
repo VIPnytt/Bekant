@@ -30,6 +30,10 @@ void DeskService::begin()
 #endif // PIN_OE
     pinMode(PIN_RST, OUTPUT_OPEN_DRAIN);
 #ifdef PIN_OE
+#if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
+    gpio_deep_sleep_hold_dis();
+#endif // SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
+    gpio_hold_dis(static_cast<gpio_num_t>(PIN_OE));
     nvs_handle_t handle{};
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
@@ -359,15 +363,32 @@ void DeskService::parse(JsonObjectConst doc)
 }
 
 /**
- * @brief Applies a named maintenance action.
+ * @brief Applies a named device action.
  *
- * Supports recalibrating the leg encoder sensors and restarting the ESP32 after placing the AVR controller in reset.
- * Unsupported action names are ignored.
+ * The "power" action disconnects MQTT, preserves the optional output-enable
+ * level, and enters deep sleep. The "recalibrate" action requests leg encoder
+ * recalibration. The "restart" action disconnects MQTT, places the AVR
+ * controller in reset, and restarts the ESP32. Unsupported action names are
+ * ignored.
  *
- * @param action Action name from the JSON request; "recalibrate" and "restart" are supported.
+ * @param action Action name from the JSON request; "power", "recalibrate", and
+ * "restart" are supported.
  */
 void DeskService::parseAction(std::string_view action)
 {
+    if (action == "power")
+    {
+        mqtt.disconnect();
+        StatusHandler::setNone();
+#ifdef PIN_OE
+        gpio_hold_en(static_cast<gpio_num_t>(PIN_OE));
+#if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
+        gpio_deep_sleep_hold_en();
+#endif // SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
+#endif // PIN_OE
+        vTaskDelay(1U);
+        esp_deep_sleep_start();
+    }
     if (action == "recalibrate")
     {
         console.send(ConsoleHandler::Command::RECALIBRATE);
