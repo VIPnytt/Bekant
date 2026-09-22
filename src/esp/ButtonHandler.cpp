@@ -76,7 +76,8 @@ bool ButtonHandler::getUp() const { return (states & 0b1U) != 0U; }
 bool ButtonHandler::getUpSimulation() { return simulateUp.first; }
 
 /**
- * @brief Releases requested button-simulation outputs and clears their requested states.
+ * @brief Releases requested button-simulation outputs, clears their requested states,
+ * and deasserts the signal to the AVR.
  */
 void ButtonHandler::resetSimulation()
 {
@@ -137,7 +138,9 @@ void ButtonHandler::onUp()
  * @brief Controls the optional output that simulates pressing the desk's down button.
  *
  * Marks the status as an error when activation is requested but the observed
- * output state is not active. Has no effect when down-button simulation is not configured.
+ * output state is not active. While either directional simulation is requested,
+ * keeps the AVR simulation signal asserted. Has no effect when down-button
+ * simulation is not configured.
  *
  * @param state Whether to activate the simulated down-button press.
  */
@@ -169,7 +172,9 @@ void ButtonHandler::setSimulateDown(bool state)
  * @brief Controls the optional output that simulates pressing the desk's up button.
  *
  * Marks the status as an error when activation is requested but the observed
- * output state is not active. Has no effect when up-button simulation is not configured.
+ * output state is not active. While either directional simulation is requested,
+ * keeps the AVR simulation signal asserted. Has no effect when up-button
+ * simulation is not configured.
  *
  * @param state Whether to activate the simulated up-button press.
  */
