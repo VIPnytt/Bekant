@@ -37,15 +37,7 @@ void DeskService::begin()
         if (nvs_get_u8(handle, "oe", &_enable) == ESP_OK)
         {
             enable = static_cast<bool>(_enable);
-#if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
-            gpio_deep_sleep_hold_dis();
-#endif // SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
-            gpio_hold_dis(static_cast<gpio_num_t>(PIN_OE));
             digitalWrite(PIN_OE, enable ? HIGH : LOW);
-            gpio_hold_en(static_cast<gpio_num_t>(PIN_OE));
-#if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
-            gpio_deep_sleep_hold_en();
-#endif // SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
         }
         nvs_close(handle);
     }
@@ -376,6 +368,10 @@ void DeskService::parseAction(std::string_view action)
     {
         mqtt.disconnect();
         StatusHandler::setNone();
+        gpio_hold_en(static_cast<gpio_num_t>(PIN_OE));
+#if SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
+        gpio_deep_sleep_hold_en();
+#endif // SOC_GPIO_SUPPORT_HOLD_IO_IN_DSLP && !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP
         vTaskDelay(1U);
         esp_deep_sleep_start();
     }
