@@ -30,6 +30,10 @@ void ConsoleHandler::handle()
         ESP_LOGV("RX", "0x%X", byte);
         if (lengthRx == 0U)
         {
+            if (byte == 0xFF)
+            {
+                return;
+            }
             lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U); // NOLINT(hicpp-signed-bitwise)
             stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0xFU);  // NOLINT(hicpp-signed-bitwise)
             bytesRx = 0U;
