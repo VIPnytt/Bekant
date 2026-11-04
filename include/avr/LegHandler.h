@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include <HardwareSerial.h>
+#include <avr/io.h>
 
 namespace LinFrame
 {
@@ -26,11 +26,17 @@ private:
 
     unsigned char errors{0U};
 
+    void flushRx();
+
+    void flushTx();
+
     void requestDiscardResponse();
 
     void sendResponse(unsigned char pid);
 
     void serialBreak();
+
+    void write(uint8_t byte);
 
     [[nodiscard]] int read(unsigned int &remainingTime);
 
@@ -109,9 +115,9 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(pid);
-        Serial.flush();
+        write(linSyncByte);
+        write(pid);
+        flushTx();
         int receivedByte{};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
         do // NOLINT(cppcoreguidelines-avoid-do-while)
@@ -151,11 +157,14 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(getPid(linDiagnosticRequestId));
-        Serial.write(data, N);
-        Serial.write(getChecksum(data));
-        Serial.flush();
+        write(linSyncByte);
+        write(getPid(linDiagnosticRequestId));
+        for (const unsigned char byte : data)
+        {
+            write(byte);
+        }
+        write(getChecksum(data));
+        flushTx();
     }
 
     /**
@@ -168,11 +177,14 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(pid);
-        Serial.write(data, N);
-        Serial.write(getChecksum(data, pid));
-        Serial.flush();
+        write(linSyncByte);
+        write(pid);
+        for (const unsigned char byte : data)
+        {
+            write(byte);
+        }
+        write(getChecksum(data, pid));
+        flushTx();
     }
 };
 

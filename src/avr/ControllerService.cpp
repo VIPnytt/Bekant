@@ -2,6 +2,7 @@
 
 #include "avr/ControllerService.h"
 
+#include "avr/TimeHandler.h"
 #include "avr/constants.h"
 
 #include <EEPROM.h>
@@ -21,16 +22,21 @@ void ControllerService::begin()
     const unsigned char _mcusr{MCUSR};
     MCUSR = 0U;
     wdt_enable(WDTO_8S);
+    TimeHandler::begin();
+    button.begin();
+    tone.begin();
     console.begin();
-    delay(0b1UL << 10U);
+    const unsigned long _lastMillis{TimeHandler::millis()};
+    while (TimeHandler::millis() - _lastMillis < 0b1UL << 10U)
+    {
+        yield();
+    }
     ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
     ConsoleHandler::send(ConsoleHandler::State::RESET_REASON, _mcusr);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_HIGH, presetHigh);
     EEPROM.get<unsigned int>(static_cast<int>('l'), presetLow);
     ConsoleHandler::send(ConsoleHandler::State::PRESET_LOW, presetLow);
-    button.begin();
-    tone.begin();
     const unsigned char init{leg.begin()};
     if (init != 0U)
     {
@@ -46,9 +52,16 @@ void ControllerService::begin()
  */
 void ControllerService::handle()
 {
-    if (read())
+    tone.handle();
+    static unsigned long lastPollMillis{0UL};
+    const unsigned long now{TimeHandler::millis()};
+    if (now - lastPollMillis > 0b1U << 5U)
     {
-        process();
+        lastPollMillis = now;
+        if (read())
+        {
+            process();
+        }
     }
     if (state != State::RECAL_PREPARE && state != State::RECAL_ONGOING && state != State::RECAL_DONE)
     {
@@ -81,7 +94,7 @@ bool ControllerService::read()
         {
             if (_encoder8 != encoder8)
             {
-                lastMillis = millis();
+                lastMillis = TimeHandler::millis();
             }
             encoder8 = _encoder8;
             state8 = node[2U];
@@ -102,7 +115,7 @@ bool ControllerService::read()
         {
             if (_encoder9 != encoder9)
             {
-                lastMillis = millis();
+                lastMillis = TimeHandler::millis();
             }
             encoder9 = _encoder9;
             state9 = node[2U];
@@ -223,7 +236,7 @@ void ControllerService::handleStatePrepare()
         state = State::IDLE;
         return;
     }
-    lastMillis = millis();
+    lastMillis = TimeHandler::millis();
     sendCommand(LegHandler::Command::PRE_MOVE);
 }
 
@@ -234,7 +247,7 @@ void ControllerService::handleStatePrepare()
  */
 void ControllerService::handleStateDown()
 {
-    if (encoderTarget >= getEncoderMin() || millis() - lastMillis > (0b1U << 8U))
+    if (encoderTarget >= getEncoderMin() || (TimeHandler::millis() - lastMillis > (0b1UL << 8U)))
     {
         state = State::STOP;
         return;
@@ -247,7 +260,7 @@ void ControllerService::handleStateDown()
  */
 void ControllerService::handleStateUp()
 {
-    if (encoderTarget <= getEncoderMax() || millis() - lastMillis > (0b1U << 8U))
+    if (encoderTarget <= getEncoderMax() || (TimeHandler::millis() - lastMillis > (0b1UL << 8U)))
     {
         state = State::STOP;
         return;

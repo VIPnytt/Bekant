@@ -5,14 +5,20 @@
 class ToneHandler
 {
 private:
-    static constexpr unsigned char overhead{static_cast<unsigned char>(48'000'000UL / F_CPU)};
+    static inline volatile bool active{false};
 
-    static constexpr unsigned char minFrequency{static_cast<unsigned char>((500'000UL / ((0b1UL << 16U) - 1UL)) + 1UL)};
+    static inline unsigned int durationMillis{0U};
+
+    static inline unsigned long startMillis{0UL};
 
 public:
     void begin();
 
+    static void handle();
+
     static void play(unsigned int frequency, unsigned int duration);
+
+    static void stop();
 };
 
 #endif // ARDUINO_ARCH_AVR
