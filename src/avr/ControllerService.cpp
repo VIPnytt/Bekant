@@ -49,6 +49,9 @@ void ControllerService::begin()
 
 /**
  * @brief Reads encoder data, advances the controller state, and handles user input outside recalibration states.
+ *
+ * Polls the encoders when more than 32 milliseconds have elapsed since the previous poll and advances the state
+ * only after both requests succeed. Checks for tone completion on every call.
  */
 void ControllerService::handle()
 {

@@ -107,6 +107,8 @@ public:
     /**
      * Requests a LIN response and reads its payload and checksum.
      *
+     * The checksum is returned without validation. An incomplete response may leave part of the buffer populated.
+     *
      * @param pid Protected identifier to transmit in the response header.
      * @param data Buffer to populate with the received payload.
      * @return The received checksum byte, or `-1` if the response is incomplete.
