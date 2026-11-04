@@ -2,7 +2,6 @@
 
 #include "avr/TimeHandler.h"
 
-#include "avr/ConsoleHandler.h"
 #include "avr/ControllerService.h"
 
 #include <avr/interrupt.h>
@@ -10,7 +9,7 @@
 
 namespace Timers
 {
-volatile unsigned long timer0{0UL};
+volatile unsigned long timer0{0UL}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 } // namespace Timers
 
 /**

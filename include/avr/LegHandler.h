@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include <avr/io.h>
+#include <stdint.h>
 
 namespace LinFrame
 {

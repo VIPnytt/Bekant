@@ -23,8 +23,8 @@ void ControllerService::begin()
     MCUSR = 0U;
     wdt_enable(WDTO_8S);
     TimeHandler::begin();
+    ToneHandler::begin();
     button.begin();
-    tone.begin();
     console.begin();
     const unsigned long _lastMillis{TimeHandler::millis()};
     while (TimeHandler::millis() - _lastMillis < 0b1UL << 10U)
@@ -52,7 +52,6 @@ void ControllerService::begin()
  */
 void ControllerService::handle()
 {
-    tone.handle();
     static unsigned long lastPollMillis{0UL};
     const unsigned long now{TimeHandler::millis()};
     if (now - lastPollMillis > 0b1U << 5U)
@@ -69,6 +68,7 @@ void ControllerService::handle()
         button.handle();
         Serial1.flush();
     }
+    ToneHandler::handle();
 }
 
 /**

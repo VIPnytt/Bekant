@@ -12,7 +12,7 @@ private:
     static inline unsigned long startMillis{0UL};
 
 public:
-    void begin();
+    static void begin();
 
     static void handle();
 
