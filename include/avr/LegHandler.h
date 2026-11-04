@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include <stdint.h>
+#include <stdint.h> // NOLINT(hicpp-deprecated-headers)
 
 namespace LinFrame
 {

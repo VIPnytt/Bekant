@@ -19,7 +19,7 @@ unsigned char LegHandler::begin()
     pinMode(Pin::deskTx, OUTPUT);
     digitalWrite(Pin::deskTx, HIGH);
     TCCR1A = 0U;
-    TCCR1B = _BV(CS11);
+    TCCR1B = 0b1U << CS11;
     TCCR1C = 0U;
     TCNT1 = 0U;
     TIMSK1 = 0U;
@@ -28,8 +28,8 @@ unsigned char LegHandler::begin()
     UBRR0H = static_cast<uint8_t>(ubrrValue >> 8U);
     UBRR0L = static_cast<uint8_t>(ubrrValue & 0xFFU);
     UCSR0A = 0U;
-    UCSR0B = _BV(RXEN0) | _BV(TXEN0);
-    UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
+    UCSR0B = (0b1U << RXEN0) | (0b1U << TXEN0);
+    UCSR0C = (0b1U << UCSZ01) | (0b1U << UCSZ00);
     constexpr unsigned char initial[3U][2U]{
         {0x7U, 0xFFU},
         {0x7U, 0xFFU},
@@ -147,11 +147,11 @@ unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
  */
 void LegHandler::write(uint8_t byte)
 {
-    while ((UCSR0A & _BV(UDRE0)) == 0U)
+    while ((UCSR0A & (0b1U << UDRE0)) == 0U)
     {
         yield();
     }
-    UCSR0A |= _BV(TXC0);
+    UCSR0A |= 0b1U << TXC0;
     UDR0 = byte;
 }
 
@@ -160,7 +160,7 @@ void LegHandler::write(uint8_t byte)
  */
 void LegHandler::flushTx()
 {
-    while ((UCSR0A & _BV(TXC0)) == 0U)
+    while ((UCSR0A & (0b1U << TXC0)) == 0U)
     {
         yield();
     }
@@ -171,7 +171,7 @@ void LegHandler::flushTx()
  */
 void LegHandler::flushRx()
 {
-    while ((UCSR0A & _BV(RXC0)) != 0U)
+    while ((UCSR0A & (0b1U << RXC0)) != 0U)
     {
         static_cast<void>(UDR0);
     }
@@ -190,7 +190,7 @@ int LegHandler::read(unsigned int &remainingTime)
         return -1;
     }
     const uint16_t start{TCNT1};
-    while ((UCSR0A & _BV(RXC0)) == 0U)
+    while ((UCSR0A & (0b1U << RXC0)) == 0U)
     {
         const uint16_t elapsed{static_cast<uint16_t>(TCNT1 - start)};
         if (elapsed >= remainingTime)
@@ -208,7 +208,7 @@ int LegHandler::read(unsigned int &remainingTime)
     {
         remainingTime -= elapsed;
     }
-    const unsigned char _errors{static_cast<unsigned char>((UCSR0A >> 2U) & 0b111U)};
+    const unsigned char _errors{static_cast<unsigned char>((static_cast<unsigned int>(UCSR0A) >> 2U) & 0b111U)};
     if (_errors != 0U && _errors != errors)
     {
         errors = _errors;
@@ -273,12 +273,12 @@ void LegHandler::sendResponse(unsigned char pid)
  */
 void LegHandler::serialBreak()
 {
-    UCSR0B &= ~(_BV(TXEN0) | _BV(RXEN0));
+    UCSR0B &= ~((0b1U << TXEN0) | (0b1U << RXEN0));
     digitalWrite(Pin::deskTx, LOW);
     delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baudRate)); // ~781 us
     digitalWrite(Pin::deskTx, HIGH);
     delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baudRate)); // ~52 us
-    UCSR0B |= _BV(TXEN0) | _BV(RXEN0);
+    UCSR0B |= (0b1U << TXEN0) | (0b1U << RXEN0);
     flushRx();
 }
 

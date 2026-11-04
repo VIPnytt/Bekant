@@ -14,7 +14,7 @@
  *
  * Writing a 1 to PINA toggles the corresponding PORTA bit in a single cycle.
  */
-ISR(TIMER2_COMPA_vect) { PINA = _BV(PA7); }
+ISR(TIMER2_COMPA_vect) { PINA = 0b1U << PA7; }
 
 /**
  * @brief Configures PA7 as a standard output and ensures Timer2 starts stopped.
@@ -60,9 +60,9 @@ void ToneHandler::play(unsigned int frequency, unsigned int duration)
     OCR2A = static_cast<uint16_t>((500'000UL / frequency) - 1UL);
     TCNT2 = 0U;
     TCCR2A = 0U;
-    TIFR2 = _BV(OCF2A);
-    TIMSK2 = _BV(OCIE2A);
-    TCCR2B = _BV(WGM22) | _BV(CS21);
+    TIFR2 = 0b1U << OCF2A;
+    TIMSK2 = 0b1U << OCIE2A;
+    TCCR2B = (0b1U << WGM22) | (0b1U << CS21);
     startMillis = TimeHandler::millis();
     durationMillis = duration;
     active = true;
@@ -76,7 +76,7 @@ void ToneHandler::stop()
     TIMSK2 = 0U;
     TCCR2B = 0U;
     TCCR2A = 0U;
-    TIFR2 = _BV(OCF2A);
+    TIFR2 = 0b1U << OCF2A;
     digitalWrite(Pin::tone, LOW);
     active = false;
 }

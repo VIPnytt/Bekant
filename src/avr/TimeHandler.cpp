@@ -2,8 +2,6 @@
 
 #include "avr/TimeHandler.h"
 
-#include "avr/ControllerService.h"
-
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
@@ -19,12 +17,12 @@ ISR(TIMER0_COMPA_vect) { ++Timers::timer0; }
 
 void TimeHandler::begin()
 {
-    TCCR0A = _BV(WGM01);
-    TCCR0B = _BV(CS01) | _BV(CS00);
+    TCCR0A = 0b1U << WGM01;
+    TCCR0B = (0b1U << CS01) | (0b1U << CS00);
     OCR0A = static_cast<uint8_t>((static_cast<unsigned long>(F_CPU) / ((0b1UL << 6U) * 1000UL)) - 1UL);
     TCNT0 = 0U;
-    TIFR0 |= _BV(OCF0A);
-    TIMSK0 |= _BV(OCIE0A);
+    TIFR0 = 0b1U << OCF0A;
+    TIMSK0 |= 0b1U << OCIE0A;
 }
 
 /**
