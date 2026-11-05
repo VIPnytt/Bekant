@@ -13,7 +13,7 @@ volatile unsigned long timer0{0UL}; // NOLINT(cppcoreguidelines-avoid-non-const-
 /**
  * @brief Increments the millisecond counter on a Timer0 compare match.
  */
-ISR(TIMER0_COMPA_vect) { ++Timers::timer0; }
+ISR(TIM0_COMPA_vect) { ++Timers::timer0; }
 
 /**
  * @brief Configures Timer0 to generate millisecond compare interrupts without resetting the accumulated count.
