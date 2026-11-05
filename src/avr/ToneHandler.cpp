@@ -60,10 +60,10 @@ void ToneHandler::play(unsigned int frequency, unsigned int duration)
     }
     OCR2A = static_cast<uint16_t>((500'000UL / frequency) - 1UL);
     TCNT2 = 0U;
-    TCCR2A = 0b1U << WGM21;
+    TCCR2A = 0U;
     TIFR2 = 0b1U << OCF2A;
     TIMSK2 = 0b1U << OCIE2A;
-    TCCR2B = 0b1U << CS21;
+    TCCR2B = (0b1U << WGM22) | (0b1U << CS21);
     startMillis = TimeHandler::millis();
     durationMillis = duration;
     active = true;
