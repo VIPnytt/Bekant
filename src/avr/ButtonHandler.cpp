@@ -4,6 +4,7 @@
 
 #include "avr/ConsoleHandler.h"
 #include "avr/ControllerService.h"
+#include "avr/TimeHandler.h"
 #include "avr/ToneHandler.h"
 #include "avr/constants.h"
 
@@ -52,7 +53,7 @@ void ButtonHandler::handle()
         pending = true;
         if (stateDown)
         {
-            lastMillis = millis();
+            lastMillis = TimeHandler::millis();
             --count;
         }
         else
@@ -66,7 +67,7 @@ void ButtonHandler::handle()
         pending = true;
         if (stateUp)
         {
-            lastMillis = millis();
+            lastMillis = TimeHandler::millis();
             ++count;
         }
         else
@@ -94,44 +95,45 @@ void ButtonHandler::handle()
  */
 void ButtonHandler::process()
 {
-    if (stateDown && stateUp && millis() - lastMillis > 0b1U << 13U)
+    const unsigned long elapsed{TimeHandler::millis() - lastMillis};
+    if (stateDown && stateUp && elapsed > (0b1U << 13U))
     {
         count = 0;
         controller.recalibrate();
     }
-    else if (stateDown && !stateUp && millis() - lastMillis > 0b1U << 9U)
+    else if (stateDown && !stateUp && elapsed > (0b1U << 9U))
     {
         count = 0;
         incrementDown();
     }
-    else if (stateUp && !stateDown && millis() - lastMillis > 0b1U << 9U)
+    else if (stateUp && !stateDown && elapsed > (0b1U << 9U))
     {
         count = 0;
         incrementUp();
     }
-    else if (count == 1 && !stateUp && millis() - lastMillis > 0b1U << 8U)
+    else if (count == 1 && !stateUp && elapsed > (0b1U << 8U))
     {
         count = 0;
         controller.setTarget(controller.getPresetHigh());
     }
-    else if (count == -1 && !stateDown && millis() - lastMillis > 0b1U << 8U)
+    else if (count == -1 && !stateDown && elapsed > (0b1U << 8U))
     {
         count = 0;
         controller.setTarget(controller.getPresetLow());
     }
-    else if (count == 2 && !stateUp && millis() - lastMillis > 0b1U << 8U)
+    else if (count == 2 && !stateUp && elapsed > (0b1U << 8U))
     {
         count = 0;
         controller.setPresetHigh(controller.getEncoderMin());
         ToneHandler::play(0b1U << 12U, 0b1U << 8U);
     }
-    else if (count == -2 && !stateDown && millis() - lastMillis > 0b1U << 8U)
+    else if (count == -2 && !stateDown && elapsed > (0b1U << 8U))
     {
         count = 0;
         controller.setPresetLow(controller.getEncoderMax());
         ToneHandler::play(0b1U << 12U, 0b1U << 8U);
     }
-    else if (count != 0 && !stateDown && !stateUp && millis() - lastMillis > 0b1U << 8U)
+    else if (count != 0 && !stateDown && !stateUp && elapsed > (0b1U << 8U))
     {
         count = 0;
     }

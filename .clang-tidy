@@ -5,6 +5,7 @@ Checks: >
   -bugprone-branch-clone,
   -bugprone-easily-swappable-parameters,
   -cert-err58-cpp,
+  -clang-analyzer-core.FixedAddressDereference,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-init-variables,

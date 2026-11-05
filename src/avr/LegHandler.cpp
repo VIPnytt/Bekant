@@ -17,7 +17,19 @@ unsigned char LegHandler::begin()
 {
     pinMode(Pin::deskRx, INPUT);
     pinMode(Pin::deskTx, OUTPUT);
-    Serial.begin(baudRate);
+    digitalWrite(Pin::deskTx, HIGH);
+    TCCR1A = 0U;
+    TCCR1B = 0b1U << CS11;
+    TCCR1C = 0U;
+    TCNT1 = 0U;
+    TIMSK1 = 0U;
+    static constexpr uint16_t ubrrValue{
+        static_cast<uint16_t>((static_cast<unsigned long>(F_CPU) / (16UL * baudRate)) - 1UL)};
+    UBRR0H = static_cast<uint8_t>(ubrrValue >> 8U);
+    UBRR0L = static_cast<uint8_t>(ubrrValue & 0xFFU);
+    UCSR0A = 0U;
+    UCSR0B = (0b1U << RXEN0) | (0b1U << TXEN0);
+    UCSR0C = (0b1U << UCSZ01) | (0b1U << UCSZ00);
     constexpr unsigned char initial[3U][2U]{
         {0x7U, 0xFFU},
         {0x7U, 0xFFU},
@@ -129,35 +141,84 @@ unsigned char LegHandler::getLeg(unsigned char pid, unsigned char (&node)[3U])
 }
 
 /**
- * @brief Reads a serial byte within the available time budget.
+ * @brief Sends a single byte over USART0 directly to the hardware data register.
  *
- * Reports a nonzero parity, data-overrun, or frame-error combination to the console before returning the byte unless
- * it matches the last reported combination.
+ * @param byte Data byte to transmit.
+ */
+void LegHandler::write(uint8_t byte)
+{
+    while ((UCSR0A & (0b1U << UDRE0)) == 0U)
+    {
+        yield();
+    }
+    UCSR0A |= 0b1U << TXC0;
+    UDR0 = byte;
+}
+
+/**
+ * @brief Waits until the final stop bit has completely cleared the USART0 transmit shift register.
+ */
+void LegHandler::flushTx()
+{
+    while ((UCSR0A & (0b1U << TXC0)) == 0U)
+    {
+        yield();
+    }
+}
+
+/**
+ * @brief Drains any residual bytes or framing errors from the USART0 receive FIFO.
+ */
+void LegHandler::flushRx()
+{
+    while ((UCSR0A & (0b1U << RXC0)) != 0U)
+    {
+        static_cast<void>(UDR0);
+    }
+}
+
+/**
+ * @brief Reads a serial byte within the remaining Timer1 time budget.
  *
- * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
- * @return int The received byte, or -1 if no byte is available before the timeout.
+ * Reports a nonzero parity, data-overrun, or frame-error combination to the console unless it matches the last
+ * reported combination.
+ *
+ * @param remainingTime Remaining Timer1 ticks, reduced by the elapsed ticks down to zero. One tick is one microsecond
+ * at an 8 MHz CPU clock.
+ * @return int The received byte, or -1 if the budget is initially zero or expires while waiting for a byte.
  */
 int LegHandler::read(unsigned int &remainingTime)
 {
-    constexpr unsigned int interval{static_cast<unsigned int>(1'000'000UL / baudRate)};
-    while (remainingTime != 0U && Serial.available() == 0)
-    {
-        const unsigned int delayTime{remainingTime >= interval ? interval : remainingTime};
-        delayMicroseconds(delayTime);
-        remainingTime -= delayTime;
-    }
-    if (Serial.available() == 0)
+    if (remainingTime == 0U)
     {
         return -1;
     }
-    // NOLINTNEXTLINE(clang-analyzer-core.FixedAddressDereference)
-    const unsigned char _errors{static_cast<unsigned char>(static_cast<unsigned char>(UCSR0A >> 2U) & 0b111U)};
+    const uint16_t start{TCNT1};
+    while ((UCSR0A & (0b1U << RXC0)) == 0U)
+    {
+        const uint16_t elapsed{static_cast<uint16_t>(TCNT1 - start)};
+        if (elapsed >= remainingTime)
+        {
+            remainingTime = 0U;
+            return -1;
+        }
+    }
+    const uint16_t elapsed{static_cast<uint16_t>(TCNT1 - start)};
+    if (elapsed >= remainingTime)
+    {
+        remainingTime = 0U;
+    }
+    else
+    {
+        remainingTime -= elapsed;
+    }
+    const unsigned char _errors{static_cast<unsigned char>((static_cast<unsigned int>(UCSR0A) >> 2U) & 0b111U)};
     if (_errors != 0U && _errors != errors)
     {
         errors = _errors;
         ConsoleHandler::send(ConsoleHandler::State::LIN, errors);
     }
-    return Serial.read();
+    return static_cast<int>(UDR0);
 }
 
 /**
@@ -166,9 +227,9 @@ int LegHandler::read(unsigned int &remainingTime)
 void LegHandler::requestDiscardResponse()
 {
     serialBreak();
-    Serial.write(linSyncByte);
-    Serial.write(getPid(linDiagnosticResponseId));
-    Serial.flush();
+    write(linSyncByte);
+    write(getPid(linDiagnosticResponseId));
+    flushTx();
     unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
     while (remainingTime != 0U)
     {
@@ -205,28 +266,26 @@ void LegHandler::sendCommand(Command command, unsigned int position)
 void LegHandler::sendResponse(unsigned char pid)
 {
     serialBreak();
-    Serial.write(linSyncByte);
-    Serial.write(pid);
-    Serial.write(static_cast<unsigned char>(~pid));
-    Serial.flush();
+    write(linSyncByte);
+    write(pid);
+    write(static_cast<unsigned char>(~pid));
+    flushTx();
 }
 
 /**
- * @brief Generates a LIN break and delimiter signal on the configured pin.
+ * @brief Generates a LIN break and delimiter, temporarily disabling USART0 transmission and reception.
  *
- * Temporarily stops serial communication while driving the LIN pin low for
- * the break duration and high for the delimiter duration, then resumes
- * serial communication.
+ * Discards any bytes left in the receive buffer after re-enabling USART0.
  */
 void LegHandler::serialBreak()
 {
-    Serial.end();
-    pinMode(Pin::deskTx, OUTPUT);
+    UCSR0B &= ~((0b1U << TXEN0) | (0b1U << RXEN0));
     digitalWrite(Pin::deskTx, LOW);
-    delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baudRate)); // ~780 µs
+    delayMicroseconds(static_cast<unsigned int>((LinFrame::breakBits + 2UL) * 1'000'000UL / baudRate)); // ~781 us
     digitalWrite(Pin::deskTx, HIGH);
-    delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baudRate));
-    Serial.begin(baudRate);
+    delayMicroseconds(static_cast<unsigned int>(LinFrame::delimiterBits * 1'000'000UL / baudRate)); // ~52 us
+    UCSR0B |= (0b1U << TXEN0) | (0b1U << RXEN0);
+    flushRx();
 }
 
 #endif // ARDUINO_ARCH_AVR
