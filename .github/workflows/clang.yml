@@ -23,7 +23,7 @@ jobs:
           persist-credentials: false
 
       - name: Clang format
-        uses: cpp-linter/cpp-linter-action@8120e05c7fbd25fa09fa93424ec49f55f7b304ab # v2.23.1
+        uses: cpp-linter/cpp-linter-action@774040af57f011a5fc47911f08ff0c3059d1835a # v2.24.0
         id: format
         with:
           files-changed-only: false
@@ -64,7 +64,7 @@ jobs:
           path: .platformio/.cache/downloads
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: 3.11
           version: latest-known
@@ -98,7 +98,7 @@ jobs:
           uv run pio run -t compiledb -e "$PIO_ENVIRONMENT"
 
       - name: Clang tidy
-        uses: cpp-linter/cpp-linter-action@8120e05c7fbd25fa09fa93424ec49f55f7b304ab # v2.23.1
+        uses: cpp-linter/cpp-linter-action@774040af57f011a5fc47911f08ff0c3059d1835a # v2.24.0
         id: tidy
         with:
           extra-args: -DCORE_DEBUG_LEVEL=5

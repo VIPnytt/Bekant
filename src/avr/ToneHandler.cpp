@@ -2,42 +2,84 @@
 
 #include "avr/ToneHandler.h"
 
+#include "avr/TimeHandler.h"
 #include "avr/constants.h"
 
+#include <avr/interrupt.h>
+#include <avr/io.h>
 #include <wiring.h>
 
 /**
- * @brief Configures the tone pin as an output.
+ * @brief Timer2 Compare Match A ISR toggles PA7 directly in hardware.
+ *
+ * Writing a 1 to PINA toggles the corresponding PORTA bit in a single cycle.
  */
-void ToneHandler::begin() { pinMode(Pin::tone, OUTPUT); }
+ISR(TIMER2_COMPA_vect) { PINA = 0b1U << PA7; }
 
 /**
- * @brief Generates a blocking square-wave tone on the tone output.
+ * @brief Configures PA7 as a standard output and ensures Timer2 starts stopped.
+ */
+void ToneHandler::begin()
+{
+    pinMode(Pin::tone, OUTPUT);
+    digitalWrite(Pin::tone, LOW);
+    TCCR2A = 0U;
+    TCCR2B = 0U;
+    TIMSK2 = 0U;
+    TCNT2 = 0U;
+    active = false;
+}
+
+/**
+ * @brief Stops an active tone when called at or after its requested duration.
+ */
+void ToneHandler::handle()
+{
+    if (active && (TimeHandler::millis() - startMillis >= durationMillis))
+    {
+        stop();
+    }
+}
+
+/**
+ * @brief Starts non-blocking timer-driven tone playback on PA7, replacing any active tone.
  *
- * Unsupported frequencies and zero-duration requests produce no output.
+ * Frequencies below 8 Hz stop the current tone without starting another. For accepted frequencies, a zero-duration
+ * request starts playback and is stopped on the next call to handle(). Playback may continue beyond its duration
+ * until handle() is called.
  *
- * @param frequency Tone frequency in hertz.
- * @param duration Approximate playback duration in milliseconds.
+ * @param frequency Requested tone frequency in hertz.
+ * @param duration Requested duration in milliseconds.
  */
 void ToneHandler::play(unsigned int frequency, unsigned int duration)
 {
-    if (duration == 0U || frequency < minFrequency)
+    stop();
+    if (frequency < 8U)
     {
         return;
     }
-    const unsigned int halfPeriod{static_cast<unsigned int>(500'000UL / frequency)};
-    if (halfPeriod <= overhead)
-    {
-        return;
-    }
-    const unsigned int delay{halfPeriod - overhead};
-    for (unsigned long idx{0UL}; idx < (duration * 1000UL) / (2UL * halfPeriod); ++idx)
-    {
-        digitalWrite(Pin::tone, HIGH);
-        delayMicroseconds(delay);
-        digitalWrite(Pin::tone, LOW);
-        delayMicroseconds(delay);
-    }
+    OCR2A = static_cast<uint16_t>((500'000UL / frequency) - 1UL);
+    TCNT2 = 0U;
+    TCCR2A = 0U;
+    TIFR2 = 0b1U << OCF2A;
+    TIMSK2 = 0b1U << OCIE2A;
+    TCCR2B = (0b1U << WGM22) | (0b1U << CS21);
+    startMillis = TimeHandler::millis();
+    durationMillis = duration;
+    active = true;
+}
+
+/**
+ * @brief Silences the tone and disables the Timer2 clock and interrupt.
+ */
+void ToneHandler::stop()
+{
+    TIMSK2 = 0U;
+    TCCR2B = 0U;
+    TCCR2A = 0U;
+    TIFR2 = 0b1U << OCF2A;
+    digitalWrite(Pin::tone, LOW);
+    active = false;
 }
 
 #endif // ARDUINO_ARCH_AVR

@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include <HardwareSerial.h>
+#include <stdint.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
 
 namespace LinFrame
 {
@@ -26,11 +26,17 @@ private:
 
     unsigned char errors{0U};
 
+    void flushRx();
+
+    void flushTx();
+
     void requestDiscardResponse();
 
     void sendResponse(unsigned char pid);
 
     void serialBreak();
+
+    void write(uint8_t byte);
 
     [[nodiscard]] int read(unsigned int &remainingTime);
 
@@ -101,6 +107,8 @@ public:
     /**
      * Requests a LIN response and reads its payload and checksum.
      *
+     * The checksum is returned without validation. An incomplete response may leave part of the buffer populated.
+     *
      * @param pid Protected identifier to transmit in the response header.
      * @param data Buffer to populate with the received payload.
      * @return The received checksum byte, or `-1` if the response is incomplete.
@@ -109,9 +117,9 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(pid);
-        Serial.flush();
+        write(linSyncByte);
+        write(pid);
+        flushTx();
         int receivedByte{};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
         do // NOLINT(cppcoreguidelines-avoid-do-while)
@@ -151,11 +159,14 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(getPid(linDiagnosticRequestId));
-        Serial.write(data, N);
-        Serial.write(getChecksum(data));
-        Serial.flush();
+        write(linSyncByte);
+        write(getPid(linDiagnosticRequestId));
+        for (const unsigned char byte : data)
+        {
+            write(byte);
+        }
+        write(getChecksum(data));
+        flushTx();
     }
 
     /**
@@ -168,11 +179,14 @@ public:
     {
         static_assert(N <= 8U);
         serialBreak();
-        Serial.write(linSyncByte);
-        Serial.write(pid);
-        Serial.write(data, N);
-        Serial.write(getChecksum(data, pid));
-        Serial.flush();
+        write(linSyncByte);
+        write(pid);
+        for (const unsigned char byte : data)
+        {
+            write(byte);
+        }
+        write(getChecksum(data, pid));
+        flushTx();
     }
 };
 
