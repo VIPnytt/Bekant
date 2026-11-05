@@ -178,10 +178,14 @@ void LegHandler::flushRx()
 }
 
 /**
- * @brief Reads a serial byte within the remaining microsecond time budget using Timer1.
+ * @brief Reads a serial byte within the remaining Timer1 time budget.
  *
- * @param remainingTime Maximum wait time in microseconds; reduced by the time spent waiting.
- * @return int The received byte, or -1 if no byte arrives before the timeout.
+ * Reports a nonzero parity, data-overrun, or frame-error combination to the console unless it matches the last
+ * reported combination.
+ *
+ * @param remainingTime Remaining Timer1 ticks, reduced by the elapsed ticks down to zero. One tick is one microsecond
+ * at an 8 MHz CPU clock.
+ * @return int The received byte, or -1 if the budget is initially zero or expires while waiting for a byte.
  */
 int LegHandler::read(unsigned int &remainingTime)
 {
@@ -269,7 +273,9 @@ void LegHandler::sendResponse(unsigned char pid)
 }
 
 /**
- * @brief Generates a LIN break and delimiter without tearing down USART0 registers.
+ * @brief Generates a LIN break and delimiter, temporarily disabling USART0 transmission and reception.
+ *
+ * Discards any bytes left in the receive buffer after re-enabling USART0.
  */
 void LegHandler::serialBreak()
 {

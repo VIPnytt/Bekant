@@ -11,10 +11,13 @@ volatile unsigned long timer0{0UL}; // NOLINT(cppcoreguidelines-avoid-non-const-
 } // namespace Timers
 
 /**
- * @brief Timer0 Compare Match A ISR executing once every 1.0 ms.
+ * @brief Increments the millisecond counter on a Timer0 compare match.
  */
 ISR(TIMER0_COMPA_vect) { ++Timers::timer0; }
 
+/**
+ * @brief Configures Timer0 to generate millisecond compare interrupts without resetting the accumulated count.
+ */
 void TimeHandler::begin()
 {
     TCCR0A = 0b1U << WGM01;

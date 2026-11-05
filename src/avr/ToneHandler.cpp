@@ -31,7 +31,7 @@ void ToneHandler::begin()
 }
 
 /**
- * @brief Asynchronously silences the tone once durationMillis has elapsed.
+ * @brief Stops an active tone when called at or after its requested duration.
  */
 void ToneHandler::handle()
 {
@@ -42,13 +42,14 @@ void ToneHandler::handle()
 }
 
 /**
- * @brief Starts non-blocking square-wave playback on PA7 using Timer2 CTC interrupts.
+ * @brief Starts non-blocking timer-driven tone playback on PA7, replacing any active tone.
  *
- * Prescaler 8 at 8 MHz gives 1 MHz (1 tick = 1 us).
- * Half-period for frequency f is 500,000 / f ticks.
+ * Frequencies below 8 Hz stop the current tone without starting another. For accepted frequencies, a zero-duration
+ * request starts playback and is stopped on the next call to handle(). Playback may continue beyond its duration
+ * until handle() is called.
  *
- * @param frequency Audio frequency in hertz (8 Hz to 65,535 Hz).
- * @param duration Duration in milliseconds.
+ * @param frequency Requested tone frequency in hertz.
+ * @param duration Requested duration in milliseconds.
  */
 void ToneHandler::play(unsigned int frequency, unsigned int duration)
 {

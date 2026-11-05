@@ -8,7 +8,8 @@ public:
     static void begin();
 
     /**
-     * Returns the elapsed milliseconds since Timer0 initialization.
+     * Returns the Timer0 compare-match count in nominal milliseconds. The counter wraps on overflow and is not
+     * reset by begin().
      */
     [[nodiscard]] static unsigned long millis();
 };
