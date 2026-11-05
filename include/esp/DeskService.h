@@ -83,7 +83,7 @@ public:
         esp_reset_reason_t::ESP_RST_WDT,
     };
 
-    static constexpr std::string_view version{"1.0.1"};
+    static constexpr std::string_view version{"1.0.2"};
 
     void begin();
 
