@@ -26,11 +26,7 @@ void ControllerService::begin()
     ToneHandler::begin();
     button.begin();
     console.begin();
-    const unsigned long _lastMillis{TimeHandler::millis()};
-    while (TimeHandler::millis() - _lastMillis < 0b1UL << 10U)
-    {
-        yield();
-    }
+    delay(0b1UL << 10U);
     ConsoleHandler::send(ConsoleHandler::State::VERSION, fingerprint(version));
     ConsoleHandler::send(ConsoleHandler::State::RESET_REASON, _mcusr);
     EEPROM.get<unsigned int>(static_cast<int>('h'), presetHigh);
