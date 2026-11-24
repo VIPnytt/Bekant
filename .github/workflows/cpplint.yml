@@ -1,0 +1,37 @@
+name: Cpplint
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpplint:
+    name: cpplint
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          python-version: 3.11
+          version: latest-known
+
+      - name: cpplint
+        run: |
+          uv run --only-group cpplint \
+            cpplint \
+              --counting=detailed \
+              --filter=+,-build/include_alpha,-build/include_order,-legal/copyright,-readability/braces,-runtime/int,-runtime/references,-whitespace/braces,-whitespace/comments,-whitespace/indent,-whitespace/line_length,-whitespace/newline \
+              --quiet \
+              --recursive \
+              --verbose=0 \
+              ./include
+              ./src

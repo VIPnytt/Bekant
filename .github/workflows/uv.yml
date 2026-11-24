@@ -10,7 +10,7 @@ permissions:
 jobs:
   uv-lock:
     name: uv.lock consistency
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout
