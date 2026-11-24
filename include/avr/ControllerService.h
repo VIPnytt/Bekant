@@ -45,7 +45,7 @@ public:
     static ControllerService &getInstance();
 
 private:
-    static constexpr char version[5U]{'1', '.', '0', '.', '2'};
+    static constexpr char version[5U]{'1', '.', '0', '.', '3'};
 
     /**
      * Computes the fingerprint sent to identify the AVR firmware version.
