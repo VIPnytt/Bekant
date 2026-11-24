@@ -33,5 +33,5 @@ jobs:
               --quiet \
               --recursive \
               --verbose=0 \
-              ./include
-              ./src
+              ./include \
+              ./src \
