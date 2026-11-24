@@ -34,4 +34,4 @@ jobs:
               --recursive \
               --verbose=0 \
               ./include \
-              ./src \
+              ./src
