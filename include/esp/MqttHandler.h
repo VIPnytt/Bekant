@@ -2,17 +2,31 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <ArduinoJson.h>
+#include <atomic>
 #include <espMqttClient.h>
+#include <esp_timer.h>
 
 class MqttHandler
 {
 private:
     static constexpr std::array<uint8_t, 1U> will{0U};
 
-    unsigned long lastMillis{0UL};
+    static inline esp_timer_handle_t timer{nullptr};
+
+    static inline std::atomic<bool> tick{false};
 
     static inline espMqttClient client{espMqttClientTypes::UseInternalTask::NO};
+
+    /**
+     * Arms the one-shot reconnect alarm if it is not already running.
+     */
+    static void armReconnectTimer();
+
+    /**
+     * Stops any active reconnect alarm and clears pending reconnect flags.
+     */
+    static void disarmReconnectTimer();
 
     /**
      * Configures MQTT discovery for the device.
@@ -42,6 +56,12 @@ private:
      */
     static void onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                           const uint8_t *payload, size_t len, size_t index, size_t total);
+
+    /**
+     * Marks an MQTT reconnect attempt as due when the one-shot timer expires.
+     * @param arg Unused timer callback argument.
+     */
+    static void onTimer(void *arg);
 
 public:
     /**

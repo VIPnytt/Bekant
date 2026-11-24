@@ -11,7 +11,8 @@
 /**
  * @brief Starts the ISP TCP server and registers its mDNS service when startup is allowed.
  *
- * When OTA authentication is configured, an abnormal reset leaves the server closed.
+ * When OTA authentication is configured, an abnormal reset leaves the server closed; otherwise,
+ * a one-shot timer limits how long the server accepts new connections.
  */
 void IspHandler::begin()
 {
@@ -21,6 +22,22 @@ void IspHandler::begin()
                             [&reason](esp_reset_reason_t _reason) { return _reason == reason; }))
     {
         return;
+    }
+    if (timer == nullptr)
+    {
+        const esp_timer_create_args_t args{
+            .callback{&onTimer},
+            .arg{this},
+            .dispatch_method{esp_timer_dispatch_t::ESP_TIMER_TASK},
+            .skip_unhandled_events{false},
+        };
+        esp_timer_create(&args, &timer);
+    }
+    if (timer != nullptr)
+    {
+        esp_timer_stop(timer);
+        tick.store(false, std::memory_order_release);
+        esp_timer_start_once(timer, 0b1ULL << 32U);
     }
 #endif // OTA_KEY
     server.begin();
@@ -37,10 +54,10 @@ void IspHandler::begin()
 void IspHandler::handle()
 {
 #ifdef OTA_KEY
-    if (server && millis() > 0b1UL << 22U)
+    if (server && tick.exchange(false, std::memory_order_acq_rel))
     {
         server.end();
-        if (state != State::PROGMODE && client.connected() != 0U)
+        if (state == State::CONNECTED)
         {
             client.stop();
             state = State::LISTENING;
@@ -375,6 +392,13 @@ void IspHandler::leaveProgrammingMode()
         client.write(STK500v1::STK_NOSYNC);
     }
 }
+
+/**
+ * @brief Marks the ISP startup window as expired when the one-shot timer fires.
+ *
+ * @param arg Pointer to the owning IspHandler instance.
+ */
+void IspHandler::onTimer(void *arg) { static_cast<IspHandler *>(arg)->tick.store(true, std::memory_order_release); }
 
 /**
  * @brief Programs one EEPROM or flash request using the current ISP address.

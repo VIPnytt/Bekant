@@ -7,7 +7,7 @@
 
 namespace Timers
 {
-volatile unsigned long timer0{0UL}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+volatile unsigned long timer0{0UL};
 } // namespace Timers
 
 /**

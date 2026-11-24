@@ -2,11 +2,12 @@
 
 #include "esp/HomeAssistantHandler.h"
 
-#include "esp/DeskService.h" // NOLINT(misc-include-cleaner)
+#include "esp/DeskService.h"
 #include "esp/constants.h"
 
 #include <WiFi.h>
 #include <format>
+#include <string>
 
 /**
  * @brief Configures the Home Assistant availability topic and unavailable payload.
