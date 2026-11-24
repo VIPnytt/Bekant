@@ -3,19 +3,34 @@
 #ifdef ARDUINO_ARCH_ESP32
 
 #include <atomic>
-#include <crgb.h>
+#include <cstdint>
 #include <esp_timer.h>
 
 class StatusHandler
 {
 private:
+    struct Color
+    {
+        uint8_t r{0U};
+        uint8_t g{0U};
+        uint8_t b{0U};
+
+        constexpr bool operator==(const Color &) const = default;
+    };
+
+    static constexpr Color black{0U, 0U, 0U};
+    static constexpr Color blue{0U, 0U, 0xFFU};
+    static constexpr Color green{0U, 0xFFU, 0U};
+    static constexpr Color red{0xFFU, 0U, 0U};
+    static constexpr Color white{0xFFU, 0xFFU, 0xFFU};
+
     static inline bool pending{true};
 
     esp_timer_handle_t timer{nullptr};
 
     std::atomic<bool> tick{false};
 
-    static inline CRGB color{CRGB::Black};
+    static inline Color color{black};
 
     static void onTimer(void *arg);
 
