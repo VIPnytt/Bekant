@@ -4,7 +4,7 @@
 
 #include "esp/DeskService.h"
 #include "esp/StatusHandler.h"
-#include "esp/secrets.h" // NOLINT(misc-include-cleaner)
+#include "esp/secrets.h"
 
 /**
  * @brief Configures and starts over-the-air update handling for the device.
@@ -36,8 +36,9 @@ void OtaHandler::onStart() { desk.safeMode(); }
  *
  * @param error OTA error reported by ArduinoOTA; all error codes are handled identically.
  */
-void OtaHandler::onError(ota_error_t error) // NOLINT(misc-unused-parameters)
+void OtaHandler::onError(ota_error_t error)
 {
+    static_cast<void>(error);
     StatusHandler::setRed();
 }
 

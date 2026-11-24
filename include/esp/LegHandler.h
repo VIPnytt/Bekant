@@ -2,21 +2,27 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
+#include <atomic>
 #include <cstdint>
+#include <esp_timer.h>
 #include <utility>
 
 class LegHandler
 {
 private:
-    unsigned long lastMillis{0UL};
+    esp_timer_handle_t timer{nullptr};
 
-    bool saved{true};
+    std::atomic<bool> tick{false};
 
     uint8_t state8{0U};
     uint8_t state9{0U};
 
     uint16_t encoder8{0U};
     uint16_t encoder9{0U};
+
+    void scheduleSave();
+
+    static void onTimer(void *arg);
 
 public:
     void begin();

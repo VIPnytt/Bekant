@@ -2,17 +2,23 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <ArduinoJson.h>
+#include <atomic>
+#include <esp_timer.h>
 
 class ToneHandler
 {
 private:
-    bool saved{true};
+    esp_timer_handle_t timer{nullptr};
+
+    std::atomic<bool> tick{false};
 
     uint16_t duration{0b1U << 9U};
     uint16_t frequency{0b1U << 12U};
 
-    unsigned long lastMillis{0UL};
+    void scheduleSave();
+
+    static void onTimer(void *arg);
 
 public:
     void begin();

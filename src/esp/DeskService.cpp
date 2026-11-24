@@ -5,11 +5,16 @@
 #include "esp/constants.h"
 #include "esp/secrets.h"
 
-#include <WiFi.h> // NOLINT(misc-include-cleaner)
+#include <WiFi.h>
+#include <algorithm>
 #include <esp_crt_bundle.h>
 #include <esp_http_client.h>
 #include <format>
 #include <nvs.h>
+#include <string>
+#include <strings.h>
+#include <utility>
+#include <vector>
 
 /**
  * @brief Initializes hardware, restores persisted state, attaches input interrupts, and starts device services.
@@ -21,6 +26,16 @@ void DeskService::begin()
     Serial.begin(115'200UL);
     vTaskDelay(0b1U << 7U);
     ESP_LOGI("Desk", "Bekant %.*s", static_cast<int>(version.size()), version.data());
+    if (timer == nullptr)
+    {
+        const esp_timer_create_args_t args{
+            .callback{&onTimer},
+            .arg{this},
+            .dispatch_method{esp_timer_dispatch_t::ESP_TIMER_TASK},
+            .skip_unhandled_events{false},
+        };
+        esp_timer_create(&args, &timer);
+    }
 #ifdef PIN_ADC
     pinMode(PIN_ADC, ANALOG);
 #endif // PIN_ADC
@@ -88,7 +103,8 @@ void DeskService::handle()
     preset.handle();
     tone.handle();
     mqtt.handle();
-    if (pending || millis() - lastMillis > 0b1U << 16U)
+    const bool timedOut{tick.exchange(false, std::memory_order_acq_rel)};
+    if (pending || timedOut)
     {
         if (!pending)
         {
@@ -100,8 +116,8 @@ void DeskService::handle()
         }
         JsonDocument doc{};
         transmit(doc);
-        lastMillis = millis();
         pending = false;
+        restartTimer();
     }
 }
 
@@ -137,21 +153,35 @@ uint16_t DeskService::encode(float height)
 /**
  * @brief Retrieves the latest firmware release version from GitHub.
  *
- * Stores the release tag without a leading `v` and marks the state for
- * publication when the response is valid. Network, HTTP, or JSON parsing
- * failures leave the current release version unchanged.
+ * Inspects the redirect target of the latest-release endpoint, stores the
+ * release tag without a leading `v`, and marks the state for publication when
+ * the response is valid. Network, HTTP, or missing-release failures leave the
+ * current release version unchanged.
  */
 void DeskService::getRelease()
 {
     const std::string userAgent{
         std::string{"Bekant/"}.append(version).append(" (ESP32; +https://github.com/VIPnytt/Bekant)")};
+    std::string location{};
     esp_http_client_config_t config{
-        .host{"api.github.com"},
+        .host{"github.com"},
         .port{443},
-        .path{"/repos/VIPnytt/Bekant/releases/latest"},
+        .path{"/VIPnytt/Bekant/releases/latest"},
         .user_agent{userAgent.c_str()},
-        .method{esp_http_client_method_t::HTTP_METHOD_GET},
+        .method{esp_http_client_method_t::HTTP_METHOD_HEAD},
+        .disable_auto_redirect{true},
+        .event_handler{[](esp_http_client_event_t *evt) -> esp_err_t
+                       {
+                           if (evt->event_id == esp_http_client_event_id_t::HTTP_EVENT_ON_HEADER &&
+                               evt->user_data != nullptr && evt->header_key != nullptr &&
+                               evt->header_value != nullptr && strcasecmp(evt->header_key, "location") == 0)
+                           {
+                               *static_cast<std::string *>(evt->user_data) = evt->header_value;
+                           }
+                           return ESP_OK;
+                       }},
         .transport_type{esp_http_client_transport_t::HTTP_TRANSPORT_OVER_SSL},
+        .user_data{&location},
         .crt_bundle_attach{esp_crt_bundle_attach},
     };
     esp_http_client_handle_t client{esp_http_client_init(&config)};
@@ -159,40 +189,31 @@ void DeskService::getRelease()
     {
         return;
     }
-    esp_http_client_set_header(client, "Accept", "application/vnd.github+json");
-    esp_http_client_set_header(client, "X-GitHub-Api-Version", "2026-03-10");
-    if (esp_http_client_open(client, 0) != ESP_OK || esp_http_client_fetch_headers(client) < 0 ||
-        esp_http_client_get_status_code(client) != 200)
+    const esp_err_t err{esp_http_client_perform(client)};
+    const int statusCode{esp_http_client_get_status_code(client)};
+    esp_http_client_cleanup(client);
+    if (err != ESP_OK || (statusCode != 301 && statusCode != 302))
     {
-        esp_http_client_cleanup(client);
         return;
     }
-    std::vector<char> body{};
-    const int64_t length{esp_http_client_get_content_length(client)};
-    if (length > 0)
+    constexpr std::string_view marker{"/releases/tag/"};
+    const size_t pos{location.find(marker)};
+    if (pos == std::string::npos)
     {
-        body.reserve(static_cast<size_t>(length));
+        return;
     }
-    std::array<char, 0b1U << 8U> buffer{};
-    while (true)
+    std::string_view tag{std::string_view{location}.substr(pos + marker.size())};
+    if (const size_t end{tag.find_first_of("?#/")}; end != std::string_view::npos)
     {
-        const int read{esp_http_client_read(client, buffer.data(), static_cast<int>(buffer.size()))};
-        if (read <= 0)
-        {
-            break;
-        }
-        body.insert(body.end(), buffer.data(), buffer.data() + read);
+        tag = tag.substr(0U, end);
     }
-    esp_http_client_cleanup(client);
-    JsonDocument filter{}; // NOLINT(misc-const-correctness)
-    filter["tag_name"].set(true);
-    JsonDocument doc{}; // NOLINT(misc-const-correctness)
-    if (deserializeJson(doc, body.data(), body.size(), DeserializationOption::Filter(filter)) ==
-            DeserializationError::Ok &&
-        doc["tag_name"].is<std::string_view>())
+    if (tag.starts_with('v'))
     {
-        const std::string_view tag{doc["tag_name"].as<std::string_view>()};
-        versionLatest = tag.starts_with('v') ? tag.substr(1U) : tag;
+        tag.remove_prefix(1U);
+    }
+    if (!tag.empty())
+    {
+        versionLatest = tag;
         if (versionLatest != version)
         {
             ESP_LOGI("Bekant",
@@ -228,6 +249,13 @@ void DeskService::onReset()
     }
     desk.pending = true;
 }
+
+/**
+ * @brief Marks a periodic state publication as due when the inactivity timer expires.
+ *
+ * @param arg Pointer to the owning DeskService instance.
+ */
+void DeskService::onTimer(void *arg) { static_cast<DeskService *>(arg)->tick.store(true, std::memory_order_release); }
 
 /**
  * @brief Applies a received console frame to the corresponding device state.
@@ -404,11 +432,29 @@ void DeskService::parseAction(std::string_view action)
 }
 
 /**
- * @brief Disables device processing and disconnects serial and MQTT services.
+ * @brief Arms or restarts the one-shot periodic publication timer.
+ */
+void DeskService::restartTimer()
+{
+    if (timer != nullptr)
+    {
+        esp_timer_stop(timer);
+        tick.store(false, std::memory_order_release);
+        esp_timer_start_once(timer, 0b1ULL << 26U);
+    }
+}
+
+/**
+ * @brief Disables device processing, stops the periodic timer, and disconnects serial and MQTT services.
  */
 void DeskService::safeMode()
 {
     process = false;
+    if (timer != nullptr)
+    {
+        esp_timer_stop(timer);
+    }
+    tick.store(false, std::memory_order_release);
     Serial1.end();
     mqtt.disconnect();
 }
@@ -422,7 +468,7 @@ void DeskService::save()
     if (nvs_open("bekant", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
     {
         saved = true;
-        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable)); // NOLINT(readability-implicit-bool-conversion)
+        nvs_set_u8(handle, "oe", static_cast<uint8_t>(enable));
         if (nvs_commit(handle) != ESP_OK)
         {
             saved = false;
@@ -603,6 +649,6 @@ DeskService &DeskService::getInstance()
     return instance;
 }
 
-DeskService &desk{DeskService::getInstance()}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+DeskService &desk{DeskService::getInstance()};
 
 #endif // ARDUINO_ARCH_ESP32

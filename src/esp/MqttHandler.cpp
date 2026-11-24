@@ -9,12 +9,23 @@
 
 #include <WiFi.h>
 #include <format>
+#include <vector>
 
 /**
- * @brief Initializes the MQTT client and publishes the Home Assistant discovery configuration.
+ * @brief Initializes the reconnect timer and MQTT client, then publishes the Home Assistant discovery configuration.
  */
 void MqttHandler::begin()
 {
+    if (timer == nullptr)
+    {
+        const esp_timer_create_args_t args{
+            .callback{&onTimer},
+            .arg{nullptr},
+            .dispatch_method{esp_timer_dispatch_t::ESP_TIMER_TASK},
+            .skip_unhandled_events{true},
+        };
+        esp_timer_create(&args, &timer);
+    }
     client.onConnect(&onConnect);
     client.onMessage(&onMessage);
     client.onDisconnect(&onDisconnect);
@@ -27,6 +38,10 @@ void MqttHandler::begin()
                    will.data(),
                    will.size() - 1U);
     client.connect();
+    if (!client.connected())
+    {
+        armReconnectTimer();
+    }
     discovery();
 }
 
@@ -36,14 +51,37 @@ void MqttHandler::begin()
 void MqttHandler::handle()
 {
     client.loop();
-    if (millis() - lastMillis > 0b1U << 16U)
+    if (tick.exchange(false, std::memory_order_acq_rel) && !client.connected())
     {
-        if (!client.connected() && WiFi.isConnected())
+        if (WiFi.isConnected())
         {
             client.connect();
         }
-        lastMillis = millis();
+        armReconnectTimer();
     }
+}
+
+/**
+ * @brief Arms the one-shot reconnect alarm if it is not already running.
+ */
+void MqttHandler::armReconnectTimer()
+{
+    if (timer != nullptr && !esp_timer_is_active(timer))
+    {
+        esp_timer_start_once(timer, 0b1ULL << 27U);
+    }
+}
+
+/**
+ * @brief Stops any active reconnect alarm and clears pending reconnect flags.
+ */
+void MqttHandler::disarmReconnectTimer()
+{
+    if (timer != nullptr)
+    {
+        esp_timer_stop(timer);
+    }
+    tick.store(false, std::memory_order_release);
 }
 
 /**
@@ -58,7 +96,8 @@ void MqttHandler::disconnect()
     client.loop();
     client.disconnect();
     client.loop();
-    lastMillis = millis();
+    disarmReconnectTimer();
+    armReconnectTimer();
 }
 
 /**
@@ -102,8 +141,10 @@ void MqttHandler::discovery()
 /**
  * @brief Configures MQTT subscriptions and announces the device as online after connecting.
  */
-void MqttHandler::onConnect(bool sessionPresent) // NOLINT(misc-unused-parameters)
+void MqttHandler::onConnect(bool sessionPresent)
 {
+    static_cast<void>(sessionPresent);
+    disarmReconnectTimer();
     ESP_LOGI("MQTT", "connected");
     client.subscribe("bekant/" HOSTNAME "/set", static_cast<uint8_t>(espMqttClientTypes::SubscribeReturncode::QOS2));
     client.publish("bekant/" HOSTNAME "/availability",
@@ -122,6 +163,7 @@ void MqttHandler::onDisconnect(espMqttClientTypes::DisconnectReason reason)
     ESP_LOGI("MQTT", "disconnected");
     ESP_LOGD("MQTT", "disconnect reason %s", espMqttClientTypes::disconnectReasonToString(reason));
     StatusHandler::setRed();
+    armReconnectTimer();
 }
 
 /**
@@ -136,15 +178,27 @@ void MqttHandler::onDisconnect(espMqttClientTypes::DisconnectReason reason)
  * @param index Offset of the current fragment within the message.
  * @param total Total message length.
  */
-void MqttHandler::onMessage(const espMqttClientTypes::MessageProperties &properties, // NOLINT(misc-unused-parameters)
-                            const char *topic,                                       // NOLINT(misc-unused-parameters)
+void MqttHandler::onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                             const uint8_t *payload, size_t len, size_t index, size_t total)
 {
-    JsonDocument doc{}; // NOLINT(misc-const-correctness)
+    static_cast<void>(properties);
+    static_cast<void>(topic);
+    JsonDocument doc{};
     if (index == 0U && len == total && deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
     {
         desk.parse(doc.as<JsonObjectConst>());
     }
+}
+
+/**
+ * @brief Marks an MQTT reconnect attempt as due when the one-shot timer expires.
+ *
+ * @param arg Unused timer callback argument.
+ */
+void MqttHandler::onTimer(void *arg)
+{
+    static_cast<void>(arg);
+    tick.store(true, std::memory_order_release);
 }
 
 #endif // ARDUINO_ARCH_ESP32

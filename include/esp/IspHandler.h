@@ -4,6 +4,8 @@
 
 #include <NetworkClient.h>
 #include <NetworkServer.h>
+#include <atomic>
+#include <esp_timer.h>
 
 class IspHandler
 {
@@ -19,7 +21,7 @@ public:
     void handle();
 
 private:
-    enum class State : uint8_t // NOLINT(performance-enum-size)
+    enum class State : uint8_t
     {
         LISTENING,
         CONNECTED,
@@ -31,7 +33,11 @@ private:
     size_t eepromSize{0U};
     size_t pageSize{0U};
 
-    std::array<uint8_t, 0b1U << 8U> buffer{0U};
+    esp_timer_handle_t timer{nullptr};
+
+    std::atomic<bool> tick{false};
+
+    std::array<uint8_t, 0b1U << 8U> buffer{};
 
     NetworkServer server{328U};
 
@@ -137,6 +143,12 @@ private:
      * @return The received byte.
      */
     [[nodiscard]] uint8_t readClient();
+
+    /**
+     * Marks the ISP startup window as expired when the one-shot timer fires.
+     * @param arg Pointer to the owning IspHandler instance.
+     */
+    static void onTimer(void *arg);
 };
 
 namespace STK500v1

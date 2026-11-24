@@ -34,8 +34,8 @@ void ConsoleHandler::handle()
             {
                 return;
             }
-            lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U); // NOLINT(hicpp-signed-bitwise)
-            stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0xFU);  // NOLINT(hicpp-signed-bitwise)
+            lengthRx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
+            stateRx = static_cast<State>(static_cast<uint8_t>(byte) & 0xFU);
             bytesRx = 0U;
         }
         bufferRx.at(bytesRx++) = static_cast<uint8_t>(byte);
@@ -64,8 +64,8 @@ void ConsoleHandler::forward()
         ESP_LOGV("TX", "0x%X", byte);
         if (lengthTx == 0U)
         {
-            lengthTx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);    // NOLINT(hicpp-signed-bitwise)
-            commandTx = static_cast<Command>(static_cast<uint8_t>(byte) & 0xFU); // NOLINT(hicpp-signed-bitwise)
+            lengthTx = static_cast<size_t>(static_cast<uint8_t>(byte) >> 4U);
+            commandTx = static_cast<Command>(static_cast<uint8_t>(byte) & 0xFU);
             bytesTx = 0U;
         }
         bufferTx.at(bytesTx++) = static_cast<uint8_t>(byte);
