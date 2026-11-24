@@ -4,18 +4,13 @@
 
 #include "esp/secrets.h"
 
-#include <FastLED.h>
-#include <esp32-hal-gpio.h>
+#include <esp32-hal-rgb-led.h>
 
 /**
- * @brief Configures the optional status LED output and registers it with FastLED.
+ * @brief Configures the fade timer for the status LED.
  */
 void StatusHandler::begin()
 {
-#ifdef PIN_LED
-    pinMode(PIN_LED, OUTPUT);
-    FastLED.addLeds<WS2812, PIN_LED, fl::EOrder::GRB>(&color, 1);
-#endif // PIN_LED
     const esp_timer_create_args_t args{
         .callback = onTimer,
         .arg = this,
@@ -35,23 +30,34 @@ void StatusHandler::handle()
 {
     if (!pending && tick.exchange(false, std::memory_order_acq_rel))
     {
-        if (color != CRGB::Black)
+        if (color != none)
         {
-            --color;
+            if (color.r != 0U)
+            {
+                --color.r;
+            }
+            if (color.g != 0U)
+            {
+                --color.g;
+            }
+            if (color.b != 0U)
+            {
+                --color.b;
+            }
             pending = true;
         }
     }
     if (pending)
     {
 #ifdef PIN_LED
-        FastLED.show();
+        rgbLedWriteOrdered(PIN_LED, rgb_led_color_order_t::LED_COLOR_ORDER_GRB, color.r, color.g, color.b);
 #endif // PIN_LED
         pending = false;
         if (timer != nullptr)
         {
             esp_timer_stop(timer);
             tick.store(false, std::memory_order_release);
-            if (color != CRGB::Black)
+            if (color != none)
             {
                 esp_timer_start_once(timer, 0b1ULL << 18U);
             }
@@ -69,7 +75,7 @@ void StatusHandler::onTimer(void *arg)
  */
 void StatusHandler::setBlue()
 {
-    color = CRGB::Blue;
+    color = blue;
     pending = true;
 }
 
@@ -78,7 +84,7 @@ void StatusHandler::setBlue()
  */
 void StatusHandler::setGreen()
 {
-    color = CRGB::Green;
+    color = green;
     pending = true;
 }
 
@@ -89,9 +95,9 @@ void StatusHandler::setGreen()
  */
 void StatusHandler::setNone(bool force)
 {
-    if (color[0U] == 0U || (color[0U] == color[1U] && color[1U] == color[2U]) || force)
+    if (color.r == 0U || (color.r == color.g && color.g == color.b) || force)
     {
-        color = CRGB::Black;
+        color = none;
         pending = true;
     }
 }
@@ -101,7 +107,7 @@ void StatusHandler::setNone(bool force)
  */
 void StatusHandler::setRed()
 {
-    color = CRGB::Red;
+    color = red;
     pending = true;
 }
 
@@ -112,9 +118,9 @@ void StatusHandler::setRed()
  */
 void StatusHandler::setWhite(bool force)
 {
-    if ((color[0U] == color[1U] && color[1U] == color[2U]) || force)
+    if ((color.r == color.g && color.g == color.b) || force)
     {
-        color = CRGB::White;
+        color = white;
         pending = true;
     }
 }
