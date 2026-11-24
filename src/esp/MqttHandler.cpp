@@ -181,6 +181,8 @@ void MqttHandler::onDisconnect(espMqttClientTypes::DisconnectReason reason)
 void MqttHandler::onMessage(const espMqttClientTypes::MessageProperties &properties, const char *topic,
                             const uint8_t *payload, size_t len, size_t index, size_t total)
 {
+    static_cast<void>(properties);
+    static_cast<void>(topic);
     JsonDocument doc{};
     if (index == 0U && len == total && deserializeJson(doc, payload, len) == DeserializationError::Code::Ok)
     {

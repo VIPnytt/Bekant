@@ -5,6 +5,7 @@
 #include "esp/secrets.h"
 
 #include <FastLED.h>
+#include <esp32-hal-gpio.h>
 
 /**
  * @brief Configures the optional status LED output and registers it with FastLED.

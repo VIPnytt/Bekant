@@ -9,7 +9,7 @@ permissions:
 jobs:
   pr-labeler:
     name: Pull request
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: write

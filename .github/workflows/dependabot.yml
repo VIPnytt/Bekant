@@ -12,7 +12,7 @@ permissions:
 jobs:
   platformio:
     name: Update PlatformIO dependencies
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
       pull-requests: write

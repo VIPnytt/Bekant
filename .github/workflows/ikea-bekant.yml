@@ -19,7 +19,7 @@ jobs:
   full:
     name: Full
     needs: context
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
       matrix:
@@ -72,12 +72,12 @@ jobs:
           #define WIFI_SSID "redacted"
           #endif // ARDUINO_ARCH_ESP32
           EOL
-          uv run pio run -e "$PIO_ENVIRONMENT"
+          uv run --only-group platformio pio run -e "$PIO_ENVIRONMENT"
 
   minimal:
     name: Minimal
     needs: context
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
       matrix:
@@ -122,4 +122,4 @@ jobs:
           #define WIFI_SSID "redacted"
           #endif // ARDUINO_ARCH_ESP32
           EOL
-          uv run pio run -e "$PIO_ENVIRONMENT"
+          uv run --only-group platformio pio run -e "$PIO_ENVIRONMENT"

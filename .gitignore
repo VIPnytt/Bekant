@@ -1,7 +1,9 @@
+/.cache
 /.idea
 /.pio
 /.platformio
 /.venv
 /.vscode
+/compile_commands.json
 /include/esp/secrets*.h
 /logs

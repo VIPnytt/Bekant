@@ -10,7 +10,7 @@ permissions:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout
@@ -26,7 +26,7 @@ jobs:
 
       - name: PlatformIO lint
         run: |
-          OUTPUT=$(uv run pio project config --lint --json-output)
+          OUTPUT=$(uv run --only-group platformio pio project config --lint --json-output)
           echo "$OUTPUT"
           if [ "$OUTPUT" != "{'errors': [], 'warnings': []}" ]; then
             exit 1
