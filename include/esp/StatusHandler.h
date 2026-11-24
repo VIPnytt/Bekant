@@ -18,9 +18,9 @@ private:
         constexpr bool operator==(const Color &) const = default;
     };
 
-    static constexpr Color black{0U, 0U, 0U};
     static constexpr Color blue{0U, 0U, 0xFFU};
     static constexpr Color green{0U, 0xFFU, 0U};
+    static constexpr Color none{0U, 0U, 0U};
     static constexpr Color red{0xFFU, 0U, 0U};
     static constexpr Color white{0xFFU, 0xFFU, 0xFFU};
 
@@ -30,7 +30,7 @@ private:
 
     std::atomic<bool> tick{false};
 
-    static inline Color color{black};
+    static inline Color color{none};
 
     static void onTimer(void *arg);
 

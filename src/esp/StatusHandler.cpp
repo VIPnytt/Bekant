@@ -30,7 +30,7 @@ void StatusHandler::handle()
 {
     if (!pending && tick.exchange(false, std::memory_order_acq_rel))
     {
-        if (color != black)
+        if (color != none)
         {
             if (color.r != 0U)
             {
@@ -57,7 +57,7 @@ void StatusHandler::handle()
         {
             esp_timer_stop(timer);
             tick.store(false, std::memory_order_release);
-            if (color != black)
+            if (color != none)
             {
                 esp_timer_start_once(timer, 0b1ULL << 18U);
             }
@@ -97,7 +97,7 @@ void StatusHandler::setNone(bool force)
 {
     if (color.r == 0U || (color.r == color.g && color.g == color.b) || force)
     {
-        color = black;
+        color = none;
         pending = true;
     }
 }
