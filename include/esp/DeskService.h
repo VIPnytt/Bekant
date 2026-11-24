@@ -14,8 +14,11 @@
 #include "esp/ToneHandler.h"
 #include "esp/WifiHandler.h"
 
-#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <ArduinoJson.h>
+#include <atomic>
+#include <esp_timer.h>
 #include <span>
+#include <string>
 
 class DeskService
 {
@@ -26,7 +29,9 @@ private:
     bool reset{false};
     bool saved{true};
 
-    unsigned long lastMillis{0UL};
+    esp_timer_handle_t timer{nullptr};
+
+    std::atomic<bool> tick{false};
 
     size_t lengthRx{0U};
     size_t lengthTx{0U};
@@ -60,6 +65,8 @@ private:
 
     void parseAction(std::string_view action);
 
+    void restartTimer();
+
     void save();
 
     void setOutputEnable(bool state);
@@ -71,6 +78,8 @@ private:
     [[nodiscard]] std::string toHex(std::span<const uint8_t> payload);
 
     static void onReset();
+
+    static void onTimer(void *arg);
 
 public:
     static constexpr std::array<esp_reset_reason_t, 7U> resetAbnormalities{
@@ -112,6 +121,6 @@ public:
     static DeskService &getInstance();
 };
 
-extern DeskService &desk; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+extern DeskService &desk;
 
 #endif // ARDUINO_ARCH_ESP32

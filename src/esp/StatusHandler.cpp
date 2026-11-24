@@ -15,6 +15,13 @@ void StatusHandler::begin()
     pinMode(PIN_LED, OUTPUT);
     FastLED.addLeds<WS2812, PIN_LED, fl::EOrder::GRB>(&color, 1);
 #endif // PIN_LED
+    const esp_timer_create_args_t args{
+        .callback = onTimer,
+        .arg = this,
+        .dispatch_method = esp_timer_dispatch_t::ESP_TIMER_TASK,
+        .skip_unhandled_events = true,
+    };
+    esp_timer_create(&args, &timer);
 }
 
 /**
@@ -25,23 +32,35 @@ void StatusHandler::begin()
  */
 void StatusHandler::handle()
 {
-    if (pending)
+    if (!pending && tick.exchange(false, std::memory_order_acq_rel))
     {
-#ifdef PIN_LED
-        FastLED.show();
-#endif // PIN_LED
-        lastMillis = millis();
-        pending = false;
-    }
-    else if (millis() - lastMillis > (0b1U << 8U))
-    {
-        lastMillis = millis();
         if (color != CRGB::Black)
         {
             --color;
             pending = true;
         }
     }
+    if (pending)
+    {
+#ifdef PIN_LED
+        FastLED.show();
+#endif // PIN_LED
+        pending = false;
+        if (timer != nullptr)
+        {
+            esp_timer_stop(timer);
+            tick.store(false, std::memory_order_release);
+            if (color != CRGB::Black)
+            {
+                esp_timer_start_once(timer, 0b1ULL << 18U);
+            }
+        }
+    }
+}
+
+void StatusHandler::onTimer(void *arg)
+{
+    static_cast<StatusHandler *>(arg)->tick.store(true, std::memory_order_release);
 }
 
 /**

@@ -150,7 +150,6 @@ private:
     [[nodiscard]] bool isIdle() const;
 };
 
-// NOLINTNEXTLINE(bugprone-dynamic-static-initializers,cppcoreguidelines-avoid-non-const-global-variables)
 extern ControllerService &controller;
 
 #endif // ARDUINO_ARCH_AVR

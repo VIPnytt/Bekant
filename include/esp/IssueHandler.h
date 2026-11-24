@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
-#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <ArduinoJson.h>
 
 class IssueHandler
 {
@@ -15,7 +15,7 @@ private:
      */
     [[nodiscard]] static constexpr uint8_t fingerprint(std::string_view characters)
     {
-        uint8_t hash{0U}; // NOLINT(misc-const-correctness)
+        uint8_t hash{0U};
         for (const char character : characters)
         {
             hash ^= static_cast<uint8_t>(character);

@@ -2,17 +2,23 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
+#include <atomic>
 #include <cstdint>
+#include <esp_timer.h>
 
 class PresetHandler
 {
 private:
-    bool saved{true};
+    esp_timer_handle_t timer{nullptr};
+
+    std::atomic<bool> tick{false};
 
     uint16_t high{0U};
     uint16_t low{0U};
 
-    unsigned long lastMillis{0UL};
+    void scheduleSave();
+
+    static void onTimer(void *arg);
 
 public:
     void begin();

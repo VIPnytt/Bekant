@@ -5,12 +5,23 @@
 #include "esp/DeskService.h"
 
 #include <nvs.h>
+#include <utility>
 
 /**
- * @brief Restores stored encoder positions for nodes 8 and 9 when available.
+ * @brief Initializes the deferred save timer and restores stored encoder positions for nodes 8 and 9 when available.
  */
 void LegHandler::begin()
 {
+    if (timer == nullptr)
+    {
+        const esp_timer_create_args_t args{
+            .callback{&onTimer},
+            .arg{this},
+            .dispatch_method{esp_timer_dispatch_t::ESP_TIMER_TASK},
+            .skip_unhandled_events{false},
+        };
+        esp_timer_create(&args, &timer);
+    }
     nvs_handle_t handle{};
     if (nvs_open("leg", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
@@ -21,14 +32,15 @@ void LegHandler::begin()
 }
 
 /**
- * @brief Periodically persists changed leg encoder positions.
+ * @brief Persists changed leg encoder positions after the deferred save interval.
  *
- * Failed storage operations leave the positions pending for a later retry.
+ * Failed storage operations re-arm the timer for a later retry.
  */
 void LegHandler::handle()
 {
-    if (!saved && millis() - lastMillis > 0b1U << 16U)
+    if (tick.exchange(false, std::memory_order_acq_rel))
     {
+        bool saved{false};
         nvs_handle_t handle{};
         if (nvs_open("leg", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
         {
@@ -36,7 +48,10 @@ void LegHandler::handle()
                     nvs_set_u16(handle, "encoder9", encoder9) == ESP_OK && nvs_commit(handle) == ESP_OK;
             nvs_close(handle);
         }
-        lastMillis = millis();
+        if (!saved)
+        {
+            scheduleSave();
+        }
     }
 }
 
@@ -75,33 +90,49 @@ std::pair<float, float> LegHandler::getLegs() const
 std::pair<uint8_t, uint8_t> LegHandler::getStates() const { return {state8, state9}; }
 
 /**
+ * @brief Marks pending encoder positions as due for persistence when the debounce timer expires.
+ *
+ * @param arg Pointer to the owning LegHandler instance.
+ */
+void LegHandler::onTimer(void *arg) { static_cast<LegHandler *>(arg)->tick.store(true, std::memory_order_release); }
+
+/**
+ * @brief Arms or restarts the deferred NVS save timer.
+ */
+void LegHandler::scheduleSave()
+{
+    if (timer != nullptr)
+    {
+        esp_timer_stop(timer);
+        tick.store(false, std::memory_order_release);
+        esp_timer_start_once(timer, 0b1ULL << 26U);
+    }
+}
+
+/**
  * @brief Updates node 8's encoder position and state.
  *
- * Changes update the status indicator and are marked for publication. Position changes are also marked for persistence.
+ * Changes update the status indicator and are marked for publication. Position changes are also scheduled for
+ * persistence.
  *
  * @param position Encoder position reported by the node.
  * @param state State reported by the node.
  */
 void LegHandler::setNode8(uint16_t position, uint8_t state)
 {
-    if (position != encoder8 && state != state8)
+    const bool positionChanged{position != encoder8};
+    const bool stateChanged{state != state8};
+    if (positionChanged)
     {
         encoder8 = position;
-        state8 = state;
-        saved = false;
-        desk.setPending();
-        desk.setStatus();
+        scheduleSave();
     }
-    else if (position != encoder8)
-    {
-        encoder8 = position;
-        saved = false;
-        desk.setPending();
-        desk.setStatus();
-    }
-    else if (state != state8)
+    if (stateChanged)
     {
         state8 = state;
+    }
+    if (positionChanged || stateChanged)
+    {
         desk.setPending();
         desk.setStatus();
     }
@@ -110,31 +141,27 @@ void LegHandler::setNode8(uint16_t position, uint8_t state)
 /**
  * @brief Updates node 9's encoder position and state.
  *
- * Changes update the status indicator and are marked for publication. Position changes are also marked for persistence.
+ * Changes update the status indicator and are marked for publication. Position changes are also scheduled for
+ * persistence.
  *
  * @param position Encoder position reported by the node.
  * @param state State reported by the node.
  */
 void LegHandler::setNode9(uint16_t position, uint8_t state)
 {
-    if (position != encoder9 && state != state9)
+    const bool positionChanged{position != encoder9};
+    const bool stateChanged{state != state9};
+    if (positionChanged)
     {
         encoder9 = position;
-        state9 = state;
-        saved = false;
-        desk.setPending();
-        desk.setStatus();
+        scheduleSave();
     }
-    else if (position != encoder9)
-    {
-        encoder9 = position;
-        saved = false;
-        desk.setPending();
-        desk.setStatus();
-    }
-    else if (state != state9)
+    if (stateChanged)
     {
         state9 = state;
+    }
+    if (positionChanged || stateChanged)
+    {
         desk.setPending();
         desk.setStatus();
     }

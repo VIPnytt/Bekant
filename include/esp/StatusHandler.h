@@ -2,16 +2,22 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 
+#include <atomic>
 #include <crgb.h>
+#include <esp_timer.h>
 
 class StatusHandler
 {
 private:
-    unsigned long lastMillis{0UL};
-
     static inline bool pending{true};
 
+    esp_timer_handle_t timer{nullptr};
+
+    std::atomic<bool> tick{false};
+
     static inline CRGB color{CRGB::Black};
+
+    static void onTimer(void *arg);
 
 public:
     void begin();

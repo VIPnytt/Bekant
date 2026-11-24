@@ -246,7 +246,7 @@ void ControllerService::handleStatePrepare()
  */
 void ControllerService::handleStateDown()
 {
-    if (encoderTarget >= getEncoderMin() || (TimeHandler::millis() - lastMillis > (0b1UL << 8U)))
+    if (encoderTarget >= getEncoderMin() || (TimeHandler::millis() - lastMillis > 0b1UL << 8U))
     {
         state = State::STOP;
         return;
@@ -259,7 +259,7 @@ void ControllerService::handleStateDown()
  */
 void ControllerService::handleStateUp()
 {
-    if (encoderTarget <= getEncoderMax() || (TimeHandler::millis() - lastMillis > (0b1UL << 8U)))
+    if (encoderTarget <= getEncoderMax() || (TimeHandler::millis() - lastMillis > 0b1UL << 8U))
     {
         state = State::STOP;
         return;
@@ -420,7 +420,6 @@ ControllerService &ControllerService::getInstance()
     return instance;
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 ControllerService &controller{ControllerService::getInstance()};
 
 #endif // ARDUINO_ARCH_AVR

@@ -4,7 +4,7 @@
 
 #include "esp/secrets.h"
 
-#include <ArduinoJson.h> // NOLINT(misc-include-cleaner)
+#include <ArduinoJson.h>
 
 class HomeAssistantHandler
 {
@@ -12,7 +12,7 @@ private:
     static constexpr std::string_view commandTopic{"bekant/" HOSTNAME "/set"};
     static constexpr std::string_view stateTopic{"bekant/" HOSTNAME "/state"};
 
-    JsonDocument &discovery; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    JsonDocument &discovery;
 
     void configuration();
 

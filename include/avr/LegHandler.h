@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO_ARCH_AVR
 
-#include <stdint.h> // NOLINT(hicpp-deprecated-headers,modernize-deprecated-headers)
+#include <stdint.h>
 
 namespace LinFrame
 {
@@ -122,7 +122,7 @@ public:
         flushTx();
         int receivedByte{};
         unsigned int remainingTime{static_cast<unsigned int>(LinFrame::frameBits * 1'000'000UL / baudRate)};
-        do // NOLINT(cppcoreguidelines-avoid-do-while)
+        do
         {
             receivedByte = read(remainingTime);
         } while (receivedByte != -1 && receivedByte != static_cast<int>(linSyncByte));
@@ -130,7 +130,7 @@ public:
         {
             return -1;
         }
-        do // NOLINT(cppcoreguidelines-avoid-do-while)
+        do
         {
             receivedByte = read(remainingTime);
         } while (receivedByte != -1 && receivedByte != pid);

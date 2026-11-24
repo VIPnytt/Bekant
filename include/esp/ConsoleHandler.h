@@ -8,7 +8,7 @@
 class ConsoleHandler
 {
 public:
-    enum class Command : uint8_t // NOLINT(performance-enum-size)
+    enum class Command : uint8_t
     {
         POSITION,
         PRESET_HIGH,
@@ -17,7 +17,7 @@ public:
         TONE,
     };
 
-    enum class State : uint8_t // NOLINT(performance-enum-size)
+    enum class State : uint8_t
     {
         BUTTONS,
         CONSOLE,

@@ -8,10 +8,20 @@
 #include <nvs.h>
 
 /**
- * @brief Restores stored high and low desk-height presets when available.
+ * @brief Initializes the deferred save timer and restores stored high and low desk-height presets when available.
  */
 void PresetHandler::begin()
 {
+    if (timer == nullptr)
+    {
+        const esp_timer_create_args_t args{
+            .callback{&onTimer},
+            .arg{this},
+            .dispatch_method{esp_timer_dispatch_t::ESP_TIMER_TASK},
+            .skip_unhandled_events{false},
+        };
+        esp_timer_create(&args, &timer);
+    }
     nvs_handle_t handle{};
     if (nvs_open("preset", nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
@@ -24,12 +34,13 @@ void PresetHandler::begin()
 /**
  * @brief Persists changed presets after the deferred save interval.
  *
- * Failed storage operations leave the presets pending for a later retry.
+ * Failed storage operations re-arm the timer for a later retry.
  */
 void PresetHandler::handle()
 {
-    if (!saved && millis() - lastMillis > 0b1U << 16U)
+    if (tick.exchange(false, std::memory_order_acq_rel))
     {
+        bool saved{false};
         nvs_handle_t handle{};
         if (nvs_open("preset", nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
         {
@@ -37,7 +48,10 @@ void PresetHandler::handle()
                     nvs_commit(handle) == ESP_OK;
             nvs_close(handle);
         }
-        lastMillis = millis();
+        if (!saved)
+        {
+            scheduleSave();
+        }
     }
 }
 
@@ -54,6 +68,29 @@ float PresetHandler::getHigh() const { return DeskService::decode(high); }
  * @return Converted low preset height in centimeters.
  */
 float PresetHandler::getLow() const { return DeskService::decode(low); }
+
+/**
+ * @brief Marks pending presets as due for persistence when the debounce timer expires.
+ *
+ * @param arg Pointer to the owning PresetHandler instance.
+ */
+void PresetHandler::onTimer(void *arg)
+{
+    static_cast<PresetHandler *>(arg)->tick.store(true, std::memory_order_release);
+}
+
+/**
+ * @brief Arms or restarts the deferred NVS save timer.
+ */
+void PresetHandler::scheduleSave()
+{
+    if (timer != nullptr)
+    {
+        esp_timer_stop(timer);
+        tick.store(false, std::memory_order_release);
+        esp_timer_start_once(timer, 0b1ULL << 26U);
+    }
+}
 
 /**
  * @brief Requests movement to the high desk-height preset stored by the AVR.
@@ -94,8 +131,7 @@ void PresetHandler::setHigh(uint16_t encoder)
     else if (encoder != high)
     {
         high = encoder;
-        lastMillis = millis();
-        saved = false;
+        scheduleSave();
         desk.setPending();
     }
 }
@@ -139,8 +175,7 @@ void PresetHandler::setLow(uint16_t encoder)
     else if (encoder != low)
     {
         low = encoder;
-        lastMillis = millis();
-        saved = false;
+        scheduleSave();
         desk.setPending();
     }
 }
